@@ -7,9 +7,9 @@
 ### ブランチ運用
 
 ```
-main ──→ feature/xxx ──→ PR ──→ main ──→ prod
- │                              │         │
- │  開発                        │         └─→ Vercel本番デプロイ
+main ──→ feature/xxx ──→ PR ──→ main
+ │                              │
+ │  開発                        └─→ Vercel本番デプロイ
  └──────────────────────────────┘
 ```
 
@@ -22,14 +22,13 @@ main ──→ feature/xxx ──→ PR ──→ main ──→ prod
 6. 後回しにする課題は`docs/backlog.md`に記載
 
 **本番デプロイ:**
-- `prod`ブランチにプッシュ → Vercelで自動デプロイ
-- `main`から`prod`へのマージでリリース
+- `main`ブランチにマージ → Vercelで自動デプロイ
 
 ## デプロイ
 
 ### Vercel設定
 
-- **Production Branch**: `prod`
+- **Production Branch**: `main`
 - **Framework Preset**: Next.js
 - **環境変数**: Vercel管理画面で設定
   - `ANTHROPIC_API_KEY`: Claude APIキー
