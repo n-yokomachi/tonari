@@ -6,12 +6,33 @@
 
 ### ブランチ運用
 
+```
+main ──→ feature/xxx ──→ PR ──→ main ──→ prod
+ │                              │         │
+ │  開発                        │         └─→ Vercel本番デプロイ
+ └──────────────────────────────┘
+```
+
+**開発フロー:**
 1. `main`から`feature/xxx`ブランチを切って実装
 2. コミット・プッシュ
 3. `main`ブランチあてにPRを作成
 4. PRを客観的にセルフレビュー
 5. その場で解決すべき課題は同じブランチで修正
 6. 後回しにする課題は`docs/backlog.md`に記載
+
+**本番デプロイ:**
+- `prod`ブランチにプッシュ → Vercelで自動デプロイ
+- `main`から`prod`へのマージでリリース
+
+## デプロイ
+
+### Vercel設定
+
+- **Production Branch**: `prod`
+- **Framework Preset**: Next.js
+- **環境変数**: Vercel管理画面で設定
+  - `ANTHROPIC_API_KEY`: Claude APIキー
 
 ### ディレクトリ構成
 
