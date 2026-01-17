@@ -6,8 +6,6 @@ import settingsStore from '@/features/stores/settings'
 import { Live2DHandler } from '@/features/messages/live2dHandler'
 import { debounce } from 'lodash'
 
-console.log('Live2DComponent module loaded')
-
 const setModelPosition = (
   app: Application,
   model: InstanceType<typeof Live2DModel>
@@ -25,17 +23,16 @@ const setModelPosition = (
     model.x = settings.characterPosition.x
     model.y = settings.characterPosition.y
   } else {
-    // Default positioning
-    const scale = 0.3
-    model.scale.set(scale)
+    const scaleX = app.renderer.width / model.width
+    const scaleY = app.renderer.height / model.height
+    model.scale.set(Math.min(scaleX, scaleY))
     model.x = app.renderer.width / 2
     model.y = app.renderer.height / 2
   }
 }
 
 const Live2DComponent = (): JSX.Element => {
-  console.log('Live2DComponent rendering')
-
+  const containerRef = useRef<HTMLDivElement>(null)
   const canvasContainerRef = useRef<HTMLCanvasElement>(null)
   const [app, setApp] = useState<Application | null>(null)
   const [model, setModel] = useState<InstanceType<typeof Live2DModel> | null>(
@@ -102,8 +99,13 @@ const Live2DComponent = (): JSX.Element => {
   }, [model, app, fixPosition, unfixPosition, resetPosition])
 
   useEffect(() => {
-    initApp()
+    // レイアウトが確定するまで待機してから初期化
+    const timer = setTimeout(() => {
+      initApp()
+    }, 500)
+
     return () => {
+      clearTimeout(timer)
       if (modelRef.current) {
         modelRef.current.destroy()
         modelRef.current = null
@@ -131,14 +133,30 @@ const Live2DComponent = (): JSX.Element => {
   }, [app, selectedLive2DPath])
 
   const initApp = () => {
-    if (!canvasContainerRef.current) return
+    if (!canvasContainerRef.current || !containerRef.current) return
+
+    const rect = containerRef.current.getBoundingClientRect()
+    const width = Math.floor(rect.width)
+    const height = Math.floor(rect.height)
+
+    // コンテナのサイズが取得できない場合はリトライ
+    if (width === 0 || height === 0) {
+      setTimeout(initApp, 100)
+      return
+    }
+
+    // canvasのサイズを明示的に設定
+    canvasContainerRef.current.width = width
+    canvasContainerRef.current.height = height
 
     const app = new Application({
-      width: window.innerWidth,
-      height: window.innerHeight,
+      width,
+      height,
       view: canvasContainerRef.current,
       backgroundAlpha: 0,
       antialias: true,
+      resolution: 1,
+      autoDensity: false,
     })
 
     setApp(app)
@@ -166,6 +184,7 @@ const Live2DComponent = (): JSX.Element => {
 
       currentApp.stage.addChild(newModel as unknown as DisplayObject)
       newModel.anchor.set(0.5, 0.5)
+
       setModelPosition(currentApp, newModel)
 
       modelRef.current = newModel
@@ -339,15 +358,19 @@ const Live2DComponent = (): JSX.Element => {
   }, [model, isDragging, dragOffset, pinchDistance, initialScale])
 
   useEffect(() => {
-    if (!app || !model) return
+    if (!app || !model || !canvasContainerRef.current) return
 
     const onResize = debounce(() => {
-      if (!canvasContainerRef.current) return
+      if (!containerRef.current || !canvasContainerRef.current) return
 
-      app.renderer.resize(
-        canvasContainerRef.current.clientWidth,
-        canvasContainerRef.current.clientHeight
-      )
+      const rect = containerRef.current.getBoundingClientRect()
+      const width = Math.floor(rect.width)
+      const height = Math.floor(rect.height)
+
+      canvasContainerRef.current.width = width
+      canvasContainerRef.current.height = height
+
+      app.renderer.resize(width, height)
 
       setModelPosition(app, model)
     }, 250)
@@ -361,10 +384,19 @@ const Live2DComponent = (): JSX.Element => {
   }, [app, model])
 
   return (
-    <div className="w-screen h-screen">
+    <div
+      ref={containerRef}
+      style={{
+        width: '100%',
+        height: '100%',
+        overflow: 'hidden',
+      }}
+    >
       <canvas
         ref={canvasContainerRef}
-        className="w-full h-full"
+        style={{
+          display: 'block',
+        }}
         onContextMenu={(e) => e.preventDefault()}
       />
     </div>

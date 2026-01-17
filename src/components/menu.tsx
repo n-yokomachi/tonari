@@ -1,11 +1,11 @@
 import React, { useCallback, useRef, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import Image from 'next/image'
 
 import homeStore from '@/features/stores/home'
 import menuStore from '@/features/stores/menu'
 import settingsStore from '@/features/stores/settings'
 import slideStore from '@/features/stores/slide'
-import { AssistantText } from './assistantText'
 import { ChatLog } from './chatLog'
 import { IconButton } from './iconButton'
 import Settings from './settings'
@@ -14,7 +14,6 @@ import Slides from './slides'
 import Capture from './capture'
 import { isMultiModalAvailable } from '@/features/constants/aiModels'
 import { AIService } from '@/features/constants/settings'
-import { getLatestAssistantMessage } from '@/utils/assistantMessageUtils'
 
 // モバイルデバイス検出用のカスタムフック
 const useIsMobile = () => {
@@ -48,24 +47,12 @@ export const Menu = () => {
   const youtubePlaying = settingsStore((s) => s.youtubePlaying)
   const slideMode = settingsStore((s) => s.slideMode)
   const slideVisible = menuStore((s) => s.slideVisible)
-  const chatLog = homeStore((s) => s.chatLog)
   const showWebcam = menuStore((s) => s.showWebcam)
   const showControlPanel = settingsStore((s) => s.showControlPanel)
   const showCapture = menuStore((s) => s.showCapture)
   const slidePlaying = slideStore((s) => s.isPlaying)
-  const showAssistantText = settingsStore((s) => s.showAssistantText)
 
   const [showSettings, setShowSettings] = useState(false)
-  // 会話ログ表示モード
-  const CHAT_LOG_MODE = {
-    HIDDEN: 0, // 非表示
-    ASSISTANT: 1, // アシスタントテキスト
-    CHAT_LOG: 2, // 会話ログ
-  } as const
-
-  const [chatLogMode, setChatLogMode] = useState<number>(
-    CHAT_LOG_MODE.ASSISTANT
-  )
   const [showPermissionModal, setShowPermissionModal] = useState(false)
   const imageFileInputRef = useRef<HTMLInputElement>(null)
 
@@ -109,9 +96,6 @@ export const Menu = () => {
         console.error('Failed to fetch markdown content:', error)
       )
   }, [selectedSlideDocs])
-
-  // アシスタントメッセージ
-  const latestAssistantMessage = getLatestAssistantMessage(chatLog)
 
   const handleChangeVrmFile = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -213,122 +197,110 @@ export const Menu = () => {
         </div>
       )}
 
-      <div className="absolute z-15 m-6">
-        <div
-          className="grid md:grid-flow-col gap-[8px] mb-10"
-          style={{ width: 'max-content' }}
-        >
-          {showControlPanel && (
-            <>
-              <div className="md:order-1 order-2">
-                <IconButton
-                  iconName="24/Settings"
-                  isProcessing={false}
-                  onClick={() => setShowSettings(true)}
-                ></IconButton>
-              </div>
-              <div className="md:order-2 order-1">
-                <IconButton
-                  iconName={
-                    chatLogMode === CHAT_LOG_MODE.CHAT_LOG
-                      ? '24/CommentOutline'
-                      : chatLogMode === CHAT_LOG_MODE.ASSISTANT
-                        ? '24/CommentFill'
-                        : '24/Close'
-                  }
-                  label={t('ChatLog')}
-                  isProcessing={false}
-                  onClick={() => setChatLogMode((prev) => (prev + 1) % 3)}
-                />
-              </div>
-              {!youtubeMode && (
-                <>
-                  <div className="order-3">
-                    <IconButton
-                      iconName="screen-share"
-                      isProcessing={false}
-                      onClick={toggleCapture}
-                    />
-                  </div>
-                  <div className="order-4">
-                    <IconButton
-                      iconName="24/Camera"
-                      isProcessing={false}
-                      onClick={toggleWebcam}
-                    />
-                  </div>
-                  {isMultiModalAvailable(
-                    selectAIService as AIService,
-                    selectAIModel,
-                    enableMultiModal,
-                    multiModalMode,
-                    customModel
-                  ) && (
-                    <div className="order-4">
+      <div className="absolute z-15 m-4">
+        <div className="flex items-center gap-4">
+          <Image
+            src="/logo.png"
+            alt="Scensei"
+            width={160}
+            height={53}
+            priority
+          />
+          <div className="flex gap-[8px]">
+            {showControlPanel && (
+              <>
+                <div className="md:order-1 order-2">
+                  <IconButton
+                    iconName="24/Settings"
+                    isProcessing={false}
+                    onClick={() => setShowSettings(true)}
+                  ></IconButton>
+                </div>
+                {!youtubeMode && (
+                  <>
+                    <div className="order-3">
                       <IconButton
-                        iconName="24/AddImage"
+                        iconName="screen-share"
                         isProcessing={false}
-                        onClick={() => imageFileInputRef.current?.click()}
-                      />
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept="image/*"
-                        ref={imageFileInputRef}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0]
-                          if (file) {
-                            const reader = new FileReader()
-                            reader.onload = (e) => {
-                              const imageUrl = e.target?.result as string
-                              homeStore.setState({ modalImage: imageUrl })
-                            }
-                            reader.readAsDataURL(file)
-                          }
-                        }}
+                        onClick={toggleCapture}
                       />
                     </div>
-                  )}
-                </>
-              )}
-              {youtubeMode && (
-                <div className="order-5">
-                  <IconButton
-                    iconName={youtubePlaying ? '24/PauseAlt' : '24/Video'}
-                    isProcessing={false}
-                    onClick={() =>
-                      settingsStore.setState({
-                        youtubePlaying: !youtubePlaying,
-                      })
-                    }
-                  />
-                </div>
-              )}
-              {slideMode && (
-                <div className="order-5">
-                  <IconButton
-                    iconName="24/FrameEffect"
-                    isProcessing={false}
-                    onClick={() =>
-                      menuStore.setState({ slideVisible: !slideVisible })
-                    }
-                    disabled={slidePlaying}
-                  />
-                </div>
-              )}
-            </>
-          )}
+                    <div className="order-4">
+                      <IconButton
+                        iconName="24/Camera"
+                        isProcessing={false}
+                        onClick={toggleWebcam}
+                      />
+                    </div>
+                    {isMultiModalAvailable(
+                      selectAIService as AIService,
+                      selectAIModel,
+                      enableMultiModal,
+                      multiModalMode,
+                      customModel
+                    ) && (
+                      <div className="order-4">
+                        <IconButton
+                          iconName="24/AddImage"
+                          isProcessing={false}
+                          onClick={() => imageFileInputRef.current?.click()}
+                        />
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="image/*"
+                          ref={imageFileInputRef}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) {
+                              const reader = new FileReader()
+                              reader.onload = (e) => {
+                                const imageUrl = e.target?.result as string
+                                homeStore.setState({ modalImage: imageUrl })
+                              }
+                              reader.readAsDataURL(file)
+                            }
+                          }}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+                {youtubeMode && (
+                  <div className="order-5">
+                    <IconButton
+                      iconName={youtubePlaying ? '24/PauseAlt' : '24/Video'}
+                      isProcessing={false}
+                      onClick={() =>
+                        settingsStore.setState({
+                          youtubePlaying: !youtubePlaying,
+                        })
+                      }
+                    />
+                  </div>
+                )}
+                {slideMode && (
+                  <div className="order-5">
+                    <IconButton
+                      iconName="24/FrameEffect"
+                      isProcessing={false}
+                      onClick={() =>
+                        menuStore.setState({ slideVisible: !slideVisible })
+                      }
+                      disabled={slidePlaying}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
       <div className="relative">
         {slideMode && slideVisible && <Slides markdown={markdownContent} />}
       </div>
-      {chatLogMode === CHAT_LOG_MODE.CHAT_LOG && <ChatLog />}
+      <ChatLog />
       {showSettings && <Settings onClickClose={() => setShowSettings(false)} />}
-      {chatLogMode === CHAT_LOG_MODE.ASSISTANT &&
-        latestAssistantMessage &&
-        (!slideMode || !slideVisible) &&
-        showAssistantText && <AssistantText message={latestAssistantMessage} />}
       {showWebcam && navigator.mediaDevices && <Webcam />}
       {showCapture && <Capture />}
       {showPermissionModal && (

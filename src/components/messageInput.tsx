@@ -23,29 +23,18 @@ const FILE_VALIDATION = {
 
 type Props = {
   userMessage: string
-  isMicRecording: boolean
   onChangeUserMessage: (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void
   onClickSendButton: (event: React.MouseEvent<HTMLButtonElement>) => void
-  onClickMicButton: (event: React.MouseEvent<HTMLButtonElement>) => void
   onClickStopButton: (event: React.MouseEvent<HTMLButtonElement>) => void
-  isSpeaking: boolean
-  silenceTimeoutRemaining: number | null
-  continuousMicListeningMode: boolean
-  onToggleContinuousMode: (event: React.MouseEvent<HTMLButtonElement>) => void
 }
 
 export const MessageInput = ({
   userMessage,
-  isMicRecording,
   onChangeUserMessage,
-  onClickMicButton,
   onClickSendButton,
   onClickStopButton,
-  isSpeaking,
-  silenceTimeoutRemaining,
-  continuousMicListeningMode,
 }: Props) => {
   const chatProcessing = homeStore((s) => s.chatProcessing)
   const slidePlaying = slideStore((s) => s.isPlaying)
@@ -58,12 +47,10 @@ export const MessageInput = ({
   const customModel = settingsStore((s) => s.customModel)
   const [rows, setRows] = useState(1)
   const [loadingDots, setLoadingDots] = useState('')
-  const [showPermissionModal, setShowPermissionModal] = useState(false)
   const [fileError, setFileError] = useState<string>('')
   const [showImageActions, setShowImageActions] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const realtimeAPIMode = settingsStore((s) => s.realtimeAPIMode)
-  const showSilenceProgressBar = settingsStore((s) => s.showSilenceProgressBar)
 
   const { t } = useTranslation()
 
@@ -340,56 +327,10 @@ export const MessageInput = ({
     }
   }
 
-  const handleMicClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    onClickMicButton(event)
-  }
-
   return (
-    <div className="absolute bottom-0 z-20 w-screen">
-      {showPermissionModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-2xl max-w-md">
-            <h3 className="text-xl font-bold mb-4">
-              {t('MicrophonePermission')}
-            </h3>
-            <p className="mb-4">{t('MicrophonePermissionMessage')}</p>
-            <button
-              className="bg-secondary hover:bg-secondary-hover px-4 py-2 rounded-lg"
-              onClick={() => setShowPermissionModal(false)}
-            >
-              {t('Close')}
-            </button>
-          </div>
-        </div>
-      )}
+    <div className="w-full flex-shrink-0">
       <div className="bg-base-light text-black">
         <div className="mx-auto max-w-4xl p-4 pb-3">
-          {/* プログレスバー - 設定に基づいて表示/非表示 */}
-          {isMicRecording && showSilenceProgressBar && (
-            <div className="w-full h-2 bg-gray-200 rounded-full mb-2 overflow-hidden">
-              <div
-                className="h-full bg-secondary transition-all duration-200 ease-linear"
-                style={{
-                  // プログレスバーの幅計算 - 最初と最後の0.3秒は表示しない
-                  width:
-                    silenceTimeoutRemaining !== null
-                      ? `${Math.min(
-                          100,
-                          Math.max(
-                            0,
-                            ((settingsStore.getState().noSpeechTimeout * 1000 -
-                              silenceTimeoutRemaining -
-                              300) /
-                              (settingsStore.getState().noSpeechTimeout * 1000 -
-                                600)) *
-                              100
-                          )
-                        )}%`
-                      : '0%',
-                }}
-              ></div>
-            </div>
-          )}
           {/* エラーメッセージ表示 */}
           {fileError && (
             <div className="mb-2 p-2 bg-red-100 border border-red-300 text-red-700 rounded-lg text-sm">
@@ -421,20 +362,6 @@ export const MessageInput = ({
           )}
 
           <div className="flex gap-2 items-end">
-            <div className="flex-shrink-0 pb-[0.3rem]">
-              <IconButton
-                iconName="24/Microphone"
-                backgroundColor={
-                  continuousMicListeningMode
-                    ? 'bg-green-500 hover:bg-green-600 active:bg-green-700 text-theme'
-                    : undefined
-                }
-                isProcessing={isMicRecording}
-                isProcessingIcon={'24/PauseAlt'}
-                disabled={chatProcessing || isSpeaking}
-                onClick={handleMicClick}
-              />
-            </div>
             <div className="flex-1 relative">
               {/* 画像添付インジケーター - アイコンのみ表示設定の場合 */}
               {showIconDisplay && (
@@ -483,11 +410,9 @@ export const MessageInput = ({
                 placeholder={
                   chatProcessing
                     ? `${t('AnswerGenerating')}${loadingDots}`
-                    : continuousMicListeningMode && isMicRecording
-                      ? t('ListeningContinuously')
-                      : isMultiModalSupported
-                        ? `${t('EnterYourQuestion')} (${t('PasteImageSupported') || 'Paste image supported'})`
-                        : t('EnterYourQuestion')
+                    : isMultiModalSupported
+                      ? `${t('EnterYourQuestion')}`
+                      : t('EnterYourQuestion')
                 }
                 onChange={handleTextChange}
                 onPaste={handlePaste}

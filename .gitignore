@@ -65,7 +65,7 @@ public/scripts/*
 
 # Background files
 /public/backgrounds/*
-!/public/backgrounds/bg-c.png
+!/public/backgrounds/.keep
 
 /public/images/uploaded/*
 !/public/images/placed/.keep

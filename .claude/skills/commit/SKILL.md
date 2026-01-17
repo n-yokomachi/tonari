@@ -11,12 +11,14 @@ allowed-tools: Bash
 ## 実行手順
 
 1. **状態確認**
+
    ```bash
    git status
    git diff --stat
    ```
 
 2. **変更をステージング**
+
    ```bash
    git add .
    ```

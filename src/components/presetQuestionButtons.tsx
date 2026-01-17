@@ -53,7 +53,7 @@ export const PresetQuestionButtons = ({ onSelectQuestion }: Props) => {
   const sortedQuestions = [...presetQuestions].sort((a, b) => a.order - b.order)
 
   return (
-    <div className="absolute bottom-[80px] z-20 w-full">
+    <div className="w-full flex-shrink-0">
       <div className="mx-auto max-w-4xl px-4" ref={containerRef}>
         <div
           ref={contentRef}

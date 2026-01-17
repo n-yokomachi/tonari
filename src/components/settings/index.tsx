@@ -9,12 +9,10 @@ import Description from './description'
 import Based from './based'
 import Character from './character'
 import AI from './ai'
-import Voice from './voice'
 import YouTube from './youtube'
 import Slide from './slide'
 import Log from './log'
 import Other from './other'
-import SpeechInput from './speechInput'
 import Images from './images'
 
 type Props = {
@@ -22,7 +20,7 @@ type Props = {
 }
 const Settings = (props: Props) => {
   return (
-    <div className="absolute z-40 w-full h-full bg-white/80 backdrop-blur ">
+    <div className="fixed inset-0 z-40 bg-white/80 backdrop-blur">
       <Header {...props} />
       <Main />
       <Footer />
@@ -52,13 +50,11 @@ type TabKey =
   | 'based'
   | 'character'
   | 'ai'
-  | 'voice'
   | 'youtube'
   | 'slide'
   | 'images'
   | 'log'
   | 'other'
-  | 'speechInput'
 
 // アイコンのパスマッピング
 const tabIconMapping: Record<TabKey, string> = {
@@ -66,13 +62,11 @@ const tabIconMapping: Record<TabKey, string> = {
   based: '/images/setting-icons/basic-settings.svg',
   character: '/images/setting-icons/character-settings.svg',
   ai: '/images/setting-icons/ai-settings.svg',
-  voice: '/images/setting-icons/voice-settings.svg',
   youtube: '/images/setting-icons/youtube-settings.svg',
   slide: '/images/setting-icons/slide-settings.svg',
   images: '/images/setting-icons/image-settings.svg',
   log: '/images/setting-icons/conversation-history.svg',
   other: '/images/setting-icons/other-settings.svg',
-  speechInput: '/images/setting-icons/microphone-settings.svg',
 }
 
 const Main = () => {
@@ -124,14 +118,6 @@ const Main = () => {
       label: t('AISettings'),
     },
     {
-      key: 'voice',
-      label: t('VoiceSettings'),
-    },
-    {
-      key: 'speechInput',
-      label: t('SpeechInputSettings'),
-    },
-    {
       key: 'youtube',
       label: t('YoutubeSettings'),
     },
@@ -163,8 +149,6 @@ const Main = () => {
         return <Character />
       case 'ai':
         return <AI />
-      case 'voice':
-        return <Voice />
       case 'youtube':
         return <YouTube />
       case 'slide':
@@ -175,8 +159,6 @@ const Main = () => {
         return <Log />
       case 'other':
         return <Other />
-      case 'speechInput':
-        return <SpeechInput />
     }
   }
 

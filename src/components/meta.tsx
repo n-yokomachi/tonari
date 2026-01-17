@@ -1,9 +1,7 @@
-import { buildUrl } from '@/utils/buildUrl'
 import Head from 'next/head'
 export const Meta = () => {
-  const title = 'AITuberKit'
-  const description =
-    'Webブラウザだけで誰でも簡単にAIキャラと会話したり、Youtubeで配信したりできます。'
+  const title = 'Scensei'
+  const description = 'あなたの香水選びをサポートするAIソムリエ'
   const imageUrl = '/ogp.png'
   return (
     <Head>

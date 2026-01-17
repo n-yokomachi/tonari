@@ -8,7 +8,6 @@ import {
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { VRMAnimation } from '../../lib/VRMAnimation/VRMAnimation'
 import { VRMLookAtSmootherLoaderPlugin } from '@/lib/VRMLookAtSmootherLoaderPlugin/VRMLookAtSmootherLoaderPlugin'
-import { LipSync } from '../lipSync/lipSync'
 import { EmoteController } from '../emoteController/emoteController'
 import { Talk } from '../messages/messages'
 
@@ -21,11 +20,10 @@ export class Model {
   public emoteController?: EmoteController
 
   private _lookAtTargetParent: THREE.Object3D
-  private _lipSync?: LipSync
 
   constructor(lookAtTargetParent: THREE.Object3D) {
     this._lookAtTargetParent = lookAtTargetParent
-    this._lipSync = new LipSync(new AudioContext(), { forceStart: true })
+    // Scenseiでは音声出力機能を削除しているため、LipSyncは作成しない
   }
 
   public async loadVRM(url: string): Promise<void> {
@@ -73,6 +71,7 @@ export class Model {
 
   /**
    * 音声を再生し、リップシンクを行う
+   * Scenseiでは音声出力機能を削除しているため、表情のみ設定
    */
   public async speak(
     buffer: ArrayBuffer,
@@ -80,22 +79,14 @@ export class Model {
     isNeedDecode: boolean = true
   ) {
     this.emoteController?.playEmotion(talk.emotion)
-    await new Promise((resolve) => {
-      this._lipSync?.playFromArrayBuffer(
-        buffer,
-        () => {
-          resolve(true)
-        },
-        isNeedDecode
-      )
-    })
+    // 音声再生なしのため即座に完了
   }
 
   /**
    * 現在の音声再生を停止
    */
   public stopSpeaking() {
-    this._lipSync?.stopCurrentPlayback()
+    // Scenseiでは音声出力機能を削除しているため、何もしない
   }
 
   /**
@@ -106,10 +97,7 @@ export class Model {
   }
 
   public update(delta: number): void {
-    if (this._lipSync) {
-      const { volume } = this._lipSync.update()
-      this.emoteController?.lipSync('aa', volume)
-    }
+    // Scenseiでは音声出力機能を削除しているため、リップシンク処理はスキップ
 
     this.emoteController?.update(delta)
     this.mixer?.update(delta)

@@ -11,29 +11,35 @@ allowed-tools: Bash
 ## 実行手順
 
 1. **状態確認**
+
    ```bash
    git status
    git diff --stat
    ```
 
 2. **変更をステージング**
+
    ```bash
    git add .
    ```
 
 3. **コミット作成**
+
    - 変更内容を分析して日本語でコミットメッセージを作成
    - 機能単位で簡潔に記述
+
    ```bash
    git commit -m "コミットメッセージ"
    ```
 
 4. **リモートにプッシュ**
+
    ```bash
    git push -u origin <branch-name>
    ```
 
 5. **Pull Request作成**
+
    ```bash
    gh pr create --title "PRタイトル" --body "$(cat <<'EOF'
    ## 概要

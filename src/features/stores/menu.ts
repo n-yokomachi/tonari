@@ -5,8 +5,6 @@ type SettingsTabKey =
   | 'based'
   | 'character'
   | 'ai'
-  | 'voice'
-  | 'speechInput'
   | 'youtube'
   | 'slide'
   | 'images'

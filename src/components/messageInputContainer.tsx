@@ -1,59 +1,37 @@
-import { useEffect } from 'react'
+import { useState } from 'react'
 import { MessageInput } from '@/components/messageInput'
 import homeStore from '@/features/stores/home'
-import settingsStore from '@/features/stores/settings'
-import { useVoiceRecognition } from '@/hooks/useVoiceRecognition'
 
-// 無音検出用の状態と変数を追加
 type Props = {
   onChatProcessStart: (text: string) => void
 }
 
 export const MessageInputContainer = ({ onChatProcessStart }: Props) => {
-  const isSpeaking = homeStore((s) => s.isSpeaking)
-  const continuousMicListeningMode = settingsStore(
-    (s) => s.continuousMicListeningMode
-  )
-  const speechRecognitionMode = settingsStore((s) => s.speechRecognitionMode)
+  const [userMessage, setUserMessage] = useState('')
 
-  // 音声認識フックを使用
-  const {
-    userMessage,
-    isListening,
-    silenceTimeoutRemaining,
-    handleInputChange,
-    handleSendMessage,
-    toggleListening,
-    handleStopSpeaking,
-    startListening,
-    stopListening,
-  } = useVoiceRecognition({ onChatProcessStart })
+  const handleInputChange = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setUserMessage(event.target.value)
+  }
 
-  // 常時マイク入力モードの切り替え
-  const toggleContinuousMode = () => {
-    // Whisperモードの場合は常時マイク入力モードを使用できない
-    if (speechRecognitionMode === 'whisper') return
+  const handleSendMessage = () => {
+    if (userMessage.trim()) {
+      onChatProcessStart(userMessage)
+      setUserMessage('')
+    }
+  }
 
-    // 現在のモードを反転して設定
-    settingsStore.setState({
-      continuousMicListeningMode: !continuousMicListeningMode,
-    })
+  const handleStopSpeaking = () => {
+    homeStore.setState({ isSpeaking: false })
   }
 
   return (
     <MessageInput
       userMessage={userMessage}
-      isMicRecording={isListening}
       onChangeUserMessage={handleInputChange}
-      onClickMicButton={toggleListening}
       onClickSendButton={handleSendMessage}
       onClickStopButton={handleStopSpeaking}
-      isSpeaking={isSpeaking}
-      silenceTimeoutRemaining={silenceTimeoutRemaining}
-      continuousMicListeningMode={
-        continuousMicListeningMode && speechRecognitionMode === 'browser'
-      }
-      onToggleContinuousMode={toggleContinuousMode}
     />
   )
 }

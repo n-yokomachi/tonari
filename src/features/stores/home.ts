@@ -119,9 +119,7 @@ const homeStore = create<HomeState>()(
           return { chatLog: updatedChatLog }
         })
       },
-      backgroundImageUrl:
-        process.env.NEXT_PUBLIC_BACKGROUND_IMAGE_PATH ??
-        '/backgrounds/bg-c.png',
+      backgroundImageUrl: process.env.NEXT_PUBLIC_BACKGROUND_IMAGE_PATH ?? '',
       modalImage: '',
       triggerShutter: false,
       webcamStatus: false,

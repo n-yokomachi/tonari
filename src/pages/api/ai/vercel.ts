@@ -161,8 +161,6 @@ export default async function handler(req: NextRequest) {
       }
     }
 
-    console.log('options', options)
-
     // ストリーミングレスポンスまたは一括レスポンスの生成
     if (stream) {
       return await streamAiText({

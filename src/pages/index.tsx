@@ -96,15 +96,43 @@ const Home = () => {
       ? {}
       : backgroundImageUrl === 'green'
         ? { backgroundColor: '#00FF00' }
-        : { backgroundImage: bgUrl }
+        : backgroundImageUrl
+          ? { backgroundImage: bgUrl }
+          : { backgroundColor: '#E8E8E8' }
 
   return (
-    <div className="h-[100svh] bg-cover" style={backgroundStyle}>
+    <div
+      className="w-screen h-screen overflow-hidden"
+      style={{
+        ...backgroundStyle,
+        display: 'grid',
+        gridTemplateColumns: '800px 1fr',
+        gridTemplateRows: '1fr auto',
+      }}
+    >
       <Meta />
       <Introduction />
-      {modelType === 'vrm' ? <VrmViewer /> : <Live2DViewer />}
-      <Form />
-      <Menu />
+      {/* 左上: チャットUI */}
+      <div
+        className="overflow-hidden"
+        style={{ gridColumn: '1', gridRow: '1' }}
+      >
+        <Menu />
+      </div>
+      {/* 右上: Live2Dビューワー */}
+      <div
+        className="overflow-hidden"
+        style={{
+          gridColumn: '2',
+          gridRow: '1',
+        }}
+      >
+        {modelType === 'vrm' ? <VrmViewer /> : <Live2DViewer />}
+      </div>
+      {/* 下部: 入力欄（全幅） */}
+      <div style={{ gridColumn: '1 / -1', gridRow: '2' }}>
+        <Form />
+      </div>
       <ModalImage />
       {messageReceiverEnabled && <MessageReceiver />}
       <Toasts />

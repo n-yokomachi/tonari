@@ -105,9 +105,9 @@ export const Form = () => {
     chatProcessingCount !== 0 ? (
     <SlideText />
   ) : (
-    <>
+    <div className="flex flex-col flex-shrink-0">
       <PresetQuestionButtons onSelectQuestion={hookSendChat} />
       <MessageInputContainer onChatProcessStart={hookSendChat} />
-    </>
+    </div>
   )
 }

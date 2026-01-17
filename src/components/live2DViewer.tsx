@@ -1,32 +1,13 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Script from 'next/script'
 import homeStore from '@/features/stores/home'
 
-const Live2DComponent = dynamic(
-  () => {
-    console.log('Loading Live2DComponent...')
-    return import('./Live2DComponent')
-      .then((mod) => mod.default)
-      .then((mod) => {
-        console.log('Live2DComponent loaded successfully')
-        return mod
-      })
-      .catch((err) => {
-        console.error('Failed to load Live2DComponent:', err)
-        throw err
-      })
-  },
-  {
-    ssr: false,
-    loading: () => {
-      console.log('Live2DComponent is loading...')
-      return null
-    },
-  }
-)
+const Live2DComponent = dynamic(() => import('./Live2DComponent'), {
+  ssr: false,
+})
 
 export default function Live2DViewer() {
   const [isMounted, setIsMounted] = useState(false)
@@ -55,33 +36,30 @@ export default function Live2DViewer() {
   }
 
   useEffect(() => {
-    console.log('Live2DViewer mounted')
     setIsMounted(true)
   }, [])
 
   if (!isMounted) {
-    console.log('Live2DViewer not mounted yet')
     return null
   }
 
-  console.log('Rendering Live2DViewer')
   return (
-    <div className="fixed bottom-0 right-0 w-screen h-screen z-5">
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        overflow: 'hidden',
+      }}
+    >
       <Script
         key={`cubismcore-${scriptLoadRetries.cubismcore}`}
         src="/scripts/live2dcubismcore.min.js"
         strategy="afterInteractive"
         onLoad={() => {
-          console.log('cubismcore loaded')
           setIsCubismCoreLoaded(true)
         }}
         onError={() => {
-          console.error('Failed to load cubism core')
-          if (retryLoadScript('cubismcore')) {
-            console.log('Retrying cubismcore load...')
-          } else {
-            console.error('Max retries reached for cubismcore')
-          }
+          retryLoadScript('cubismcore')
         }}
       />
       {isCubismCoreLoaded && <Live2DComponent />}
