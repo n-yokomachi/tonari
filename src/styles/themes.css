@@ -53,26 +53,26 @@ div {
 
 /* Scensei テーマ（香水ソムリエ） - デフォルト */
 :root {
-  --color-primary: #9D7E4A;
-  --color-primary-hover: #C9A96E;
-  --color-primary-press: #B8955C;
-  --color-primary-disabled: #9D7E4A4d;
-  --color-secondary: #5C4B7D;
-  --color-secondary-hover: #6F5D94;
-  --color-secondary-press: #4A3B66;
-  --color-secondary-disabled: #5C4B7D4d;
-  --color-text-primary: #5C4B3A;
-  --color-text-base: #FFFFFF;
-  --color-text-default: #3D3D3D;
-  --color-base-light: #FBF7F2;
-  --color-base-dark: #1A1A1A;
+  --color-primary: #9d7e4a;
+  --color-primary-hover: #c9a96e;
+  --color-primary-press: #b8955c;
+  --color-primary-disabled: #9d7e4a4d;
+  --color-secondary: #5c4b7d;
+  --color-secondary-hover: #6f5d94;
+  --color-secondary-press: #4a3b66;
+  --color-secondary-disabled: #5c4b7d4d;
+  --color-text-primary: #5c4b3a;
+  --color-text-base: #ffffff;
+  --color-text-default: #3d3d3d;
+  --color-base-light: #fbf7f2;
+  --color-base-dark: #1a1a1a;
 
   /* Scensei専用の追加変数 */
-  --scensei-primary: #9D7E4A;
-  --scensei-primary-light: #C9A96E;
-  --scensei-secondary: #5C4B7D;
-  --scensei-background: #1A1A1A;
-  --scensei-surface: #2D2D2D;
-  --scensei-text: #F5F0E8;
-  --scensei-accent: #E8C4A0;
+  --scensei-primary: #9d7e4a;
+  --scensei-primary-light: #c9a96e;
+  --scensei-secondary: #5c4b7d;
+  --scensei-background: #1a1a1a;
+  --scensei-surface: #2d2d2d;
+  --scensei-text: #f5f0e8;
+  --scensei-accent: #e8c4a0;
 }

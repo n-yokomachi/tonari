@@ -97,7 +97,6 @@ export const Menu = () => {
       )
   }, [selectedSlideDocs])
 
-
   const handleChangeVrmFile = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const files = event.target.files
@@ -207,95 +206,93 @@ export const Menu = () => {
             height={53}
             priority
           />
-          <div
-            className="flex gap-[8px]"
-          >
-          {showControlPanel && (
-            <>
-              <div className="md:order-1 order-2">
-                <IconButton
-                  iconName="24/Settings"
-                  isProcessing={false}
-                  onClick={() => setShowSettings(true)}
-                ></IconButton>
-              </div>
-              {!youtubeMode && (
-                <>
-                  <div className="order-3">
-                    <IconButton
-                      iconName="screen-share"
-                      isProcessing={false}
-                      onClick={toggleCapture}
-                    />
-                  </div>
-                  <div className="order-4">
-                    <IconButton
-                      iconName="24/Camera"
-                      isProcessing={false}
-                      onClick={toggleWebcam}
-                    />
-                  </div>
-                  {isMultiModalAvailable(
-                    selectAIService as AIService,
-                    selectAIModel,
-                    enableMultiModal,
-                    multiModalMode,
-                    customModel
-                  ) && (
-                    <div className="order-4">
+          <div className="flex gap-[8px]">
+            {showControlPanel && (
+              <>
+                <div className="md:order-1 order-2">
+                  <IconButton
+                    iconName="24/Settings"
+                    isProcessing={false}
+                    onClick={() => setShowSettings(true)}
+                  ></IconButton>
+                </div>
+                {!youtubeMode && (
+                  <>
+                    <div className="order-3">
                       <IconButton
-                        iconName="24/AddImage"
+                        iconName="screen-share"
                         isProcessing={false}
-                        onClick={() => imageFileInputRef.current?.click()}
-                      />
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept="image/*"
-                        ref={imageFileInputRef}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0]
-                          if (file) {
-                            const reader = new FileReader()
-                            reader.onload = (e) => {
-                              const imageUrl = e.target?.result as string
-                              homeStore.setState({ modalImage: imageUrl })
-                            }
-                            reader.readAsDataURL(file)
-                          }
-                        }}
+                        onClick={toggleCapture}
                       />
                     </div>
-                  )}
-                </>
-              )}
-              {youtubeMode && (
-                <div className="order-5">
-                  <IconButton
-                    iconName={youtubePlaying ? '24/PauseAlt' : '24/Video'}
-                    isProcessing={false}
-                    onClick={() =>
-                      settingsStore.setState({
-                        youtubePlaying: !youtubePlaying,
-                      })
-                    }
-                  />
-                </div>
-              )}
-              {slideMode && (
-                <div className="order-5">
-                  <IconButton
-                    iconName="24/FrameEffect"
-                    isProcessing={false}
-                    onClick={() =>
-                      menuStore.setState({ slideVisible: !slideVisible })
-                    }
-                    disabled={slidePlaying}
-                  />
-                </div>
-              )}
-            </>
-          )}
+                    <div className="order-4">
+                      <IconButton
+                        iconName="24/Camera"
+                        isProcessing={false}
+                        onClick={toggleWebcam}
+                      />
+                    </div>
+                    {isMultiModalAvailable(
+                      selectAIService as AIService,
+                      selectAIModel,
+                      enableMultiModal,
+                      multiModalMode,
+                      customModel
+                    ) && (
+                      <div className="order-4">
+                        <IconButton
+                          iconName="24/AddImage"
+                          isProcessing={false}
+                          onClick={() => imageFileInputRef.current?.click()}
+                        />
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="image/*"
+                          ref={imageFileInputRef}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) {
+                              const reader = new FileReader()
+                              reader.onload = (e) => {
+                                const imageUrl = e.target?.result as string
+                                homeStore.setState({ modalImage: imageUrl })
+                              }
+                              reader.readAsDataURL(file)
+                            }
+                          }}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+                {youtubeMode && (
+                  <div className="order-5">
+                    <IconButton
+                      iconName={youtubePlaying ? '24/PauseAlt' : '24/Video'}
+                      isProcessing={false}
+                      onClick={() =>
+                        settingsStore.setState({
+                          youtubePlaying: !youtubePlaying,
+                        })
+                      }
+                    />
+                  </div>
+                )}
+                {slideMode && (
+                  <div className="order-5">
+                    <IconButton
+                      iconName="24/FrameEffect"
+                      isProcessing={false}
+                      onClick={() =>
+                        menuStore.setState({ slideVisible: !slideVisible })
+                      }
+                      disabled={slidePlaying}
+                    />
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>

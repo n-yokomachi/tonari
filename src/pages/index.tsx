@@ -130,9 +130,7 @@ const Home = () => {
         {modelType === 'vrm' ? <VrmViewer /> : <Live2DViewer />}
       </div>
       {/* 下部: 入力欄（全幅） */}
-      <div
-        style={{ gridColumn: '1 / -1', gridRow: '2' }}
-      >
+      <div style={{ gridColumn: '1 / -1', gridRow: '2' }}>
         <Form />
       </div>
       <ModalImage />
