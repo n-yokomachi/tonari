@@ -2,7 +2,6 @@ import { useTranslation } from 'react-i18next'
 import Image from 'next/image'
 
 import AdvancedSettings from './advancedSettings'
-import MessageReceiverSetting from './messageReceiver'
 import PresetQuestions from './presetQuestions'
 
 const Other = () => {
@@ -23,7 +22,6 @@ const Other = () => {
 
       <AdvancedSettings />
       <PresetQuestions />
-      <MessageReceiverSetting />
     </>
   )
 }

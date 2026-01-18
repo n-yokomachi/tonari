@@ -121,20 +121,8 @@ interface Integrations {
 
 interface Character {
   characterName: string
-  characterPreset1: string
-  characterPreset2: string
-  characterPreset3: string
-  characterPreset4: string
-  characterPreset5: string
-  customPresetName1: string
-  customPresetName2: string
-  customPresetName3: string
-  customPresetName4: string
-  customPresetName5: string
-  selectedPresetIndex: number
   showAssistantText: boolean
   showCharacterName: boolean
-  systemPrompt: string
   selectedVrmPath: string
   fixedCharacterPosition: boolean
   characterPosition: {
@@ -346,28 +334,10 @@ const getInitialValuesFromEnv = (): SettingsState => ({
 
   // Character
   characterName: process.env.NEXT_PUBLIC_CHARACTER_NAME || 'Scensei',
-  characterPreset1: process.env.NEXT_PUBLIC_CHARACTER_PRESET1 || SYSTEM_PROMPT,
-  characterPreset2: process.env.NEXT_PUBLIC_CHARACTER_PRESET2 || SYSTEM_PROMPT,
-  characterPreset3: process.env.NEXT_PUBLIC_CHARACTER_PRESET3 || SYSTEM_PROMPT,
-  characterPreset4: process.env.NEXT_PUBLIC_CHARACTER_PRESET4 || SYSTEM_PROMPT,
-  characterPreset5: process.env.NEXT_PUBLIC_CHARACTER_PRESET5 || SYSTEM_PROMPT,
-  customPresetName1:
-    process.env.NEXT_PUBLIC_CUSTOM_PRESET_NAME1 || '香水ソムリエ',
-  customPresetName2:
-    process.env.NEXT_PUBLIC_CUSTOM_PRESET_NAME2 || 'カジュアル',
-  customPresetName3:
-    process.env.NEXT_PUBLIC_CUSTOM_PRESET_NAME3 || 'フォーマル',
-  customPresetName4: process.env.NEXT_PUBLIC_CUSTOM_PRESET_NAME4 || 'カスタム1',
-  customPresetName5: process.env.NEXT_PUBLIC_CUSTOM_PRESET_NAME5 || 'カスタム2',
-  selectedPresetIndex: 0,
   showAssistantText:
     process.env.NEXT_PUBLIC_SHOW_ASSISTANT_TEXT === 'true' ? true : false,
   showCharacterName:
     process.env.NEXT_PUBLIC_SHOW_CHARACTER_NAME === 'true' ? true : false,
-  systemPrompt:
-    process.env.NEXT_PUBLIC_SYSTEM_PROMPT ||
-    process.env.NEXT_PUBLIC_CHARACTER_PRESET1 ||
-    SYSTEM_PROMPT,
   selectedVrmPath:
     process.env.NEXT_PUBLIC_SELECTED_VRM_PATH || '/vrm/Scensei.vrm',
   fixedCharacterPosition: false,

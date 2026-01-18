@@ -10,6 +10,7 @@ export const ChatLog = () => {
   const chatScrollRef = useRef<HTMLDivElement>(null)
 
   const characterName = settingsStore((s) => s.characterName)
+  const chatProcessing = homeStore((s) => s.chatProcessing)
   const messages = messageSelectors.getTextAndImageMessages(
     homeStore((s) => s.chatLog)
   )
@@ -26,13 +27,20 @@ export const ChatLog = () => {
       behavior: 'smooth',
       block: 'center',
     })
-  }, [messages])
+  }, [messages, chatProcessing])
 
   return (
-    <div className="h-full w-full overflow-y-auto px-4 pt-20 pb-4">
+    <div className="h-full w-full overflow-y-auto px-4 py-4">
       {messages.map((msg, i) => {
         return (
-          <div key={i} ref={messages.length - 1 === i ? chatScrollRef : null}>
+          <div
+            key={i}
+            ref={
+              messages.length - 1 === i && !chatProcessing
+                ? chatScrollRef
+                : null
+            }
+          >
             {typeof msg.content === 'string' ? (
               <Chat
                 role={msg.role}
@@ -56,6 +64,39 @@ export const ChatLog = () => {
           </div>
         )
       })}
+      {chatProcessing &&
+        (messages.length === 0 ||
+          messages[messages.length - 1].role === 'user') && (
+          <div ref={chatScrollRef}>
+            <LoadingIndicator characterName={characterName} />
+          </div>
+        )}
+    </div>
+  )
+}
+
+const LoadingIndicator = ({ characterName }: { characterName: string }) => {
+  return (
+    <div className="mx-auto ml-0 md:ml-10 lg:ml-20 my-4 pr-10">
+      <div className="px-6 py-2 rounded-t-lg font-bold tracking-wider bg-secondary text-theme">
+        {characterName || 'CHARACTER'}
+      </div>
+      <div className="px-6 py-4 bg-white rounded-b-lg">
+        <div className="flex items-center gap-1">
+          <span
+            className="w-2 h-2 bg-secondary rounded-full animate-bounce"
+            style={{ animationDelay: '0ms' }}
+          />
+          <span
+            className="w-2 h-2 bg-secondary rounded-full animate-bounce"
+            style={{ animationDelay: '150ms' }}
+          />
+          <span
+            className="w-2 h-2 bg-secondary rounded-full animate-bounce"
+            style={{ animationDelay: '300ms' }}
+          />
+        </div>
+      </div>
     </div>
   )
 }

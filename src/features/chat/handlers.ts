@@ -12,6 +12,7 @@ import i18next from 'i18next'
 import toastStore from '@/features/stores/toast'
 import { generateMessageId } from '@/utils/messageUtils'
 import { isMultiModalAvailable } from '@/features/constants/aiModels'
+import { SYSTEM_PROMPT } from '@/features/constants/systemPromptConstants'
 
 // セッションIDを生成する関数
 const generateSessionId = () => generateMessageId()
@@ -377,6 +378,11 @@ export const processAIResponse = async (messages: Message[]) => {
     stream = await getAIChatResponseStream(messages)
   } catch (e) {
     console.error(e)
+    toastStore.getState().addToast({
+      message: i18next.t('Errors.AIAPIError'),
+      type: 'error',
+      tag: 'ai-api-error',
+    })
     homeStore.setState({ chatProcessing: false })
     return
   }
@@ -635,6 +641,11 @@ export const processAIResponse = async (messages: Message[]) => {
     }
   } catch (e) {
     console.error('Error processing AI response stream:', e)
+    toastStore.getState().addToast({
+      message: i18next.t('Errors.AIAPIError'),
+      type: 'error',
+      tag: 'ai-stream-error',
+    })
   } finally {
     reader.releaseLock()
   }
@@ -712,7 +723,7 @@ export const handleSendChatFn = () => async (text: string) => {
       })
     }
   } else {
-    let systemPrompt = ss.systemPrompt
+    let systemPrompt = SYSTEM_PROMPT
     if (ss.slideMode) {
       if (sls.isPlaying) {
         return
@@ -834,6 +845,11 @@ export const handleSendChatFn = () => async (text: string) => {
       await processAIResponse(messages)
     } catch (e) {
       console.error(e)
+      toastStore.getState().addToast({
+        message: i18next.t('Errors.AIAPIError'),
+        type: 'error',
+        tag: 'ai-response-error',
+      })
       homeStore.setState({ chatProcessing: false })
     }
   }

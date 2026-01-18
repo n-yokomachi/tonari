@@ -237,7 +237,10 @@
     "LocalLLMNotFound": "ローカルLLMのエンドポイントが見つかりません",
     "LocalLLMAPIError": "ローカルLLM APIでエラーが発生しました",
     "CustomAPIError": "カスタムAPIでエラーが発生しました",
-    "InvalidJSON": "JSON形式が正しくありません"
+    "InvalidJSON": "JSON形式が正しくありません",
+    "NetworkError": "ネットワークエラーが発生しました。接続を確認してください",
+    "RateLimitError": "リクエスト制限に達しました。しばらく待ってから再度お試しください",
+    "CameraPermissionMessage": "カメラの使用を許可してください"
   },
   "MessageReceiver": "外部からの指示を受け付ける",
   "MessageReceiverDescription": "APIを利用してAIキャラの発言を外部から指示することができます。",

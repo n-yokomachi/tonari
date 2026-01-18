@@ -29,7 +29,6 @@
     "@ai-sdk/xai": "^1.2.16",
     "@anthropic-ai/sdk": "^0.20.8",
     "@azure/identity": "^4.5.0",
-    "@charcoal-ui/icons": "^2.6.0",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@google-cloud/text-to-speech": "^5.0.1",
     "@google/generative-ai": "^0.11.3",
@@ -68,7 +67,6 @@
     "zustand": "^4.5.4"
   },
   "devDependencies": {
-    "@charcoal-ui/tailwind-config": "^2.6.0",
     "@gltf-transform/core": "^2.4.6",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",

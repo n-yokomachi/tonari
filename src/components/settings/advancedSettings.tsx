@@ -6,8 +6,6 @@ const AdvancedSettings = () => {
   const includeTimestampInUserMessage = settingsStore(
     (s) => s.includeTimestampInUserMessage
   )
-  const useVideoAsBackground = settingsStore((s) => s.useVideoAsBackground)
-  const showQuickMenu = settingsStore((s) => s.showQuickMenu)
 
   const { t } = useTranslation()
 
@@ -24,36 +22,6 @@ const AdvancedSettings = () => {
         >
           {t('LocalStorageResetButton')}
         </TextButton>
-      </div>
-      <div className="my-6">
-        <div className="my-4 text-xl font-bold">
-          {t('UseVideoAsBackground')}
-        </div>
-        <div className="my-2">
-          <TextButton
-            onClick={() =>
-              settingsStore.setState((s) => ({
-                useVideoAsBackground: !s.useVideoAsBackground,
-              }))
-            }
-          >
-            {useVideoAsBackground ? t('StatusOn') : t('StatusOff')}
-          </TextButton>
-        </div>
-      </div>
-      <div className="my-6">
-        <div className="my-4 text-xl font-bold">{t('ShowQuickMenu')}</div>
-        <div className="my-2">
-          <TextButton
-            onClick={() =>
-              settingsStore.setState((s) => ({
-                showQuickMenu: !s.showQuickMenu,
-              }))
-            }
-          >
-            {showQuickMenu ? t('StatusOn') : t('StatusOff')}
-          </TextButton>
-        </div>
       </div>
       <div className="my-6">
         <div className="my-4 text-xl font-bold">

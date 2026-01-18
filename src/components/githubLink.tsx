@@ -6,7 +6,7 @@ export const GitHubLink = () => {
     <div className="absolute right-0 z-15 m-6">
       <a
         draggable={false}
-        href="https://github.com/tegnike/aituber-kit"
+        href="https://github.com/n-yokomachi/scensei"
         rel="noopener noreferrer"
         target="_blank"
       >
@@ -17,7 +17,7 @@ export const GitHubLink = () => {
             width={24}
             src={buildUrl('/github-mark-white.svg')}
           />
-          <div className="mx-2 text-theme font-bold">Fork me</div>
+          <div className="mx-2 text-theme font-bold">Star me</div>
         </div>
       </a>
     </div>

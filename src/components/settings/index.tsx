@@ -4,16 +4,11 @@ import menuStore from '@/features/stores/menu'
 
 import { GitHubLink } from '../githubLink'
 import { IconButton } from '../iconButton'
-import Image from 'next/image'
-import Description from './description'
 import Based from './based'
 import Character from './character'
 import AI from './ai'
-import YouTube from './youtube'
-import Slide from './slide'
 import Log from './log'
 import Other from './other'
-import Images from './images'
 
 type Props = {
   onClickClose: () => void
@@ -45,26 +40,13 @@ const Header = ({ onClickClose }: Pick<Props, 'onClickClose'>) => {
 }
 
 // タブの定義
-type TabKey =
-  | 'description'
-  | 'based'
-  | 'character'
-  | 'ai'
-  | 'youtube'
-  | 'slide'
-  | 'images'
-  | 'log'
-  | 'other'
+type TabKey = 'based' | 'character' | 'ai' | 'log' | 'other'
 
 // アイコンのパスマッピング
 const tabIconMapping: Record<TabKey, string> = {
-  description: '/images/setting-icons/description.svg',
   based: '/images/setting-icons/basic-settings.svg',
   character: '/images/setting-icons/character-settings.svg',
   ai: '/images/setting-icons/ai-settings.svg',
-  youtube: '/images/setting-icons/youtube-settings.svg',
-  slide: '/images/setting-icons/slide-settings.svg',
-  images: '/images/setting-icons/image-settings.svg',
   log: '/images/setting-icons/conversation-history.svg',
   other: '/images/setting-icons/other-settings.svg',
 }
@@ -102,10 +84,6 @@ const Main = () => {
 
   const tabs: { key: TabKey; label: string }[] = [
     {
-      key: 'description',
-      label: t('Description'),
-    },
-    {
       key: 'based',
       label: t('BasedSettings'),
     },
@@ -116,18 +94,6 @@ const Main = () => {
     {
       key: 'ai',
       label: t('AISettings'),
-    },
-    {
-      key: 'youtube',
-      label: t('YoutubeSettings'),
-    },
-    {
-      key: 'slide',
-      label: t('SlideSettings'),
-    },
-    {
-      key: 'images',
-      label: t('ImageSettings'),
     },
     {
       key: 'log',
@@ -141,24 +107,18 @@ const Main = () => {
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'description':
-        return <Description />
       case 'based':
         return <Based />
       case 'character':
         return <Character />
       case 'ai':
         return <AI />
-      case 'youtube':
-        return <YouTube />
-      case 'slide':
-        return <Slide />
-      case 'images':
-        return <Images />
       case 'log':
         return <Log />
       case 'other':
         return <Other />
+      default:
+        return <Based />
     }
   }
 
@@ -207,13 +167,13 @@ const Main = () => {
                 <div
                   className="w-5 h-5 mr-2 icon-mask-default"
                   style={{
-                    maskImage: `url(${tabIconMapping[activeTab]})`,
+                    maskImage: `url(${tabIconMapping[activeTab as TabKey] || tabIconMapping.based})`,
                     maskSize: 'contain',
                     maskRepeat: 'no-repeat',
                     maskPosition: 'center',
                   }}
                 />
-                {currentTab?.label}
+                {currentTab?.label || t('BasedSettings')}
               </div>
               <svg
                 className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}

@@ -27,14 +27,12 @@ type Props = {
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void
   onClickSendButton: (event: React.MouseEvent<HTMLButtonElement>) => void
-  onClickStopButton: (event: React.MouseEvent<HTMLButtonElement>) => void
 }
 
 export const MessageInput = ({
   userMessage,
   onChangeUserMessage,
   onClickSendButton,
-  onClickStopButton,
 }: Props) => {
   const chatProcessing = homeStore((s) => s.chatProcessing)
   const slidePlaying = slideStore((s) => s.isPlaying)
@@ -420,9 +418,10 @@ export const MessageInput = ({
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 disabled={chatProcessing || slidePlaying || realtimeAPIMode}
-                className="bg-white hover:bg-white-hover focus:bg-white disabled:bg-gray-100 disabled:text-primary-disabled rounded-2xl w-full px-4 text-theme-default font-bold disabled"
+                className="bg-white hover:bg-white-hover focus:bg-white focus:ring-2 focus:ring-secondary focus:outline-none disabled:bg-gray-100 disabled:text-primary-disabled disabled:cursor-not-allowed rounded-2xl w-full px-4 text-theme-default font-bold transition-all duration-200"
                 value={userMessage}
                 rows={rows}
+                aria-label={t('EnterYourQuestion')}
                 style={{
                   lineHeight: '1.5',
                   padding: showIconDisplay ? '8px 16px 8px 32px' : '8px 16px',
@@ -431,20 +430,14 @@ export const MessageInput = ({
                 }}
               ></textarea>
             </div>
-            <div className="flex gap-2 flex-shrink-0 pb-[0.3rem]">
+            <div className="flex-shrink-0 pb-[0.3rem]">
               <IconButton
                 iconName="24/Send"
-                className="bg-secondary hover:bg-secondary-hover active:bg-secondary-press disabled:bg-secondary-disabled"
+                className="bg-secondary hover:bg-secondary-hover active:bg-secondary-press disabled:bg-secondary-disabled disabled:opacity-50 disabled:cursor-not-allowed"
                 isProcessing={chatProcessing}
                 disabled={chatProcessing || !userMessage || realtimeAPIMode}
                 onClick={onClickSendButton}
-              />
-
-              <IconButton
-                iconName="stop"
-                className="bg-secondary hover:bg-secondary-hover active:bg-secondary-press disabled:bg-secondary-disabled"
-                onClick={onClickStopButton}
-                isProcessing={false}
+                aria-label={t('SendMessage.directSendTitle')}
               />
             </div>
           </div>
