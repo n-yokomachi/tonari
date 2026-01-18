@@ -219,7 +219,10 @@
     "LocalLLMNotFound": "Local LLM endpoint not found",
     "LocalLLMAPIError": "An error occurred in local LLM API",
     "CustomAPIError": "An error occurred in custom API",
-    "InvalidJSON": "JSON format is incorrect"
+    "InvalidJSON": "JSON format is incorrect",
+    "NetworkError": "A network error occurred. Please check your connection",
+    "RateLimitError": "Rate limit reached. Please try again later",
+    "CameraPermissionMessage": "Please allow camera access"
   },
   "MessageReceiver": "Accept instructions from external sources",
   "MessageReceiverDescription": "You can instruct the AI character's speech from external sources using API.",

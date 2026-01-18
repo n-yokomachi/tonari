@@ -1,4 +1,3 @@
-import '@charcoal-ui/icons'
 import type { AppProps } from 'next/app'
 import React, { useEffect } from 'react'
 import { Analytics } from '@vercel/analytics/react'

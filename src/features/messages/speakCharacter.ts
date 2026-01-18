@@ -246,7 +246,7 @@ export const speakCharacter = (
   const vowelSequence = textToVowelSequence(talk.message)
 
   // 1音あたりの時間（ミリ秒）- 自然な発話速度に近づける
-  const msPerPhoneme = 150
+  const msPerPhoneme = 80
 
   // 現在の母音インデックス
   let currentIndex = 0

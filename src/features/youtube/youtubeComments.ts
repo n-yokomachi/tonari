@@ -11,6 +11,7 @@ import {
 import { processAIResponse } from '../chat/handlers'
 import homeStore from '@/features/stores/home'
 import { messageSelectors } from '../messages/messageSelectors'
+import { SYSTEM_PROMPT } from '@/features/constants/systemPromptConstants'
 
 export const getLiveChatId = async (
   liveId: string,
@@ -114,7 +115,7 @@ export const fetchAndProcessComments = async (
           await checkIfResponseContinuationIsRequired(chatLog)
         if (isContinuationNeeded) {
           const continuationMessage = await getMessagesForContinuation(
-            ss.systemPrompt,
+            SYSTEM_PROMPT,
             chatLog
           )
           processAIResponse(continuationMessage)
@@ -161,7 +162,7 @@ export const fetchAndProcessComments = async (
           ) {
             // 会話の続きを生成
             const continuationMessage = await getMessagesForContinuation(
-              ss.systemPrompt,
+              SYSTEM_PROMPT,
               chatLog
             )
             processAIResponse(continuationMessage)
@@ -170,7 +171,7 @@ export const fetchAndProcessComments = async (
             const anotherTopic = await getAnotherTopic(chatLog)
             console.log('anotherTopic:', anotherTopic)
             const newTopicMessage = await getMessagesForNewTopic(
-              ss.systemPrompt,
+              SYSTEM_PROMPT,
               chatLog,
               anotherTopic
             )
@@ -178,7 +179,7 @@ export const fetchAndProcessComments = async (
           } else if (noCommentCount === 6) {
             // スリープモードにする
             const messagesForSleep = await getMessagesForSleep(
-              ss.systemPrompt,
+              SYSTEM_PROMPT,
               chatLog
             )
             processAIResponse(messagesForSleep)

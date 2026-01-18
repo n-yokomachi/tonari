@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { MessageInput } from '@/components/messageInput'
-import homeStore from '@/features/stores/home'
 
 type Props = {
   onChatProcessStart: (text: string) => void
@@ -22,16 +21,11 @@ export const MessageInputContainer = ({ onChatProcessStart }: Props) => {
     }
   }
 
-  const handleStopSpeaking = () => {
-    homeStore.setState({ isSpeaking: false })
-  }
-
   return (
     <MessageInput
       userMessage={userMessage}
       onChangeUserMessage={handleInputChange}
       onClickSendButton={handleSendMessage}
-      onClickStopButton={handleStopSpeaking}
     />
   )
 }

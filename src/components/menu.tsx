@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState, useEffect } from 'react'
+import React, { useCallback, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import Image from 'next/image'
 
@@ -9,11 +9,7 @@ import slideStore from '@/features/stores/slide'
 import { ChatLog } from './chatLog'
 import { IconButton } from './iconButton'
 import Settings from './settings'
-import { Webcam } from './webcam'
 import Slides from './slides'
-import Capture from './capture'
-import { isMultiModalAvailable } from '@/features/constants/aiModels'
-import { AIService } from '@/features/constants/settings'
 
 // モバイルデバイス検出用のカスタムフック
 const useIsMobile = () => {
@@ -38,27 +34,17 @@ const useIsMobile = () => {
 }
 
 export const Menu = () => {
-  const selectAIService = settingsStore((s) => s.selectAIService)
-  const selectAIModel = settingsStore((s) => s.selectAIModel)
-  const enableMultiModal = settingsStore((s) => s.enableMultiModal)
-  const multiModalMode = settingsStore((s) => s.multiModalMode)
-  const customModel = settingsStore((s) => s.customModel)
   const youtubeMode = settingsStore((s) => s.youtubeMode)
   const youtubePlaying = settingsStore((s) => s.youtubePlaying)
   const slideMode = settingsStore((s) => s.slideMode)
   const slideVisible = menuStore((s) => s.slideVisible)
-  const showWebcam = menuStore((s) => s.showWebcam)
   const showControlPanel = settingsStore((s) => s.showControlPanel)
-  const showCapture = menuStore((s) => s.showCapture)
   const slidePlaying = slideStore((s) => s.isPlaying)
 
   const [showSettings, setShowSettings] = useState(false)
-  const [showPermissionModal, setShowPermissionModal] = useState(false)
-  const imageFileInputRef = useRef<HTMLInputElement>(null)
 
   // ロングタップ用のステート
   const [touchStartTime, setTouchStartTime] = useState<number | null>(null)
-  const [touchEndTime, setTouchEndTime] = useState<number | null>(null)
 
   // モバイルデバイス検出
   const isMobile = useIsMobile()
@@ -74,7 +60,6 @@ export const Menu = () => {
   }
 
   const handleTouchEnd = () => {
-    setTouchEndTime(Date.now())
     if (touchStartTime && Date.now() - touchStartTime >= 800) {
       // 800ms以上押し続けるとロングタップと判定
       setShowSettings(true)
@@ -135,29 +120,6 @@ export const Menu = () => {
   }, [])
 
   useEffect(() => {
-    console.log('onChangeWebcamStatus')
-    homeStore.setState({ webcamStatus: showWebcam })
-
-    if (showWebcam) {
-      navigator.mediaDevices
-        .getUserMedia({ video: true })
-        .then(() => {
-          setShowPermissionModal(false)
-        })
-        .catch(() => {
-          setShowPermissionModal(true)
-          homeStore.setState({ webcamStatus: false })
-          menuStore.setState({ showWebcam: false })
-        })
-    }
-  }, [showWebcam])
-
-  useEffect(() => {
-    console.log('onChangeCaptureStatus')
-    homeStore.setState({ captureStatus: showCapture })
-  }, [showCapture])
-
-  useEffect(() => {
     if (!youtubePlaying) {
       settingsStore.setState({
         youtubeContinuationCount: 0,
@@ -166,22 +128,6 @@ export const Menu = () => {
       })
     }
   }, [youtubePlaying])
-
-  const toggleCapture = useCallback(() => {
-    menuStore.setState(({ showCapture }) => ({ showCapture: !showCapture }))
-    menuStore.setState({ showWebcam: false }) // Captureを表示するときWebcamを非表示にする
-    if (!showCapture) {
-      homeStore.setState({ webcamStatus: false }) // Ensure webcam status is false when enabling capture
-    }
-  }, [showCapture])
-
-  const toggleWebcam = useCallback(() => {
-    menuStore.setState(({ showWebcam }) => ({ showWebcam: !showWebcam }))
-    menuStore.setState({ showCapture: false }) // Webcamを表示するときCaptureを非表示にする
-    if (!showWebcam) {
-      homeStore.setState({ captureStatus: false }) // Ensure capture status is false when enabling webcam
-    }
-  }, [showWebcam])
 
   return (
     <>
@@ -197,77 +143,27 @@ export const Menu = () => {
         </div>
       )}
 
-      <div className="absolute z-15 m-4">
-        <div className="flex items-center gap-4">
-          <Image
-            src="/logo.png"
-            alt="Scensei"
-            width={160}
-            height={53}
-            priority
-          />
-          <div className="flex gap-[8px]">
-            {showControlPanel && (
-              <>
-                <div className="md:order-1 order-2">
+      <div className="flex flex-col h-full">
+        {/* ヘッダー部分 */}
+        <div className="flex-shrink-0 z-15 px-4 py-2">
+          <div className="flex items-center gap-3">
+            <Image
+              src="/logo.png"
+              alt="Scensei"
+              width={120}
+              height={40}
+              priority
+            />
+            <div className="flex gap-[8px]">
+              {showControlPanel && (
+                <>
                   <IconButton
                     iconName="24/Settings"
                     isProcessing={false}
                     onClick={() => setShowSettings(true)}
-                  ></IconButton>
-                </div>
-                {!youtubeMode && (
-                  <>
-                    <div className="order-3">
-                      <IconButton
-                        iconName="screen-share"
-                        isProcessing={false}
-                        onClick={toggleCapture}
-                      />
-                    </div>
-                    <div className="order-4">
-                      <IconButton
-                        iconName="24/Camera"
-                        isProcessing={false}
-                        onClick={toggleWebcam}
-                      />
-                    </div>
-                    {isMultiModalAvailable(
-                      selectAIService as AIService,
-                      selectAIModel,
-                      enableMultiModal,
-                      multiModalMode,
-                      customModel
-                    ) && (
-                      <div className="order-4">
-                        <IconButton
-                          iconName="24/AddImage"
-                          isProcessing={false}
-                          onClick={() => imageFileInputRef.current?.click()}
-                        />
-                        <input
-                          type="file"
-                          className="hidden"
-                          accept="image/*"
-                          ref={imageFileInputRef}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0]
-                            if (file) {
-                              const reader = new FileReader()
-                              reader.onload = (e) => {
-                                const imageUrl = e.target?.result as string
-                                homeStore.setState({ modalImage: imageUrl })
-                              }
-                              reader.readAsDataURL(file)
-                            }
-                          }}
-                        />
-                      </div>
-                    )}
-                  </>
-                )}
-                {youtubeMode && (
-                  <div className="order-5">
+                    aria-label={t('BasedSettings')}
+                  />
+                  {youtubeMode && (
                     <IconButton
                       iconName={youtubePlaying ? '24/PauseAlt' : '24/Video'}
                       isProcessing={false}
@@ -276,11 +172,10 @@ export const Menu = () => {
                           youtubePlaying: !youtubePlaying,
                         })
                       }
+                      aria-label={youtubePlaying ? 'Pause' : 'Play'}
                     />
-                  </div>
-                )}
-                {slideMode && (
-                  <div className="order-5">
+                  )}
+                  {slideMode && (
                     <IconButton
                       iconName="24/FrameEffect"
                       isProcessing={false}
@@ -288,31 +183,24 @@ export const Menu = () => {
                         menuStore.setState({ slideVisible: !slideVisible })
                       }
                       disabled={slidePlaying}
+                      aria-label={t('SlideMode')}
                     />
-                  </div>
-                )}
-              </>
-            )}
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
+        {/* スライド表示 */}
+        <div className="relative">
+          {slideMode && slideVisible && <Slides markdown={markdownContent} />}
+        </div>
+        {/* チャットログ */}
+        <div className="flex-1 overflow-hidden">
+          <ChatLog />
+        </div>
       </div>
-      <div className="relative">
-        {slideMode && slideVisible && <Slides markdown={markdownContent} />}
-      </div>
-      <ChatLog />
       {showSettings && <Settings onClickClose={() => setShowSettings(false)} />}
-      {showWebcam && navigator.mediaDevices && <Webcam />}
-      {showCapture && <Capture />}
-      {showPermissionModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <p>{t('Errors.CameraPermissionMessage')}</p>
-            <button onClick={() => setShowPermissionModal(false)}>
-              {t('Close')}
-            </button>
-          </div>
-        </div>
-      )}
       <input
         type="file"
         className="hidden"

@@ -7,6 +7,7 @@ import {
 import settingsStore from '@/features/stores/settings'
 import homeStore from '@/features/stores/home'
 import { Message } from '@/features/messages/messages'
+import { SYSTEM_PROMPT } from '@/features/constants/systemPromptConstants'
 
 class ReceivedMessage {
   timestamp: number
@@ -92,7 +93,7 @@ const MessageReceiver = () => {
               .map((m) => `${m.role}: ${m.content}`)
               .join('\n')
             const systemPrompt = message.useCurrentSystemPrompt
-              ? ss.systemPrompt
+              ? SYSTEM_PROMPT
               : message.systemPrompt
             const messages: Message[] = [
               {
