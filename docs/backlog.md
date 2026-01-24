@@ -67,6 +67,18 @@ PRレビューで発見した、後回しにする課題を記載する。
   - `src/pages/api/get-image-list.ts`
 - **対応案**: 将来使用しないなら削除検討
 
+### バックエンドのユニットテスト追加
+
+- **発見**: Phase5 PR#6 レビュー
+- **内容**: `backend/tests/__init__.py`が空で、ユニットテストがない
+- **対応案**: Strands Agentsのテスト方法に従いテストを追加
+
+### agentcore.tsの変数宣言修正
+
+- **発見**: Phase5 PR#6 レビュー
+- **内容**: `src/pages/api/ai/agentcore.ts`の138行目・154行目で`let`を使用しているが再代入なし
+- **対応案**: `const`に変更
+
 ---
 
 ## 対応済み

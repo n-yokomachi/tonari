@@ -67,3 +67,14 @@ public/scripts/*
 
 .claude/settings.local.json
 
+# AgentCore CLI generated files
+backend/.agentcore_identity_*
+backend/.bedrock_agentcore/
+backend/.bedrock_agentcore.yaml
+
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+*.pyo
+

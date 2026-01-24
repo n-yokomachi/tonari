@@ -1,8 +1,8 @@
 import { Message } from '@/features/messages/messages'
-import { getVercelAIChatResponseStream } from './vercelAIChat'
+import { getAgentCoreChatResponseStream } from './agentCoreChat'
 
 export async function getAIChatResponseStream(
   messages: Message[]
 ): Promise<ReadableStream<string> | null> {
-  return getVercelAIChatResponseStream(messages)
+  return getAgentCoreChatResponseStream(messages)
 }
