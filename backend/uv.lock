@@ -196,6 +196,11 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/49/11/c3bf53670e2fe13354b72a7c8e9518ca22210527ff6e65ef1a86917a6e5e/bedrock_agentcore-1.2.0-py3-none-any.whl", hash = "sha256:3a17184d24b2fe77a4f49c813956623dec8011523da44df187ec22d064237fcb", size = 118697, upload-time = "2026-01-13T22:05:27.131Z" },
 ]
 
+[package.optional-dependencies]
+strands-agents = [
+    { name = "strands-agents" },
+]
+
 [[package]]
 name = "bedrock-agentcore-starter-toolkit"
 version = "0.2.8"
@@ -1721,7 +1726,7 @@ name = "scensei-backend"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "bedrock-agentcore" },
+    { name = "bedrock-agentcore", extra = ["strands-agents"] },
     { name = "bedrock-agentcore-starter-toolkit" },
     { name = "strands-agents" },
     { name = "strands-agents-tools" },
@@ -1735,7 +1740,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bedrock-agentcore", specifier = ">=1.2.0" },
+    { name = "bedrock-agentcore", extras = ["strands-agents"], specifier = ">=1.2.0" },
     { name = "bedrock-agentcore-starter-toolkit", specifier = ">=0.2.8" },
     { name = "strands-agents", specifier = ">=1.23.0" },
     { name = "strands-agents-tools", specifier = ">=0.2.19" },

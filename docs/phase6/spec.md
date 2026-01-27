@@ -6,9 +6,9 @@
 
 ## 完了条件
 
-- [ ] 短期記憶が動作し、同一セッション内で会話履歴が保持される
-- [ ] セッションIDがフロントエンド〜バックエンド間で正しく受け渡しされる
-- [ ] セッションを跨いだ会話で過去の会話を参照しない（セッション分離）
+- [x] 短期記憶が動作し、同一セッション内で会話履歴が保持される
+- [x] セッションIDがフロントエンド〜バックエンド間で正しく受け渡しされる
+- [ ] 動作確認: リロードしても会話履歴が継続される
 - [ ] 長期記憶でユーザーの好みが保持される（localStorage匿名UUID方式）
 
 ## 前提条件
@@ -102,43 +102,27 @@ async def invoke(payload: dict):
 
 ### 6.2 フロントエンド連携
 
-#### セッションID・ユーザーID管理
+#### セッションID管理
 
 ```typescript
 // src/features/chat/agentCoreChat.ts
 
-// セッションIDを生成・保持（sessionStorage: タブ単位）
+// セッションIDを生成・保持（localStorage: ブラウザ単位で永続化）
+// リロードしても同一セッションとして扱われる
 const getSessionId = (): string => {
   const key = 'scensei_session_id'
-  let sessionId = sessionStorage.getItem(key)
+  let sessionId = localStorage.getItem(key)
   if (!sessionId) {
     sessionId = `session-${crypto.randomUUID()}`
-    sessionStorage.setItem(key, sessionId)
+    localStorage.setItem(key, sessionId)
   }
   return sessionId
-}
-
-// ユーザーIDを生成・保持（localStorage: ブラウザ単位で永続化）
-const getActorId = (): string => {
-  const key = 'scensei_actor_id'
-  let actorId = localStorage.getItem(key)
-  if (!actorId) {
-    actorId = `user-${crypto.randomUUID()}`
-    localStorage.setItem(key, actorId)
-  }
-  return actorId
 }
 
 export async function getAgentCoreChatResponseStream(
   messages: Message[]
 ): Promise<ReadableStream<string> | null> {
-  const userMessages = messages.filter((m) => m.role === 'user')
-  const lastUserMessage = userMessages[userMessages.length - 1]
-
-  if (!lastUserMessage) {
-    return null
-  }
-
+  // ...
   const response = await fetch('/api/ai/agentcore', {
     method: 'POST',
     headers: {
@@ -146,13 +130,14 @@ export async function getAgentCoreChatResponseStream(
     },
     body: JSON.stringify({
       message: lastUserMessage.content,
-      sessionId: getSessionId(),  // セッションID（タブ単位）
-      actorId: getActorId(),      // ユーザーID（ブラウザ単位）
+      sessionId: getSessionId(),  // セッションID（ブラウザ単位で永続化）
     }),
   })
   // ...
 }
 ```
+
+**注意:** 短期記憶のみの段階ではactorIdはバックエンドで固定値 `"anonymous"` を使用。長期記憶実装時にlocalStorage UUID方式に変更。
 
 #### API Routeの修正
 
@@ -161,9 +146,9 @@ export async function getAgentCoreChatResponseStream(
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // ...
-  const { message, sessionId, actorId } = req.body
+  const { message, sessionId } = req.body
 
-  // AgentCore Runtimeへのリクエストにsession_id, actor_idを含める
+  // AgentCore Runtimeへのリクエストにsession_idを含める
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
@@ -175,7 +160,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     body: JSON.stringify({
       prompt: message,
       session_id: sessionId,  // AgentCore Memoryのセッション用
-      actor_id: actorId,      // ユーザー識別用（長期記憶）
     }),
   })
   // ...
@@ -188,14 +172,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 #### ユーザー識別方式
 
-匿名UUID方式を採用（ログイン不要）：
+匿名UUID方式（ログイン不要）：
 - `localStorage`にUUIDを保存
 - 同じブラウザ = 同じユーザーとして識別
 - ブラウザ変更・クリア時は別ユーザー扱い
 
 #### Memory Strategy設定（要検討）
 
-AgentCore Memoryの長期記憶には複数の戦略がある。Phase 6実装時に検討：
+AgentCore Memoryの長期記憶には複数の戦略がある：
 
 | 戦略 | 用途 |
 |------|------|
@@ -208,38 +192,12 @@ AgentCore Memoryの長期記憶には複数の戦略がある。Phase 6実装時
 - `retrieval_config`のパラメータ（`top_k`, `relevance_score`）
 - メモリモードの変更方法（CLI or AWSコンソール）
 
-#### 長期記憶の活用（実装例）
-
-```python
-# backend/src/agent/scensei_agent.py
-
-from bedrock_agentcore.memory.integrations.strands.config import (
-    AgentCoreMemoryConfig,
-    RetrievalConfig
-)
-
-memory_config = AgentCoreMemoryConfig(
-    memory_id=MEMORY_ID,
-    session_id=session_id,
-    actor_id=actor_id,
-    # 長期記憶からの検索設定（戦略に応じて調整）
-    retrieval_config={
-        "/preferences/{actorId}": RetrievalConfig(top_k=5, relevance_score=0.7),
-    }
-)
-```
-
----
-
----
-
-### 6.4 検討タスク
-
-Phase 6実装時に以下を検討・決定する：
+#### 実装タスク
 
 - [ ] Memory Strategyの選定（userPreference / semantic / summary）
+- [ ] actorId管理の実装（localStorage匿名UUID方式）
+- [ ] メモリモード変更（STM_ONLY → FULL）
 - [ ] `retrieval_config`パラメータの調整
-- [ ] メモリモード変更手順の確認（STM_ONLY → FULL）
 
 ---
 
@@ -259,8 +217,8 @@ Phase 6実装時に以下を検討・決定する：
 ### 短期記憶
 
 1. 同一セッション内で「私は柑橘系が好きです」と伝えた後、「おすすめを教えて」と聞くと好みを踏まえた回答が得られる
-2. ブラウザをリロード（sessionStorageクリア）すると新しいセッションになり、過去の会話を参照しない
-3. 別タブで開くと別セッションとして扱われる
+2. ブラウザをリロードしても同一セッションとして会話が継続される（localStorageでセッションID保持）
+3. localStorageをクリアすると新しいセッションになり、過去の会話を参照しない
 
 ### 長期記憶
 
@@ -282,6 +240,7 @@ Phase 6実装時に以下を検討・決定する：
 
 ## 備考
 
+- セッションIDはlocalStorageで永続化（リロードしても継続）
 - ユーザー識別は匿名UUID方式（localStorage）を採用。ログイン機能は不要
-- 将来的にデバイス跨ぎが必要になった場合はPhase 8でCognito認証を検討
+- 将来的にデバイス跨ぎが必要になった場合はCognito認証を検討
 - AgentCore Memoryのイベント保持期間（30日）は必要に応じて調整

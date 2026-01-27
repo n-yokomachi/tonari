@@ -5,7 +5,7 @@ description = "Scensei - 香水ソムリエAIエージェント"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "bedrock-agentcore>=1.2.0",
+    "bedrock-agentcore[strands-agents]>=1.2.0",
     "bedrock-agentcore-starter-toolkit>=0.2.8",
     "strands-agents>=1.23.0",
     "strands-agents-tools>=0.2.19",
