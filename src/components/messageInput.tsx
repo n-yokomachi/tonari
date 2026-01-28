@@ -42,7 +42,6 @@ export const MessageInput = ({
   const multiModalMode = settingsStore((s) => s.multiModalMode)
   const customModel = settingsStore((s) => s.customModel)
   const [rows, setRows] = useState(1)
-  const [loadingDots, setLoadingDots] = useState('')
   const [fileError, setFileError] = useState<string>('')
   const [showImageActions, setShowImageActions] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -61,31 +60,21 @@ export const MessageInput = ({
   // アイコン表示の条件
   const showIconDisplay = modalImage && imageDisplayPosition === 'icon'
 
+  // チャット処理完了後にテキストエリアをフォーカス
   useEffect(() => {
-    if (chatProcessing) {
-      const interval = setInterval(() => {
-        setLoadingDots((prev) => {
-          if (prev === '...') return ''
-          return prev + '.'
-        })
-      }, 200)
-
-      return () => clearInterval(interval)
-    } else {
-      if (textareaRef.current) {
-        textareaRef.current.value = ''
-        const isTouchDevice = () => {
-          if (typeof window === 'undefined') return false
-          return (
-            'ontouchstart' in window ||
-            navigator.maxTouchPoints > 0 ||
-            // @ts-expect-error: msMaxTouchPoints is IE-specific
-            navigator.msMaxTouchPoints > 0
-          )
-        }
-        if (!isTouchDevice()) {
-          textareaRef.current.focus()
-        }
+    if (!chatProcessing && textareaRef.current) {
+      textareaRef.current.value = ''
+      const isTouchDevice = () => {
+        if (typeof window === 'undefined') return false
+        return (
+          'ontouchstart' in window ||
+          navigator.maxTouchPoints > 0 ||
+          // @ts-expect-error: msMaxTouchPoints is IE-specific
+          navigator.msMaxTouchPoints > 0
+        )
+      }
+      if (!isTouchDevice()) {
+        textareaRef.current.focus()
       }
     }
   }, [chatProcessing])
@@ -402,13 +391,7 @@ export const MessageInput = ({
               )}
               <textarea
                 ref={textareaRef}
-                placeholder={
-                  chatProcessing
-                    ? `${t('AnswerGenerating')}${loadingDots}`
-                    : isMultiModalSupported
-                      ? `${t('EnterYourQuestion')}`
-                      : t('EnterYourQuestion')
-                }
+                placeholder=""
                 onChange={handleTextChange}
                 onPaste={handlePaste}
                 onKeyDown={handleKeyPress}
@@ -436,6 +419,30 @@ export const MessageInput = ({
                 onClick={onClickSendButton}
                 aria-label={t('SendMessage.directSendTitle')}
               />
+            </div>
+            {/* ジェスチャーテストボタン */}
+            <div className="flex-shrink-0 pb-[0.3rem] flex gap-1">
+              <button
+                onClick={() => {
+                  console.log('Bow button clicked')
+                  const model = homeStore.getState().viewer?.model
+                  console.log('Model:', model)
+                  model?.playGesture('bow')
+                }}
+                className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded"
+                title="お辞儀"
+              >
+                🙇
+              </button>
+              <button
+                onClick={() =>
+                  homeStore.getState().viewer?.model?.playGesture('present')
+                }
+                className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded"
+                title="紹介"
+              >
+                👐
+              </button>
             </div>
           </div>
         </div>

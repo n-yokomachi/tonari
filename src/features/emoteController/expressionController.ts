@@ -67,8 +67,8 @@ export class ExpressionController {
     }
   }
 
-  public update(delta: number) {
-    if (this._autoBlink) {
+  public update(delta: number, skipAutoBlink: boolean = false) {
+    if (this._autoBlink && !skipAutoBlink) {
       this._autoBlink.update(delta)
     }
 

@@ -96,11 +96,26 @@ export class Model {
     this.emoteController?.playEmotion(preset)
   }
 
+  /**
+   * ジェスチャーを再生する
+   */
+  public playGesture(gesture: 'bow' | 'present' | 'none') {
+    this.emoteController?.playGesture(gesture)
+  }
+
   public update(delta: number): void {
     // Scenseiでは音声出力機能を削除しているため、リップシンク処理はスキップ
 
-    this.emoteController?.update(delta)
+    // 表情・瞬きの更新（ジェスチャー以外）
+    this.emoteController?.updateExpression(delta)
+
+    // アイドルアニメーションの更新
     this.mixer?.update(delta)
+
+    // VRMの内部更新（look-at、スプリングボーン等）
     this.vrm?.update(delta)
+
+    // ジェスチャーの更新（VRM更新の後に実行して最終的なボーン回転を適用）
+    this.emoteController?.updateGesture(delta)
   }
 }

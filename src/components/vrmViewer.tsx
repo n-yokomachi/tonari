@@ -1,9 +1,28 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 
 import homeStore from '@/features/stores/home'
 import settingsStore from '@/features/stores/settings'
 
 export default function VrmViewer() {
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // ResizeObserverでコンテナサイズの変更を検知
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const resizeObserver = new ResizeObserver(() => {
+      const { viewer } = homeStore.getState()
+      viewer.resize()
+    })
+
+    resizeObserver.observe(container)
+
+    return () => {
+      resizeObserver.disconnect()
+    }
+  }, [])
+
   const canvasRef = useCallback((canvas: HTMLCanvasElement) => {
     if (canvas) {
       const { viewer } = homeStore.getState()
@@ -46,7 +65,7 @@ export default function VrmViewer() {
   }, [])
 
   return (
-    <div className={'w-full h-full overflow-hidden'}>
+    <div ref={containerRef} className={'w-full h-full overflow-hidden'}>
       <canvas ref={canvasRef} className={'h-full w-full'}></canvas>
     </div>
   )

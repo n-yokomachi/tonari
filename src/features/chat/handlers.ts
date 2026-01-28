@@ -62,17 +62,19 @@ const extractSentence = (
  * @param sentence 発話する文
  * @param emotionTag 感情タグ (例: "[neutral]")
  * @param currentAssistantMessageListRef アシスタントメッセージリストの参照
+ * @param fallbackEmotion 感情タグがない場合に使用するフォールバック感情
  */
 const handleSpeakAndStateUpdate = (
   sessionId: string,
   sentence: string,
   emotionTag: string,
-  currentAssistantMessageListRef: { current: string[] }
+  currentAssistantMessageListRef: { current: string[] },
+  fallbackEmotion: EmotionType = 'neutral'
 ) => {
   const hs = homeStore.getState()
   const emotion = emotionTag.includes('[')
     ? (emotionTag.slice(1, -1).toLowerCase() as EmotionType)
-    : 'neutral'
+    : fallbackEmotion
 
   // 発話不要/不可能な文字列だった場合はスキップ
   if (
@@ -110,6 +112,7 @@ export const speakMessageHandler = async (receivedMessage: string) => {
   let accumulatedAssistantText: string = ''
   let remainingMessage = receivedMessage
   let currentMessageId: string = generateMessageId()
+  let persistentEmotion: EmotionType = 'neutral' // レスポンス全体で保持する感情
 
   while (remainingMessage.length > 0 || isCodeBlock) {
     let processableText = ''
@@ -166,6 +169,12 @@ export const speakMessageHandler = async (receivedMessage: string) => {
           extractSentence(textAfterEmotion)
 
         if (sentence) {
+          // 新しい感情タグがあれば永続感情を更新
+          if (emotionTag.includes('[')) {
+            persistentEmotion = emotionTag
+              .slice(1, -1)
+              .toLowerCase() as EmotionType
+          }
           assistantMessageListRef.current.push(sentence)
           const aiText = emotionTag ? `${emotionTag} ${sentence}` : sentence
           accumulatedAssistantText += aiText + ' '
@@ -173,11 +182,18 @@ export const speakMessageHandler = async (receivedMessage: string) => {
             sessionId,
             sentence,
             emotionTag,
-            assistantMessageListRef
+            assistantMessageListRef,
+            persistentEmotion
           )
           localRemaining = textAfterSentence
         } else {
           if (localRemaining === prevLocalRemaining && localRemaining) {
+            // 新しい感情タグがあれば永続感情を更新
+            if (emotionTag.includes('[')) {
+              persistentEmotion = emotionTag
+                .slice(1, -1)
+                .toLowerCase() as EmotionType
+            }
             const finalSentence = localRemaining
             assistantMessageListRef.current.push(finalSentence)
             const aiText = emotionTag
@@ -188,7 +204,8 @@ export const speakMessageHandler = async (receivedMessage: string) => {
               sessionId,
               finalSentence,
               emotionTag,
-              assistantMessageListRef
+              assistantMessageListRef,
+              persistentEmotion
             )
             localRemaining = ''
           } else {
@@ -211,7 +228,8 @@ export const speakMessageHandler = async (receivedMessage: string) => {
             sessionId,
             finalSentence,
             '',
-            assistantMessageListRef
+            assistantMessageListRef,
+            persistentEmotion
           )
           break
         }
@@ -283,6 +301,7 @@ export const processAIResponse = async (userMessage: string) => {
   let currentMessageId: string | null = null
   let currentMessageContent = ''
   let currentEmotionTag = ''
+  let persistentEmotion: EmotionType = 'neutral' // レスポンス全体で保持する感情
   let isCodeBlock = false
   let codeBlockContent = ''
 
@@ -393,11 +412,18 @@ export const processAIResponse = async (userMessage: string) => {
                 extractSentence(textAfterEmotion)
 
               if (sentence) {
+                // 新しい感情タグがあれば永続感情を更新
+                if (currentEmotionTag.includes('[')) {
+                  persistentEmotion = currentEmotionTag
+                    .slice(1, -1)
+                    .toLowerCase() as EmotionType
+                }
                 handleSpeakAndStateUpdate(
                   sessionId,
                   sentence,
                   currentEmotionTag,
-                  assistantMessageListRef
+                  assistantMessageListRef,
+                  persistentEmotion
                 )
                 textToProcessBeforeCode = textAfterSentence
                 if (!textAfterSentence) currentEmotionTag = ''
@@ -442,11 +468,18 @@ export const processAIResponse = async (userMessage: string) => {
               extractSentence(textAfterEmotion)
 
             if (sentence) {
+              // 新しい感情タグがあれば永続感情を更新
+              if (currentEmotionTag.includes('[')) {
+                persistentEmotion = currentEmotionTag
+                  .slice(1, -1)
+                  .toLowerCase() as EmotionType
+              }
               handleSpeakAndStateUpdate(
                 sessionId,
                 sentence,
                 currentEmotionTag,
-                assistantMessageListRef
+                assistantMessageListRef,
+                persistentEmotion
               )
               processableTextForSpeech = textAfterSentence
               if (!textAfterSentence) currentEmotionTag = ''
@@ -480,13 +513,19 @@ export const processAIResponse = async (userMessage: string) => {
             const finalSentence = receivedChunksForSpeech
             const { emotionTag: extractedEmotion, remainingText: finalText } =
               extractEmotion(finalSentence)
-            if (extractedEmotion) currentEmotionTag = extractedEmotion
+            if (extractedEmotion) {
+              currentEmotionTag = extractedEmotion
+              persistentEmotion = extractedEmotion
+                .slice(1, -1)
+                .toLowerCase() as EmotionType
+            }
 
             handleSpeakAndStateUpdate(
               sessionId,
               finalText,
               currentEmotionTag,
-              assistantMessageListRef
+              assistantMessageListRef,
+              persistentEmotion
             )
           } else {
             console.warn(

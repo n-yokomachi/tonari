@@ -30,19 +30,32 @@ export class AutoBlink {
 
     // 目が閉じている場合、目が開くまでの時間を返す
     if (!this._isOpen) {
-      return this._remainingTime
+      const waitTime = this._remainingTime
+      // 自動瞬きを無効化する場合は、目を開いてからblink値をリセット
+      if (!isAuto) {
+        setTimeout(() => {
+          this._isOpen = true
+          this._expressionManager.setValue('blink', 0)
+        }, waitTime * 1000)
+      }
+      return waitTime
     }
 
     return 0
   }
 
   public update(delta: number) {
+    // 自動瞬きが無効の場合は何もしない（感情表現中は瞬きを停止）
+    if (!this._isAutoBlink) {
+      return
+    }
+
     if (this._remainingTime > 0) {
       this._remainingTime -= delta
       return
     }
 
-    if (this._isOpen && this._isAutoBlink) {
+    if (this._isOpen) {
       this.close()
       return
     }

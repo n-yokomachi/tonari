@@ -1,3 +1,4 @@
+import { useState, useCallback, useEffect } from 'react'
 import { Form } from '@/components/form'
 import MessageReceiver from '@/components/messageReceiver'
 import { Menu } from '@/components/menu'
@@ -7,6 +8,7 @@ import VrmViewer from '@/components/vrmViewer'
 import { Toasts } from '@/components/toasts'
 import { WebSocketManager } from '@/components/websocketManager'
 import ImageOverlay from '@/components/ImageOverlay'
+import { ResizableDivider } from '@/components/resizableDivider'
 import homeStore from '@/features/stores/home'
 import settingsStore from '@/features/stores/settings'
 import '@/lib/i18n'
@@ -14,8 +16,31 @@ import { buildUrl } from '@/utils/buildUrl'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { MobileHeader } from '@/components/mobileHeader'
 
+const CHAT_WIDTH_KEY = 'scensei-chat-width'
+const DEFAULT_CHAT_WIDTH = 500
+const MIN_CHAT_WIDTH = 300
+const MAX_CHAT_WIDTH = 900
+
 const Home = () => {
   const isMobile = useIsMobile()
+  const [chatWidth, setChatWidth] = useState(DEFAULT_CHAT_WIDTH)
+
+  // ローカルストレージから幅を復元
+  useEffect(() => {
+    const saved = localStorage.getItem(CHAT_WIDTH_KEY)
+    if (saved) {
+      const width = parseInt(saved, 10)
+      if (!isNaN(width) && width >= MIN_CHAT_WIDTH && width <= MAX_CHAT_WIDTH) {
+        setChatWidth(width)
+      }
+    }
+  }, [])
+
+  const handleResize = useCallback((width: number) => {
+    setChatWidth(width)
+    localStorage.setItem(CHAT_WIDTH_KEY, String(width))
+  }, [])
+
   const webcamStatus = homeStore((s) => s.webcamStatus)
   const backgroundImageUrl = homeStore((s) => s.backgroundImageUrl)
   const useVideoAsBackground = settingsStore((s) => s.useVideoAsBackground)
@@ -36,23 +61,6 @@ const Home = () => {
           ? { backgroundImage: bgUrl }
           : { backgroundColor: '#E8E8E8' }
 
-  // SSR時（isMobile === null）はレイアウトを確定しない
-  // モバイル用レイアウト: 縦並び（VRM上、チャット中、入力下）
-  // デスクトップ用レイアウト: 横並び（チャット左、VRM右、入力下）
-  const gridStyle =
-    isMobile === null
-      ? {} // SSR時は空スタイル
-      : isMobile
-        ? {
-            display: 'flex',
-            flexDirection: 'column' as const,
-          }
-        : {
-            display: 'grid',
-            gridTemplateColumns: 'minmax(400px, 800px) 1fr',
-            gridTemplateRows: '1fr auto',
-          }
-
   // SSR時はローディング表示
   if (isMobile === null) {
     return (
@@ -64,11 +72,8 @@ const Home = () => {
 
   return (
     <div
-      className="w-screen h-screen overflow-hidden"
-      style={{
-        ...backgroundStyle,
-        ...gridStyle,
-      }}
+      className="w-screen h-screen overflow-hidden flex flex-col"
+      style={backgroundStyle}
     >
       <Meta />
       {isMobile ? (
@@ -90,25 +95,29 @@ const Home = () => {
         </>
       ) : (
         <>
-          {/* デスクトップ: 左上 - チャットUI */}
-          <div
-            className="overflow-hidden"
-            style={{ gridColumn: '1', gridRow: '1' }}
-          >
-            <Menu />
-          </div>
-          {/* デスクトップ: 右上 - VRMビューワー */}
-          <div
-            className="overflow-hidden"
-            style={{
-              gridColumn: '2',
-              gridRow: '1',
-            }}
-          >
-            <VrmViewer />
+          {/* デスクトップ: メインエリア（チャット + リサイザー + VRM） */}
+          <div className="flex-1 flex overflow-hidden">
+            {/* 左: チャットUI */}
+            <div
+              className="overflow-hidden flex-shrink-0"
+              style={{ width: chatWidth }}
+            >
+              <Menu />
+            </div>
+            {/* リサイザー */}
+            <ResizableDivider
+              onResize={handleResize}
+              minWidth={MIN_CHAT_WIDTH}
+              maxWidth={MAX_CHAT_WIDTH}
+              initialWidth={chatWidth}
+            />
+            {/* 右: VRMビューワー */}
+            <div className="flex-1 overflow-hidden">
+              <VrmViewer />
+            </div>
           </div>
           {/* デスクトップ: 下部 - 入力欄（全幅） */}
-          <div style={{ gridColumn: '1 / -1', gridRow: '2' }}>
+          <div className="flex-shrink-0">
             <Form />
           </div>
         </>
