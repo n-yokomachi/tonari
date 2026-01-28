@@ -8,14 +8,13 @@
 
 - [x] 短期記憶が動作し、同一セッション内で会話履歴が保持される
 - [x] セッションIDがフロントエンド〜バックエンド間で正しく受け渡しされる
-- [ ] 動作確認: リロードしても会話履歴が継続される
-- [ ] 長期記憶でユーザーの好みが保持される（localStorage匿名UUID方式）
+- [x] リロードしても会話履歴が継続される（localStorageでセッションID保持）
+- [x] 長期記憶でユーザーの好みが保持される（localStorage匿名UUID方式）
 
 ## 前提条件
 
 - Phase 5が完了していること
 - AgentCore Memoryが作成済み（`scensei_mem-INEd7K94yX`）
-- 現在のメモリモード: `STM_ONLY`
 
 ---
 
@@ -44,7 +43,8 @@ from .prompts import SCENSEI_SYSTEM_PROMPT
 def create_scensei_agent(session_id: str, actor_id: str = "anonymous") -> Agent:
     """Scenseiエージェントを作成（セッション管理付き）"""
 
-    # AgentCore Memory設定
+    # AgentCore Memory設定（STM + LTM）
+    # LTM戦略はMemoryリソース側で設定済み
     memory_config = AgentCoreMemoryConfig(
         memory_id=os.getenv("AGENTCORE_MEMORY_ID", "scensei_mem-INEd7K94yX"),
         session_id=session_id,
@@ -102,7 +102,7 @@ async def invoke(payload: dict):
 
 ### 6.2 フロントエンド連携
 
-#### セッションID管理
+#### セッションID・アクターID管理
 
 ```typescript
 // src/features/chat/agentCoreChat.ts
@@ -119,25 +119,40 @@ const getSessionId = (): string => {
   return sessionId
 }
 
+// アクターIDを生成・保持（localStorage: ブラウザ単位で永続化）
+// LTM（長期記憶）でユーザーを識別するためのID
+const getActorId = (): string => {
+  const key = 'scensei_actor_id'
+  let actorId = localStorage.getItem(key)
+  if (!actorId) {
+    actorId = `user-${crypto.randomUUID()}`
+    localStorage.setItem(key, actorId)
+  }
+  return actorId
+}
+
+// 会話履歴はAgentCore Memoryが管理するため、最新のユーザーメッセージのみ送信
 export async function getAgentCoreChatResponseStream(
-  messages: Message[]
+  userMessage: string
 ): Promise<ReadableStream<string> | null> {
-  // ...
+  if (!userMessage) {
+    return null
+  }
+
   const response = await fetch('/api/ai/agentcore', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      message: lastUserMessage.content,
-      sessionId: getSessionId(),  // セッションID（ブラウザ単位で永続化）
+      message: userMessage,
+      sessionId: getSessionId(),
+      actorId: getActorId(),
     }),
   })
   // ...
 }
 ```
-
-**注意:** 短期記憶のみの段階ではactorIdはバックエンドで固定値 `"anonymous"` を使用。長期記憶実装時にlocalStorage UUID方式に変更。
 
 #### API Routeの修正
 
@@ -146,9 +161,9 @@ export async function getAgentCoreChatResponseStream(
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // ...
-  const { message, sessionId } = req.body
+  const { message, sessionId, actorId } = req.body
 
-  // AgentCore Runtimeへのリクエストにsession_idを含める
+  // AgentCore Runtimeへのリクエストにsession_id, actor_idを含める
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
@@ -159,7 +174,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     },
     body: JSON.stringify({
       prompt: message,
-      session_id: sessionId,  // AgentCore Memoryのセッション用
+      session_id: sessionId,  // AgentCore Memory STM用（セッション単位）
+      actor_id: actorId,      // AgentCore Memory LTM用（ユーザー単位）
     }),
   })
   // ...
@@ -177,27 +193,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 - 同じブラウザ = 同じユーザーとして識別
 - ブラウザ変更・クリア時は別ユーザー扱い
 
-#### Memory Strategy設定（要検討）
+#### LTM戦略設定
 
-AgentCore Memoryの長期記憶には複数の戦略がある：
+以下の3つの戦略をMemoryリソースに追加済み：
 
-| 戦略 | 用途 |
-|------|------|
-| `userPreferenceMemoryStrategy` | ユーザーの好み（香りの好み等）を学習・保持 |
-| `semanticMemoryStrategy` | 事実情報を抽出・保持 |
-| `summaryMemoryStrategy` | セッション要約を保持 |
+| 戦略ID | タイプ | 用途 |
+|--------|--------|------|
+| `scensei_user_preferences` | USER_PREFERENCE | ユーザーの香りの好みを学習・保持 |
+| `scensei_semantic_facts` | SEMANTIC | 重要な事実（購入履歴等）を抽出・保持 |
+| `scensei_episodic` | EPISODIC | 会話エピソードの記憶 |
 
-**検討ポイント:**
-- どの戦略を使うか（複数併用も可能）
-- `retrieval_config`のパラメータ（`top_k`, `relevance_score`）
-- メモリモードの変更方法（CLI or AWSコンソール）
-
-#### 実装タスク
-
-- [ ] Memory Strategyの選定（userPreference / semantic / summary）
-- [ ] actorId管理の実装（localStorage匿名UUID方式）
-- [ ] メモリモード変更（STM_ONLY → FULL）
-- [ ] `retrieval_config`パラメータの調整
+**追加コマンド:**
+```bash
+aws bedrock-agentcore-control update-memory \
+  --memory-id scensei_mem-INEd7K94yX \
+  --region ap-northeast-1 \
+  --memory-strategies '{
+    "addMemoryStrategies": [
+      {
+        "userPreferenceMemoryStrategy": {
+          "name": "scensei_user_preferences",
+          "namespaces": ["/strategy/{memoryStrategyId}/actors/{actorId}"]
+        }
+      },
+      {
+        "semanticMemoryStrategy": {
+          "name": "scensei_semantic_facts",
+          "namespaces": ["/strategy/{memoryStrategyId}/actors/{actorId}"]
+        }
+      },
+      {
+        "episodicMemoryStrategy": {
+          "name": "scensei_episodic",
+          "namespaces": ["/strategy/{memoryStrategyId}/actors/{actorId}/sessions/{sessionId}"],
+          "reflectionConfiguration": {
+            "namespaces": ["/strategy/{memoryStrategyId}/actors/{actorId}"]
+          }
+        }
+      }
+    ]
+  }'
+```
 
 ---
 
@@ -208,7 +244,7 @@ AgentCore Memoryの長期記憶には複数の戦略がある：
 | Memory ID | `scensei_mem-INEd7K94yX` | 既存のAgentCore Memory |
 | Memory ARN | `arn:aws:bedrock-agentcore:ap-northeast-1:765653276628:memory/scensei_mem-INEd7K94yX` | |
 | Event Expiry | 30日 | 短期記憶の保持期間 |
-| Memory Mode | `STM_ONLY` → `FULL` | 長期記憶を使うため変更 |
+| LTM Strategies | 3戦略 | USER_PREFERENCE, SEMANTIC, EPISODIC |
 
 ---
 
