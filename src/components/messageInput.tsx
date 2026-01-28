@@ -402,13 +402,7 @@ export const MessageInput = ({
               )}
               <textarea
                 ref={textareaRef}
-                placeholder={
-                  chatProcessing
-                    ? `${t('AnswerGenerating')}${loadingDots}`
-                    : isMultiModalSupported
-                      ? `${t('EnterYourQuestion')}`
-                      : t('EnterYourQuestion')
-                }
+                placeholder=""
                 onChange={handleTextChange}
                 onPaste={handlePaste}
                 onKeyDown={handleKeyPress}

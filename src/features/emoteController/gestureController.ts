@@ -16,6 +16,7 @@ interface GestureKeyframe {
 interface GestureDefinition {
   keyframes: GestureKeyframe[]
   holdDuration: number
+  closeEyes?: boolean // ジェスチャー中に目を閉じる
 }
 
 /**
@@ -55,7 +56,7 @@ export class GestureController {
     this._gestures.set('bow', {
       keyframes: [
         {
-          duration: 0.5,
+          duration: 1.0,
           bones: [
             {
               bone: 'spine',
@@ -75,10 +76,59 @@ export class GestureController {
                 new THREE.Euler(0.12, 0, 0)
               ),
             },
+            {
+              bone: 'rightShoulder',
+              rotation: new THREE.Quaternion().setFromEuler(
+                new THREE.Euler(0, -0.2, -0.0)
+              ),
+            },
+            {
+              bone: 'rightUpperArm',
+              rotation: new THREE.Quaternion().setFromEuler(
+                new THREE.Euler(/*上腕の回転*/0, /*上腕の前後*/0.1, /*上腕の左右*/-0.1)
+              ),
+            },
+            {
+              bone: 'rightLowerArm',
+              rotation: new THREE.Quaternion().setFromEuler(
+                new THREE.Euler(0.15, 1.5, 0.5) 
+              ),
+            },
+            {
+              bone: 'rightHand',
+              rotation: new THREE.Quaternion().setFromEuler(
+                new THREE.Euler(0.6, 0.2, 0.7)
+              ),
+            },
+            {
+              bone: 'leftShoulder',
+              rotation: new THREE.Quaternion().setFromEuler(
+                new THREE.Euler(0, 0.2, -0.0)
+              ),
+            },
+            {
+              bone: 'leftUpperArm',
+              rotation: new THREE.Quaternion().setFromEuler(
+                new THREE.Euler(/*上腕の回転*/0, /*上腕の前後*/-0.1, /*上腕の左右*/0.1)
+              ),
+            },
+            {
+              bone: 'leftLowerArm',
+              rotation: new THREE.Quaternion().setFromEuler(
+                new THREE.Euler(-0.15, -1.5, -0.7) 
+              ),
+            },
+            {
+              bone: 'leftHand',
+              rotation: new THREE.Quaternion().setFromEuler(
+                new THREE.Euler(0.6, -0.2, -0.7)
+              ),
+            },
           ],
         },
       ],
-      holdDuration: 0.6,
+      holdDuration: 1.0,
+      closeEyes: true,
     })
 
     // 紹介ジェスチャー（手を前に出して示す）
@@ -86,36 +136,42 @@ export class GestureController {
       keyframes: [
         // 腕を上げる
         {
-          duration: 0.3,
+          duration: 0.6,
           bones: [
+            {
+              bone: 'neck',
+              rotation: new THREE.Quaternion().setFromEuler(
+                new THREE.Euler(-0.05, -0.2, 0.3) 
+              ),
+            },
             {
               bone: 'chest',
               rotation: new THREE.Quaternion().setFromEuler(
-                new THREE.Euler(0.1, 0.1, -0.05)
+                new THREE.Euler(/*腰の折りたたみ*/0.1, /*腰の回転*/0.2, /*腰の左右曲げ*/-0.15) 
               ),
             },
             {
               bone: 'rightShoulder',
               rotation: new THREE.Quaternion().setFromEuler(
-                new THREE.Euler(0, 0.3, -0.1)
+                new THREE.Euler(0, -0.0, -0.0)
               ),
             },
             {
               bone: 'rightUpperArm',
               rotation: new THREE.Quaternion().setFromEuler(
-                new THREE.Euler(0.2, 0.3, 0.1) // Z軸負で腕を上げる
+                new THREE.Euler(0.2, -0.3, 0.2)
               ),
             },
             {
               bone: 'rightLowerArm',
               rotation: new THREE.Quaternion().setFromEuler(
-                new THREE.Euler(1.8, 0.7, -2.7) // Z軸負で肘を曲げる
+                new THREE.Euler(1.7, 0.5, -2.9) 
               ),
             },
             {
               bone: 'rightHand',
               rotation: new THREE.Quaternion().setFromEuler(
-                new THREE.Euler(-1, -0.1, -1)
+                new THREE.Euler(0, -0.5, -0.6)
               ),
             },
           ],
@@ -179,6 +235,9 @@ export class GestureController {
     } else {
       this._updateGestureAnimation(delta, definition)
     }
+
+    // ジェスチャー中の表情を適用
+    this._applyGestureExpression()
   }
 
   private _updateGestureAnimation(delta: number, definition: GestureDefinition) {
@@ -256,7 +315,7 @@ export class GestureController {
   }
 
   private _updateReturnAnimation(delta: number) {
-    const returnDuration = 0.4
+    const returnDuration = 0.8
     this._keyframeElapsedTime += delta
     const progress = Math.min(this._keyframeElapsedTime / returnDuration, 1)
 
@@ -267,6 +326,11 @@ export class GestureController {
 
     if (progress >= 1) {
       console.log('Gesture completed')
+      // 目を閉じていた場合は開ける
+      const definition = this._gestures.get(this._currentGesture)
+      if (definition?.closeEyes && this._vrm.expressionManager) {
+        this._vrm.expressionManager.setValue('blink', 0)
+      }
       this._isPlaying = false
       this._currentGesture = 'none'
       this._isReturning = false
@@ -274,6 +338,25 @@ export class GestureController {
       this._currentGestureRotations.clear()
       this._persistedRotations.clear()
     }
+  }
+
+  /**
+   * ジェスチャー中の表情を適用（目を閉じるなど）
+   */
+  private _applyGestureExpression() {
+    const definition = this._gestures.get(this._currentGesture)
+    if (!definition?.closeEyes) return
+
+    const expressionManager = this._vrm.expressionManager
+    if (!expressionManager) return
+
+    // ジェスチャーの進行に合わせて目を閉じる
+    // 戻りアニメーション中は徐々に開ける
+    const blinkWeight = this._isReturning
+      ? this._gestureBlendWeight
+      : Math.min(this._gestureBlendWeight * 1.5, 1) // 素早く閉じる
+
+    expressionManager.setValue('blink', blinkWeight)
   }
 
   /**
@@ -315,5 +398,14 @@ export class GestureController {
 
   public get currentGesture(): GestureType {
     return this._currentGesture
+  }
+
+  /**
+   * ジェスチャーにより目を閉じている状態かどうか
+   */
+  public get isClosingEyes(): boolean {
+    if (!this._isPlaying) return false
+    const definition = this._gestures.get(this._currentGesture)
+    return definition?.closeEyes === true
   }
 }
