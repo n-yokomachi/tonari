@@ -99,7 +99,7 @@ export class Model {
   /**
    * ジェスチャーを再生する
    */
-  public playGesture(gesture: 'bow' | 'wave' | 'present' | 'none') {
+  public playGesture(gesture: 'bow' | 'present' | 'none') {
     this.emoteController?.playGesture(gesture)
   }
 

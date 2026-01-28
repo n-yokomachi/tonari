@@ -85,13 +85,17 @@ export class GestureController {
             {
               bone: 'rightUpperArm',
               rotation: new THREE.Quaternion().setFromEuler(
-                new THREE.Euler(/*上腕の回転*/0, /*上腕の前後*/0.1, /*上腕の左右*/-0.1)
+                new THREE.Euler(
+                  /*上腕の回転*/ 0,
+                  /*上腕の前後*/ 0.1,
+                  /*上腕の左右*/ -0.1
+                )
               ),
             },
             {
               bone: 'rightLowerArm',
               rotation: new THREE.Quaternion().setFromEuler(
-                new THREE.Euler(0.15, 1.5, 0.5) 
+                new THREE.Euler(0.15, 1.5, 0.5)
               ),
             },
             {
@@ -109,13 +113,17 @@ export class GestureController {
             {
               bone: 'leftUpperArm',
               rotation: new THREE.Quaternion().setFromEuler(
-                new THREE.Euler(/*上腕の回転*/0, /*上腕の前後*/-0.1, /*上腕の左右*/0.1)
+                new THREE.Euler(
+                  /*上腕の回転*/ 0,
+                  /*上腕の前後*/ -0.1,
+                  /*上腕の左右*/ 0.1
+                )
               ),
             },
             {
               bone: 'leftLowerArm',
               rotation: new THREE.Quaternion().setFromEuler(
-                new THREE.Euler(-0.15, -1.5, -0.7) 
+                new THREE.Euler(-0.15, -1.5, -0.7)
               ),
             },
             {
@@ -141,13 +149,17 @@ export class GestureController {
             {
               bone: 'neck',
               rotation: new THREE.Quaternion().setFromEuler(
-                new THREE.Euler(-0.05, -0.2, 0.3) 
+                new THREE.Euler(-0.05, -0.2, 0.3)
               ),
             },
             {
               bone: 'chest',
               rotation: new THREE.Quaternion().setFromEuler(
-                new THREE.Euler(/*腰の折りたたみ*/0.1, /*腰の回転*/0.2, /*腰の左右曲げ*/-0.15) 
+                new THREE.Euler(
+                  /*腰の折りたたみ*/ 0.1,
+                  /*腰の回転*/ 0.2,
+                  /*腰の左右曲げ*/ -0.15
+                )
               ),
             },
             {
@@ -165,7 +177,7 @@ export class GestureController {
             {
               bone: 'rightLowerArm',
               rotation: new THREE.Quaternion().setFromEuler(
-                new THREE.Euler(1.7, 0.5, -2.9) 
+                new THREE.Euler(1.7, 0.5, -2.9)
               ),
             },
             {
@@ -185,15 +197,10 @@ export class GestureController {
    * ジェスチャーを再生
    */
   public playGesture(gesture: GestureType) {
-    console.log('playGesture called:', gesture, 'isPlaying:', this._isPlaying)
     if (gesture === 'none' || this._isPlaying) return
 
     const definition = this._gestures.get(gesture)
-    if (!definition) {
-      console.log('No gesture definition found for:', gesture)
-      return
-    }
-    console.log('Starting gesture:', gesture)
+    if (!definition) return
 
     this._currentGesture = gesture
     this._isPlaying = true
@@ -240,7 +247,10 @@ export class GestureController {
     this._applyGestureExpression()
   }
 
-  private _updateGestureAnimation(delta: number, definition: GestureDefinition) {
+  private _updateGestureAnimation(
+    delta: number,
+    definition: GestureDefinition
+  ) {
     const keyframe = definition.keyframes[this._currentKeyframeIndex]
     if (!keyframe) {
       this._startHoldPhase(definition)
@@ -277,8 +287,8 @@ export class GestureController {
           const prevRot = prevRotations.get(boneRot.bone)
           const fromQuat = prevRot
             ? prevRot.to.clone()
-            : this._persistedRotations.get(boneRot.bone)?.clone() ??
-              new THREE.Quaternion()
+            : (this._persistedRotations.get(boneRot.bone)?.clone() ??
+              new THREE.Quaternion())
           this._currentGestureRotations.set(boneRot.bone, {
             from: fromQuat,
             to: boneRot.rotation.clone(),
@@ -325,7 +335,6 @@ export class GestureController {
     this._applyGestureRotations()
 
     if (progress >= 1) {
-      console.log('Gesture completed')
       // 目を閉じていた場合は開ける
       const definition = this._gestures.get(this._currentGesture)
       if (definition?.closeEyes && this._vrm.expressionManager) {
