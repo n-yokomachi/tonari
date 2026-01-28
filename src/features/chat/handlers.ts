@@ -1,115 +1,18 @@
 import { getAIChatResponseStream } from '@/features/chat/aiChatFactory'
-import { Message, EmotionType } from '@/features/messages/messages'
+import { EmotionType } from '@/features/messages/messages'
 import { speakCharacter } from '@/features/messages/speakCharacter'
 import homeStore from '@/features/stores/home'
 import settingsStore from '@/features/stores/settings'
-import { messageSelectors } from '../messages/messageSelectors'
 import webSocketStore from '@/features/stores/websocketStore'
 import i18next from 'i18next'
 import toastStore from '@/features/stores/toast'
 import { generateMessageId } from '@/utils/messageUtils'
-import { isMultiModalAvailable } from '@/features/constants/aiModels'
-import { SYSTEM_PROMPT } from '@/features/constants/systemPromptConstants'
 
 // セッションIDを生成する関数
 const generateSessionId = () => generateMessageId()
 
 // コードブロックのデリミネーター
 const CODE_DELIMITER = '```'
-
-/**
- * AI判断機能でマルチモーダルを使用するかどうかを決定する
- * @param userMessage ユーザーメッセージ
- * @param image 画像データ
- * @param decisionPrompt AI判断用プロンプト
- * @returns 画像を使用するかどうか
- */
-const askAIForMultiModalDecision = async (
-  userMessage: string,
-  image: string,
-  decisionPrompt: string
-): Promise<boolean> => {
-  try {
-    // 直近の会話履歴を取得（最新3つまで）
-    const currentChatLog = homeStore.getState().chatLog
-    const recentMessages = currentChatLog.slice(-3)
-
-    // 会話履歴をテキストとして構築
-    let conversationHistory = ''
-    if (recentMessages.length > 0) {
-      conversationHistory = '\n\n直近の会話履歴:\n'
-      // cutImageMessage関数を使用して画像メッセージをテキストに変換
-      const textOnlyMessages = messageSelectors.cutImageMessage(recentMessages)
-      textOnlyMessages.forEach((msg, index) => {
-        const content = msg.content || ''
-        conversationHistory += `${index + 1}. ${msg.role === 'user' ? 'ユーザー' : 'アシスタント'}: ${content}\n`
-      })
-    }
-
-    // AI判断用のメッセージを構築
-    const decisionMessage: Message = {
-      role: 'user',
-      content: [
-        {
-          type: 'text',
-          text: `Conversation History:\n${conversationHistory}\n\nUser Message: "${userMessage}"`,
-        },
-        { type: 'image', image: image },
-      ],
-      timestamp: new Date().toISOString(),
-    }
-
-    // AI判断用のシステムプロンプト
-    const systemMessage: Message = {
-      role: 'system',
-      content: decisionPrompt,
-    }
-
-    // AIに判断を求める
-    const response = await getAIChatResponseStream([
-      systemMessage,
-      decisionMessage,
-    ])
-
-    if (!response) {
-      return false // エラーの場合は画像を使用しない
-    }
-
-    // ReadableStreamからテキストを取得
-    const reader = response.getReader()
-    let result = ''
-
-    try {
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        result += value
-      }
-    } finally {
-      reader.releaseLock()
-    }
-
-    const decision = result.trim().toLowerCase()
-
-    // 各言語の肯定的な回答をチェック
-    const affirmativeResponses = [
-      'はい',
-      'yes',
-      'oui',
-      'sí',
-      'ja',
-      '是',
-      '예',
-      'tak',
-      'da',
-      'sim',
-    ]
-    return affirmativeResponses.some((response) => decision.includes(response))
-  } catch (error) {
-    console.error('AI判断でエラーが発生しました:', error)
-    return false // エラーの場合は画像を使用しない
-  }
-}
 
 /**
  * テキストから感情タグ `[...]` を抽出する
@@ -346,10 +249,11 @@ export const speakMessageHandler = async (receivedMessage: string) => {
 }
 
 /**
- * AIからの応答を処理する関数 (Refactored for chunk-by-chunk saving)
- * @param messages 解答生成に使用するメッセージの配列
+ * AIからの応答を処理する関数
+ * 会話履歴はAgentCore Memoryが管理するため、最新のユーザーメッセージのみ送信
+ * @param userMessage ユーザーのメッセージ
  */
-export const processAIResponse = async (messages: Message[]) => {
+export const processAIResponse = async (userMessage: string) => {
   const sessionId = generateSessionId()
   homeStore.setState({ chatProcessing: true })
   let stream
@@ -357,7 +261,7 @@ export const processAIResponse = async (messages: Message[]) => {
   const assistantMessageListRef = { current: [] as string[] }
 
   try {
-    stream = await getAIChatResponseStream(messages)
+    stream = await getAIChatResponseStream(userMessage)
   } catch (e) {
     console.error(e)
     toastStore.getState().addToast({
@@ -418,8 +322,6 @@ export const processAIResponse = async (messages: Message[]) => {
           }
         }
 
-        // assistantMessage is now derived from chatLog, no need to set it separately
-
         receivedChunksForSpeech += value
       }
 
@@ -479,7 +381,6 @@ export const processAIResponse = async (messages: Message[]) => {
               delimiterIndex + CODE_DELIMITER.length
             )
 
-            //
             let textToProcessBeforeCode = beforeCode.trimStart()
             while (textToProcessBeforeCode.length > 0) {
               const prevText = textToProcessBeforeCode
@@ -648,8 +549,6 @@ export const processAIResponse = async (messages: Message[]) => {
       role: 'code',
       content: codeBlockContent,
     })
-    codeBlockContent = ''
-    isCodeBlock = false
   }
 }
 
@@ -665,7 +564,6 @@ export const handleSendChatFn = () => async (text: string) => {
 
   const ss = settingsStore.getState()
   const wsManager = webSocketStore.getState().wsManager
-  const modalImage = homeStore.getState().modalImage
 
   if (ss.externalLinkageMode) {
     homeStore.setState({ chatProcessing: true })
@@ -691,88 +589,18 @@ export const handleSendChatFn = () => async (text: string) => {
       })
     }
   } else {
-    const systemPrompt = SYSTEM_PROMPT
-
     homeStore.setState({ chatProcessing: true })
 
-    // マルチモーダル対応チェック
-    if (
-      modalImage &&
-      !isMultiModalAvailable(
-        ss.selectAIService,
-        ss.selectAIModel,
-        ss.enableMultiModal,
-        ss.multiModalMode,
-        ss.customModel
-      )
-    ) {
-      toastStore.getState().addToast({
-        message: i18next.t('MultiModalNotSupported'),
-        type: 'error',
-        tag: 'multimodal-not-supported',
-      })
-      homeStore.setState({
-        chatProcessing: false,
-        modalImage: '',
-      })
-      return
-    }
-
-    // マルチモーダルモードに基づいてメッセージコンテンツを構築
-    let userMessageContent: Message['content'] = newMessage
-    let shouldUseImage = false
-
-    if (modalImage) {
-      switch (ss.multiModalMode) {
-        case 'always':
-          shouldUseImage = true
-          break
-        case 'never':
-          shouldUseImage = false
-          break
-        case 'ai-decide':
-          // AI判断モードの場合は、AIに判断を求める
-          shouldUseImage = await askAIForMultiModalDecision(
-            newMessage,
-            modalImage,
-            ss.multiModalAiDecisionPrompt
-          )
-          break
-      }
-
-      if (shouldUseImage) {
-        userMessageContent = [
-          { type: 'text' as const, text: newMessage },
-          { type: 'image' as const, image: modalImage },
-        ]
-      }
-    }
-
+    // ユーザーメッセージをチャットログに追加（画面表示用）
     homeStore.getState().upsertMessage({
       role: 'user',
-      content: userMessageContent,
+      content: newMessage,
       timestamp: timestamp,
     })
 
-    if (modalImage) {
-      homeStore.setState({ modalImage: '' })
-    }
-
-    const currentChatLog = homeStore.getState().chatLog
-
-    const messages: Message[] = [
-      {
-        role: 'system',
-        content: systemPrompt,
-      },
-      ...messageSelectors.getProcessedMessages(
-        currentChatLog,
-        ss.includeTimestampInUserMessage
-      ),
-    ]
-
     try {
-      await processAIResponse(messages)
+      // 会話履歴はAgentCore Memoryが管理するため、最新のユーザーメッセージのみ送信
+      await processAIResponse(newMessage)
     } catch (e) {
       console.error(e)
       toastStore.getState().addToast({

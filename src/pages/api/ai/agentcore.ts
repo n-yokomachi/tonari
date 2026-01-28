@@ -66,7 +66,7 @@ export default async function handler(
   }
 
   try {
-    const { message, sessionId } = req.body
+    const { message, sessionId, actorId } = req.body
 
     if (!message) {
       return res.status(400).json({ error: 'Message is required' })
@@ -92,7 +92,11 @@ export default async function handler(
         'X-Amzn-Bedrock-AgentCore-Runtime-Session-Id': runtimeSessionId,
         Accept: 'text/event-stream',
       },
-      body: JSON.stringify({ prompt: message }),
+      body: JSON.stringify({
+        prompt: message,
+        session_id: sessionId, // AgentCore Memory STM用（セッション単位）
+        actor_id: actorId, // AgentCore Memory LTM用（ユーザー単位）
+      }),
     })
 
     if (!response.ok) {

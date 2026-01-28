@@ -1,16 +1,40 @@
-import { Message } from '@/features/messages/messages'
+/**
+ * セッションIDを取得（localStorage: ブラウザ単位で永続化）
+ * リロードしても同一セッションとして扱われる
+ */
+const getSessionId = (): string => {
+  const key = 'scensei_session_id'
+  let sessionId = localStorage.getItem(key)
+  if (!sessionId) {
+    sessionId = `session-${crypto.randomUUID()}`
+    localStorage.setItem(key, sessionId)
+  }
+  return sessionId
+}
+
+/**
+ * アクターIDを取得（localStorage: ブラウザ単位で永続化）
+ * LTM（長期記憶）でユーザーを識別するためのID
+ * セッションを跨いでも同一ユーザーとして記憶される
+ */
+const getActorId = (): string => {
+  const key = 'scensei_actor_id'
+  let actorId = localStorage.getItem(key)
+  if (!actorId) {
+    actorId = `user-${crypto.randomUUID()}`
+    localStorage.setItem(key, actorId)
+  }
+  return actorId
+}
 
 /**
  * AgentCore APIを呼び出してレスポンスストリームを取得する
+ * 会話履歴はAgentCore Memoryが管理するため、最新のユーザーメッセージのみ送信
  */
 export async function getAgentCoreChatResponseStream(
-  messages: Message[]
+  userMessage: string
 ): Promise<ReadableStream<string> | null> {
-  // 最新のユーザーメッセージを取得
-  const userMessages = messages.filter((m) => m.role === 'user')
-  const lastUserMessage = userMessages[userMessages.length - 1]
-
-  if (!lastUserMessage) {
+  if (!userMessage) {
     return null
   }
 
@@ -20,7 +44,9 @@ export async function getAgentCoreChatResponseStream(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      message: lastUserMessage.content,
+      message: userMessage,
+      sessionId: getSessionId(),
+      actorId: getActorId(),
     }),
   })
 

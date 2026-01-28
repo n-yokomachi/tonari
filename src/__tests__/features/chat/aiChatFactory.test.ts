@@ -1,14 +1,8 @@
 import { getAIChatResponseStream } from '../../../features/chat/aiChatFactory'
-import { getVercelAIChatResponseStream } from '../../../features/chat/vercelAIChat'
-import settingsStore from '../../../features/stores/settings'
-import { Message } from '../../../features/messages/messages'
+import { getAgentCoreChatResponseStream } from '../../../features/chat/agentCoreChat'
 
-jest.mock('../../../features/chat/vercelAIChat', () => ({
-  getVercelAIChatResponseStream: jest.fn(),
-}))
-
-jest.mock('../../../features/stores/settings', () => ({
-  getState: jest.fn(),
+jest.mock('../../../features/chat/agentCoreChat', () => ({
+  getAgentCoreChatResponseStream: jest.fn(),
 }))
 
 describe('aiChatFactory', () => {
@@ -16,9 +10,7 @@ describe('aiChatFactory', () => {
     jest.clearAllMocks()
   })
 
-  const testMessages: Message[] = [
-    { role: 'user', content: 'こんにちは', timestamp: '2023-01-01T00:00:00Z' },
-  ]
+  const testMessage = 'こんにちは'
 
   const createMockStream = () => {
     return new ReadableStream({
@@ -29,50 +21,22 @@ describe('aiChatFactory', () => {
     })
   }
 
-  it('Vercel AI SDKをサポートするサービスの場合、getVercelAIChatResponseStreamを呼び出す', async () => {
-    const aiServices = [
-      'openai',
-      'anthropic',
-      'google',
-      'azure',
-      'xai',
-      'groq',
-      'cohere',
-      'mistralai',
-      'perplexity',
-      'fireworks',
-      'deepseek',
-      'openrouter',
-      'lmstudio',
-      'ollama',
-      'custom-api',
-    ]
+  it('getAgentCoreChatResponseStreamを呼び出す', async () => {
+    const mockStream = createMockStream()
+    ;(getAgentCoreChatResponseStream as jest.Mock).mockResolvedValue(mockStream)
 
-    for (const service of aiServices) {
-      jest.clearAllMocks()
+    const result = await getAIChatResponseStream(testMessage)
 
-      const mockStream = createMockStream()
-      ;(getVercelAIChatResponseStream as jest.Mock).mockResolvedValue(
-        mockStream
-      )
-      ;(settingsStore.getState as jest.Mock).mockReturnValue({
-        selectAIService: service,
-      })
-
-      const result = await getAIChatResponseStream(testMessages)
-
-      expect(getVercelAIChatResponseStream).toHaveBeenCalledWith(testMessages)
-      expect(result).toBe(mockStream)
-    }
+    expect(getAgentCoreChatResponseStream).toHaveBeenCalledWith(testMessage)
+    expect(result).toBe(mockStream)
   })
 
-  it('サポートされていないAIサービスの場合、エラーをスローする', async () => {
-    ;(settingsStore.getState as jest.Mock).mockReturnValue({
-      selectAIService: 'unsupported-service',
-    })
+  it('空のメッセージの場合、nullを返す', async () => {
+    ;(getAgentCoreChatResponseStream as jest.Mock).mockResolvedValue(null)
 
-    await expect(getAIChatResponseStream(testMessages)).rejects.toThrow(
-      'Unsupported AI service: unsupported-service'
-    )
+    const result = await getAIChatResponseStream('')
+
+    expect(getAgentCoreChatResponseStream).toHaveBeenCalledWith('')
+    expect(result).toBeNull()
   })
 })
