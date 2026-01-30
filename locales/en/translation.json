@@ -223,5 +223,7 @@
     "userInputTitle": "Send user input",
     "userInputDescription": "The sent message will be processed the same as if it were entered from the AITuberKit input form. If multiple messages are sent, they will be processed in order.\nThe AI model selected in the AITuberKit settings will be used.\nThe system prompt and conversation history from AITuberKit will be used."
   },
-  "NoClientIDSet": "Client ID is not set"
+  "NoClientIDSet": "Client ID is not set",
+  "DataManagement": "Data Management",
+  "PerfumeDataManagement": "Perfume Data Management"
 }

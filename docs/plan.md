@@ -293,7 +293,7 @@ scensei/
 │   │   └── ...
 │   └── package.json
 │
-├── backend/                     # Strands Agent (新規)
+├── agentcore/                     # Strands Agent (新規)
 │   ├── src/
 │   │   ├── agent/
 │   │   │   ├── __init__.py

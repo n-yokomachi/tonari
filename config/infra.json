@@ -1,0 +1,19 @@
+{
+  "$schema": "./infra.schema.json",
+  "_comment": "インフラ設定（シークレット以外）/ Infrastructure settings (non-secrets)",
+
+  "aws": {
+    "region": "ap-northeast-1",
+    "dynamodbTableName": "scensei-perfumes"
+  },
+
+  "bedrock": {
+    "modelId": "jp.anthropic.claude-haiku-4-5-20251001-v1:0"
+  },
+
+  "webauthn": {
+    "_comment": "開発環境用。本番環境では環境変数で上書き",
+    "rpId": "localhost",
+    "origin": "http://localhost:3000"
+  }
+}

@@ -27,6 +27,7 @@ const iconNameToPath: Record<string, string> = {
   // カスタムアイコン
   'screen-share': '/images/icons/screen-share.svg',
   stop: '/images/icons/stop.svg',
+  '24/Database': '/images/icons/database.svg',
 }
 
 type IconName = keyof typeof iconNameToPath | string

@@ -8,6 +8,15 @@ const nextConfig = {
     root: process.env.BASE_PATH || '',
   },
   optimizeFonts: false,
+  // APIルートのトレーリングスラッシュを処理
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*/',
+        destination: '/api/:path*',
+      },
+    ]
+  },
 }
 
 module.exports = nextConfig

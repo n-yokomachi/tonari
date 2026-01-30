@@ -1,194 +1,436 @@
-# Phase 8: 外部データ連携（Web検索 & Google Sheets）
+# Phase 8: 外部データ連携（実体験DB & Web検索）
 
 ## 目的
 
-実在の香水情報をWeb検索で取得し、さらに開発者の実体験に基づいた香水データをGoogle Sheetsから参照することで、より正確で信頼性の高い香水提案を実現する。
+開発者の実体験に基づいた香水データをDynamoDBで管理し、AgentCore Gateway経由でエージェントから参照可能にする。また、Tavily Web検索で実在の香水情報を補完し、より正確で信頼性の高い香水提案を実現する。
 
 ## 完了条件
 
-- [ ] Web検索ツールが動作し、実在の香水情報を取得できる
-- [ ] Google Sheetsから香水データを読み取れる
-- [ ] 提案時に実体験データを優先的に参照する
-- [ ] Web検索と実体験データを組み合わせた提案ができる
+- [ ] CDKでDynamoDB + Lambdaがデプロイできる
+- [ ] 香水管理ページから香水データのCRUD操作ができる
+- [ ] AgentCore Gateway経由でエージェントが香水DBを検索できる
+- [ ] Tavily Web検索でエージェントが実在の香水情報を取得できる
+- [ ] 実体験データを優先した香水提案ができる
 
 ## 前提条件
 
 - Phase 7が完了していること
+- AWS CDK CLIがインストール済み
 - Tavily APIキーを取得済み
-- Google Cloud Projectでサービスアカウントを作成済み
+
+---
+
+## アーキテクチャ
+
+```
+┌─────────────────────────────────────────────────────┐
+│          Frontend (Next.js / Vercel)                │
+│  ┌──────────────┐  ┌───────────────────────────┐   │
+│  │ Chat UI      │  │ 香水管理ページ（管理者用） │   │
+│  └──────────────┘  └─────────────┬─────────────┘   │
+└────────┬─────────────────────────┼─────────────────┘
+         │                         │ API Routes
+         ▼                         ▼
+┌────────────────────┐    ┌────────────────────────┐
+│ AgentCore Runtime  │    │ Next.js API → DynamoDB │
+│ (Strands Agent)    │    │ (管理用CRUD)           │
+└────────┬───────────┘    └────────────────────────┘
+         │ MCP Protocol
+         ▼
+┌────────────────────────────────────────────────────┐
+│              AgentCore Gateway                      │
+│  ┌──────────────────┐  ┌────────────────────────┐  │
+│  │ Lambda Target    │  │ Tavily Target          │  │
+│  │ (香水DB検索)     │  │ (Web検索)              │  │
+│  └────────┬─────────┘  └────────────────────────┘  │
+└───────────┼─────────────────────────────────────────┘
+            ▼
+     ┌──────────────┐        ← CDKで構築
+     │  DynamoDB    │
+     │ (香水データ)  │
+     └──────────────┘
+```
 
 ---
 
 ## 実装タスク
 
-### 8.1 Web検索ツールの導入
+### 8.1 CDKプロジェクト構築
 
-#### 背景調査結果
+#### ディレクトリ構成
 
-Phase 7で`strands-agents-tools`の`web_search`を使用しようとしたが、AgentCoreランタイムでは依存パッケージがバンドルされておらず`ModuleNotFoundError`が発生。
-
-#### 解決策: AgentCore Gateway + Tavily
-
-AgentCore Gatewayを使用してTavily Web Search APIを統合する。
-
-**Tavilyとは:**
-- LLMエージェント向けに最適化されたWeb検索API
-- セマンティックランキングされた検索結果を返す
-- AWS Marketplaceで入手可能
-- AgentCore Gatewayとネイティブ統合
-
-#### セットアップ手順
-
-**Step 1: Tavily APIキーの取得**
-- [Tavily](https://tavily.com) でアカウント作成
-- APIキーを取得
-
-**Step 2: API Key Credential Providerの作成**
-```bash
-aws bedrock-agentcore-control create-api-key-credential-provider \
-  --name tavily-api-key \
-  --api-key "<TAVILY_API_KEY>" \
-  --description "Tavily search API for Scensei"
+```
+infra/
+├── bin/
+│   └── infra.ts
+├── lib/
+│   └── scensei-stack.ts
+├── lambda/
+│   └── perfume-search/
+│       ├── index.py
+│       └── requirements.txt
+├── cdk.json
+├── package.json
+└── tsconfig.json
 ```
 
-**Step 3: AgentCore Gatewayの作成**
-```bash
-bedrock-agentcore-starter-toolkit gateway create-mcp-gateway \
-  --name ScenseiGateway \
-  --region ap-northeast-1 \
-  --enable_semantic_search
+#### DynamoDBテーブル設計
+
+**テーブル名**: `scensei-perfumes`
+
+| 属性名 | 型 | 説明 |
+|--------|------|------|
+| PK | String | `PERFUME#<uuid>` |
+| SK | String | `METADATA` |
+| brand | String | ブランド名 |
+| name | String | 商品名 |
+| topNotes | List | トップノート |
+| middleNotes | List | ミドルノート |
+| baseNotes | List | ベースノート |
+| scenes | List | おすすめシーン |
+| seasons | List | おすすめ季節 |
+| impression | String | 実体験コメント |
+| rating | Number | 評価（1-5） |
+| createdAt | String | 作成日時（ISO8601） |
+| updatedAt | String | 更新日時（ISO8601） |
+
+※ GSIは使用しない（コスト削減のため、Scanで検索）
+
+#### CDKスタック実装
+
+```typescript
+// lib/scensei-stack.ts
+import * as cdk from 'aws-cdk-lib';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as python from '@aws-cdk/aws-lambda-python-alpha';
+
+export class ScenseiStack extends cdk.Stack {
+  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+    super(scope, id, props);
+
+    // DynamoDB Table
+    const perfumeTable = new dynamodb.Table(this, 'PerfumeTable', {
+      tableName: 'scensei-perfumes',
+      partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    // GSI for family search
+    perfumeTable.addGlobalSecondaryIndex({
+      indexName: 'FamilyIndex',
+      partitionKey: { name: 'family', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'rating', type: dynamodb.AttributeType.NUMBER },
+    });
+
+    // Lambda for perfume search (AgentCore Gateway Target)
+    const searchLambda = new python.PythonFunction(this, 'PerfumeSearchLambda', {
+      functionName: 'scensei-perfume-search',
+      entry: 'lambda/perfume-search',
+      runtime: lambda.Runtime.PYTHON_3_12,
+      environment: {
+        TABLE_NAME: perfumeTable.tableName,
+      },
+    });
+
+    perfumeTable.grantReadData(searchLambda);
+
+    // Output Lambda ARN for Gateway configuration
+    new cdk.CfnOutput(this, 'PerfumeSearchLambdaArn', {
+      value: searchLambda.functionArn,
+      description: 'Lambda ARN for AgentCore Gateway Target',
+    });
+  }
+}
 ```
 
-**Step 4: Tavily統合ターゲットの追加**
-
-AgentCore GatewayはIntegration targets（事前構成済みコネクタ）としてTavilyをサポート。
-
-#### エージェントからの利用
+#### Lambda関数実装
 
 ```python
-from strands import Agent
-from strands.models import BedrockModel
-# MCPプロトコル経由でGatewayのツールを使用
+# lambda/perfume-search/index.py
+import os
+import boto3
+from boto3.dynamodb.conditions import Key, Attr
 
-agent = Agent(
-    model=bedrock_model,
-    system_prompt=SCENSEI_SYSTEM_PROMPT,
-    session_manager=session_manager,
-    # Gateway経由でTavilyツールにアクセス
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table(os.environ['TABLE_NAME'])
+
+def handler(event, context):
+    """
+    AgentCore Gateway から呼び出される香水検索Lambda
+
+    Parameters:
+    - query: 検索キーワード（オプション）
+    - family: 香りファミリーで絞り込み（オプション）
+    - season: 季節で絞り込み（オプション）
+    - limit: 取得件数（デフォルト5）
+    """
+    query = event.get('query', '')
+    family = event.get('family')
+    season = event.get('season')
+    limit = int(event.get('limit', 5))
+
+    if family:
+        # GSIで香りファミリー検索
+        response = table.query(
+            IndexName='FamilyIndex',
+            KeyConditionExpression=Key('family').eq(family),
+            ScanIndexForward=False,  # ratingの降順
+            Limit=limit
+        )
+    else:
+        # フルスキャン（小規模データ想定）
+        response = table.scan(Limit=limit * 3)
+
+    items = response.get('Items', [])
+
+    # 季節フィルター
+    if season:
+        items = [i for i in items if season in i.get('seasons', [])]
+
+    # キーワード検索（簡易）
+    if query:
+        items = [i for i in items if
+                 query.lower() in i.get('name', '').lower() or
+                 query.lower() in i.get('brand', '').lower() or
+                 query.lower() in i.get('impression', '').lower()]
+
+    # 上位N件を返却
+    results = items[:limit]
+
+    return {
+        'perfumes': [
+            {
+                'brand': item.get('brand'),
+                'name': item.get('name'),
+                'family': item.get('family'),
+                'topNotes': item.get('topNotes', []),
+                'middleNotes': item.get('middleNotes', []),
+                'baseNotes': item.get('baseNotes', []),
+                'scenes': item.get('scenes', []),
+                'seasons': item.get('seasons', []),
+                'impression': item.get('impression'),
+                'rating': item.get('rating'),
+            }
+            for item in results
+        ],
+        'count': len(results)
+    }
+```
+
+#### デプロイ手順
+
+```bash
+cd infra
+npm install
+npx cdk bootstrap  # 初回のみ
+npx cdk deploy
+```
+
+---
+
+### 8.2 香水管理ページ（フロントエンド）
+
+#### ページ構成
+
+- `/admin/login` - ログインページ
+- `/admin/perfumes` - 香水一覧・管理ページ
+
+#### 認証方式
+
+シンプルなパスワード認証をmiddlewareで実装。
+
+**環境変数**:
+```
+ADMIN_PASSWORD=your-secret-password
+```
+
+**フロー**:
+```
+/admin/login → パスワード入力 → Cookie発行（admin_token）
+/admin/* → middleware でCookie検証 → OK: 表示 / NG: /admin/login へリダイレクト
+```
+
+**middleware実装**:
+```typescript
+// middleware.ts
+if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
+  const adminToken = req.cookies.get('admin_token')
+  if (!adminToken || adminToken.value !== expectedToken) {
+    return NextResponse.redirect(new URL('/admin/login', req.url))
+  }
+}
+```
+
+#### API Routes
+
+```typescript
+// pages/api/admin/auth.ts - ログイン認証
+// pages/api/admin/perfumes/index.ts - 一覧取得 & 新規作成
+// pages/api/admin/perfumes/[id].ts - 個別取得・更新・削除
+```
+
+#### UI機能
+
+- ログインフォーム（パスワード入力）
+- 香水一覧表示（テーブル形式）
+- 新規追加フォーム
+- 編集・削除機能
+- 検索・フィルター
+
+#### アクセス方法
+
+1. **設定画面から**: 設定画面に「香水データ管理」ボタンを追加
+2. **エージェント経由**: 「管理画面を開いて」等のリクエストでURLを案内
+
+**システムプロンプトに追加**:
+```
+## 管理画面への案内
+
+ユーザーから「管理画面」「香水の登録」「データ管理」などのリクエストがあった場合、
+以下のURLを案内してください：
+
+「香水データの管理画面はこちらです: /admin/perfumes
+パスワードが必要ですので、管理者にお問い合わせください。」
+```
+
+---
+
+### 8.3 AgentCore Gateway設定
+
+#### Gateway作成
+
+```python
+from bedrock_agentcore_starter_toolkit.operations.gateway.client import GatewayClient
+
+client = GatewayClient(region_name="ap-northeast-1")
+
+# OAuth認証設定
+cognito = client.create_oauth_authorizer_with_cognito("ScenseiGateway")
+
+# Gateway作成
+gateway = client.create_mcp_gateway(
+    name="ScenseiGateway",
+    authorizer_config=cognito["authorizer_config"],
+    enable_semantic_search=True
 )
 ```
 
-#### 代替案: AgentCore Browser
-
-マネージドChromeブラウザを使用してWeb検索する方法もある。
+#### Lambda Target追加
 
 ```python
-from strands_tools.browser import AgentCoreBrowser
-
-browser_tool = AgentCoreBrowser(region="ap-northeast-1")
-agent = Agent(tools=[browser_tool.browser])
+# CDKでデプロイしたLambdaをターゲットに追加
+lambda_target = client.create_mcp_gateway_target(
+    gateway=gateway,
+    name="PerfumeSearch",
+    target_type="lambda",
+    target_payload={
+        "lambdaArn": "<CDK Output: PerfumeSearchLambdaArn>",
+        "toolSchema": {
+            "name": "search_perfume_database",
+            "description": "開発者の実体験に基づいた香水データベースを検索します。実際に試した香水の印象やおすすめ情報が含まれています。",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "検索キーワード（ブランド名、香水名、印象など）"
+                    },
+                    "family": {
+                        "type": "string",
+                        "description": "香りのファミリー（フローラル、シトラス、ウッディ、オリエンタル等）"
+                    },
+                    "season": {
+                        "type": "string",
+                        "description": "季節（春、夏、秋、冬）"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "取得件数（デフォルト5）"
+                    }
+                }
+            }
+        }
+    }
+)
 ```
 
-**比較:**
-| 方式 | メリット | デメリット |
-|------|---------|-----------|
-| Gateway + Tavily | 高速、構造化データ、低コスト | Tavily APIキー必要 |
-| AgentCore Browser | フル機能、視覚的確認可能 | 重い、遅い、コスト高 |
+#### Tavily Target追加
 
-**推奨:** Gateway + Tavilyを採用
+```python
+# Tavily API Key Credential Provider作成
+tavily_cred = client.create_api_key_credential_provider(
+    name="tavily-api-key",
+    api_key="<TAVILY_API_KEY>"
+)
 
-#### 参考資料
-
-- [AWS Bedrock AgentCore Gateway Documentation](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway.html)
-- [Build dynamic web research agents with Strands Agents SDK and Tavily](https://aws.amazon.com/blogs/machine-learning/build-dynamic-web-research-agents-with-the-strands-agents-sdk-and-tavily/)
-- [Get started with AgentCore Browser](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/browser-onboarding.html)
-- [Sample Strands Agent with AgentCore](https://github.com/aws-samples/sample-strands-agent-with-agentcore)
-- [strands-agents/tools GitHub](https://github.com/strands-agents/tools)
+# Tavily統合ターゲット追加
+tavily_target = client.create_mcp_gateway_target(
+    gateway=gateway,
+    name="TavilySearch",
+    target_type="integration",
+    target_payload={
+        "integrationType": "TAVILY",
+        "credentialProviderArn": tavily_cred["arn"]
+    }
+)
+```
 
 ---
 
-### 8.2 Google Sheets連携
+### 8.4 エージェント連携
 
-#### 概要
-
-開発者の実体験に基づいた香水データをGoogle Sheetsで管理し、エージェントがMCPツール経由で参照できるようにする。
-
-#### データ構造（想定）
-
-| 列名 | 説明 | 例 |
-|-----|------|-----|
-| brand | ブランド名 | Chanel |
-| name | 商品名 | No.5 |
-| family | 香りのファミリー | フローラル |
-| top_notes | トップノート | アルデヒド、ベルガモット |
-| middle_notes | ミドルノート | ローズ、ジャスミン |
-| base_notes | ベースノート | サンダルウッド、バニラ |
-| scene | おすすめシーン | フォーマル、特別な日 |
-| season | おすすめ季節 | 秋冬 |
-| impression | 実体験コメント | 上品で華やかな印象 |
-| rating | 評価（1-5） | 5 |
-
-#### 実装方式
-
-**方式A: AgentCore Gateway + Google Sheets MCP Server**
-
-AgentCore GatewayはMCP Serversターゲットをサポート。Google Sheets用のMCPサーバーを構築またはOSSを利用。
-
-```bash
-# MCP Server ターゲットの追加
-aws bedrock-agentcore-control create-gateway-target \
-  --gateway-id <gateway-id> \
-  --target-type MCP_SERVER \
-  --mcp-server-config '{
-    "url": "https://your-mcp-server.com",
-    "protocol_version": "2025-06-18"
-  }'
-```
-
-**方式B: カスタムLambdaツール**
-
-Google Sheets APIを呼び出すLambda関数を作成し、AgentCore Gatewayのターゲットとして登録。
+#### バックエンド修正
 
 ```python
-# Lambda関数例
-import gspread
-from google.oauth2.service_account import Credentials
+# agentcore/src/agent/scensei_agent.py
+from strands import Agent
+from strands.models import BedrockModel
+from strands.tools.mcp.mcp_client import MCPClient
+from mcp.client.streamable_http import streamablehttp_client
 
-def lambda_handler(event, context):
-    # サービスアカウント認証
-    credentials = Credentials.from_service_account_info(...)
-    gc = gspread.authorize(credentials)
+def create_gateway_transport(gateway_url: str, access_token: str):
+    return streamablehttp_client(
+        gateway_url,
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
 
-    # スプレッドシートからデータ取得
-    sheet = gc.open("Scensei香水データ").sheet1
-    records = sheet.get_all_records()
+def create_scensei_agent(session_id: str, actor_id: str = "anonymous") -> Agent:
+    # Gateway設定
+    gateway_url = os.environ.get("AGENTCORE_GATEWAY_URL")
+    access_token = get_gateway_access_token()  # Cognito認証
 
-    return {"perfumes": records}
+    # MCPクライアント経由でGatewayツールを取得
+    mcp_client = MCPClient(
+        lambda: create_gateway_transport(gateway_url, access_token)
+    )
+
+    agent = Agent(
+        model=bedrock_model,
+        system_prompt=SCENSEI_SYSTEM_PROMPT,
+        session_manager=session_manager,
+        tools=mcp_client.list_tools_sync(),  # Gateway経由のツール
+    )
+    return agent
 ```
 
-#### 推奨アプローチ
-
-1. まずカスタムLambdaツールで実装（シンプル）
-2. 将来的にMCPサーバー化を検討
-
----
-
-## システムプロンプト修正
-
-Web検索とGoogle Sheets連携を活用する指示を追加。
+#### システムプロンプト修正
 
 ```python
 ## 香水提案のルール（ツール活用）
 
 香水を提案する際は、以下の優先順位でデータソースを活用してください：
 
-1. **実体験データ（最優先）**
-   - Google Sheetsの香水データベースを検索
-   - 開発者の実体験に基づいた評価・コメントを参照
+1. **実体験データベース（最優先）**
+   - `search_perfume_database` ツールで香水データベースを検索
+   - 開発者が実際に試した香水の印象・評価を参照
    - 該当する香水があれば優先的に提案
+   - 実体験コメントを必ず伝える
 
 2. **Web検索（補完）**
-   - 実体験データにない香水はWeb検索で情報を取得
+   - 実体験データにない香水は `tavily_search` で情報を取得
    - 検索結果から正確な情報（ブランド名、商品名、特徴）を使用
    - 架空の香水を絶対に提案しない
 
@@ -201,69 +443,47 @@ Web検索とGoogle Sheets連携を活用する指示を追加。
 
 ## テスト項目
 
-### Web検索
+### CDK・インフラ
 
-- [ ] 「シトラス系のおすすめ香水」で実在の香水が提案される
-- [ ] 提案された香水名をWeb検索して実在が確認できる
-- [ ] 検索エラー時は一般知識にフォールバックする
+- [ ] `cdk deploy` が成功する
+- [ ] DynamoDBテーブルが作成される
+- [ ] Lambda関数がデプロイされる
+- [ ] Lambda関数が単体で動作する
 
-### Google Sheets連携
+### 香水管理ページ
 
-- [ ] スプレッドシートのデータが正しく読み取れる
-- [ ] 実体験データがある香水は優先的に提案される
-- [ ] 実体験コメントが回答に含まれる
+- [ ] 香水の一覧が表示される
+- [ ] 新規香水を追加できる
+- [ ] 既存香水を編集できる
+- [ ] 香水を削除できる
+
+### AgentCore Gateway
+
+- [ ] Gatewayが作成される
+- [ ] Lambda Targetが登録される
+- [ ] Tavily Targetが登録される
+- [ ] エージェントからツールが見える
 
 ### 統合テスト
 
-- [ ] 「春におすすめの香水」で実体験データとWeb検索が組み合わさった提案
-- [ ] ユーザーの好みに合わせた提案ができる
-
----
-
-## 技術的な詳細
-
-### AgentCore Gateway アーキテクチャ
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Scensei Agent                        │
-│                  (AgentCore Runtime)                    │
-└─────────────────────┬───────────────────────────────────┘
-                      │ MCP Protocol
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│              AgentCore Gateway                          │
-│  ┌─────────────────┐  ┌─────────────────────────────┐  │
-│  │ Tavily Target   │  │ Google Sheets Lambda Target │  │
-│  │ (Integration)   │  │ (Lambda)                    │  │
-│  └────────┬────────┘  └──────────────┬──────────────┘  │
-└───────────┼──────────────────────────┼──────────────────┘
-            │                          │
-            ▼                          ▼
-     ┌──────────────┐          ┌──────────────┐
-     │  Tavily API  │          │ Google Sheets│
-     └──────────────┘          │     API      │
-                               └──────────────┘
-```
-
-### 認証・セキュリティ
-
-- **Tavily**: API Key Credential Provider経由で管理
-- **Google Sheets**: Secrets Manager経由でサービスアカウントキーを管理
-- **Gateway**: OAuth2/Cognito認証
+- [ ] 「フローラル系のおすすめ香水」で実体験DBから提案される
+- [ ] DBにない香水はWeb検索で補完される
+- [ ] 実体験コメントが回答に含まれる
 
 ---
 
 ## 優先度
 
-1. **高**: Web検索（Tavily）の導入 - 実在確認の基本機能
-2. **中**: Google Sheets連携 - 差別化機能
-3. **低**: MCP Server化 - 将来的な拡張
+1. **高**: CDKプロジェクト構築（DynamoDB + Lambda）
+2. **高**: 香水管理ページ（データ入力手段）
+3. **中**: AgentCore Gateway設定
+4. **中**: Tavily連携
 
 ---
 
-## 備考
+## 参考資料
 
-- Tavily APIは検索ごとに約20クレジット消費
-- Google Sheets APIは1日100,000リクエストまで無料
-- AgentCore Gatewayの利用料金は要確認
+- [AgentCore Gateway Documentation](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway.html)
+- [AgentCore Gateway + Lambda (DEV Community)](https://dev.to/aws-heroes/amazon-bedrock-agentcore-gateway-part-3-exposing-existing-aws-lambda-function-via-mcp-and-gateway-2ga)
+- [AgentCore Starter Toolkit Quickstart](https://github.com/aws/bedrock-agentcore-starter-toolkit/blob/main/documentation/docs/user-guide/gateway/quickstart.md)
+- [AWS CDK Python Lambda](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-lambda-python-alpha-readme.html)

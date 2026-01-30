@@ -5,6 +5,7 @@ import { Message } from '@/features/messages/messages'
 import { Viewer } from '../vrmViewer/viewer'
 import { messageSelectors } from '../messages/messageSelectors'
 import { generateMessageId } from '@/utils/messageUtils'
+import { getAppConfig } from '@/lib/config'
 
 export interface PersistedState {
   userOnboarded: boolean
@@ -107,7 +108,7 @@ const homeStore = create<HomeState>()(
           return { chatLog: updatedChatLog }
         })
       },
-      backgroundImageUrl: process.env.NEXT_PUBLIC_BACKGROUND_IMAGE_PATH ?? '',
+      backgroundImageUrl: getAppConfig().general.backgroundImagePath,
       modalImage: '',
       triggerShutter: false,
       webcamStatus: false,

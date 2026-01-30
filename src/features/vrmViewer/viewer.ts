@@ -59,6 +59,9 @@ export class Viewer {
     this.model.loadVRM(url).then(async () => {
       if (!this.model?.vrm) return
 
+      // 初期化完了まで非表示にする（ぶれ防止）
+      this.model.vrm.scene.visible = false
+
       // Disable frustum culling
       this.model.vrm.scene.traverse((obj) => {
         obj.frustumCulled = false
@@ -72,6 +75,21 @@ export class Viewer {
       // HACK: アニメーションの原点がずれているので再生後にカメラ位置を調整する
       requestAnimationFrame(() => {
         this.resetCamera()
+
+        // スプリングボーン等の物理シミュレーションが安定するまで数フレーム待つ
+        let frameCount = 0
+        const waitForStabilization = () => {
+          frameCount++
+          if (frameCount >= 5) {
+            // 5フレーム待って表示
+            if (this.model?.vrm) {
+              this.model.vrm.scene.visible = true
+            }
+          } else {
+            requestAnimationFrame(waitForStabilization)
+          }
+        }
+        requestAnimationFrame(waitForStabilization)
       })
     })
   }

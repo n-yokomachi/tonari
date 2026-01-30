@@ -13,12 +13,12 @@ allowed-tools: Bash
 1. **デプロイ実行**
 
    ```bash
-   cd backend && uv run agentcore deploy
+   cd agentcore && uv run agentcore deploy
    ```
 
 ## 使用場面
 
-- バックエンドのコード（`backend/`配下）を変更した時
+- バックエンドのコード（`agentcore/`配下）を変更した時
 - システムプロンプト（`prompts.py`）を変更した時
 - エージェントの設定（`scensei_agent.py`）を変更した時
 - ツールを追加・変更した時

@@ -1,0 +1,17 @@
+#!/usr/bin/env node
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+require("source-map-support/register");
+const cdk = require("aws-cdk-lib");
+const scensei_stack_1 = require("../lib/scensei-stack");
+const app = new cdk.App();
+// Cognito User Pool ID (AgentCore M2M用と同じものを使用)
+const cognitoUserPoolId = app.node.tryGetContext('cognitoUserPoolId') || 'ap-northeast-1_9YLOHAYn6';
+new scensei_stack_1.ScenseiStack(app, 'ScenseiStack', {
+    env: {
+        account: process.env.CDK_DEFAULT_ACCOUNT,
+        region: process.env.CDK_DEFAULT_REGION || 'ap-northeast-1',
+    },
+    cognitoUserPoolId,
+});
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiaW5mcmEuanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyIuLi8uLi9iaW4vaW5mcmEudHMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7O0FBQ0EsdUNBQW9DO0FBQ3BDLG1DQUFrQztBQUNsQyx3REFBbUQ7QUFFbkQsTUFBTSxHQUFHLEdBQUcsSUFBSSxHQUFHLENBQUMsR0FBRyxFQUFFLENBQUE7QUFFekIsZ0RBQWdEO0FBQ2hELE1BQU0saUJBQWlCLEdBQUcsR0FBRyxDQUFDLElBQUksQ0FBQyxhQUFhLENBQUMsbUJBQW1CLENBQUMsSUFBSSwwQkFBMEIsQ0FBQTtBQUVuRyxJQUFJLDRCQUFZLENBQUMsR0FBRyxFQUFFLGNBQWMsRUFBRTtJQUNwQyxHQUFHLEVBQUU7UUFDSCxPQUFPLEVBQUUsT0FBTyxDQUFDLEdBQUcsQ0FBQyxtQkFBbUI7UUFDeEMsTUFBTSxFQUFFLE9BQU8sQ0FBQyxHQUFHLENBQUMsa0JBQWtCLElBQUksZ0JBQWdCO0tBQzNEO0lBQ0QsaUJBQWlCO0NBQ2xCLENBQUMsQ0FBQSIsInNvdXJjZXNDb250ZW50IjpbIiMhL3Vzci9iaW4vZW52IG5vZGVcbmltcG9ydCAnc291cmNlLW1hcC1zdXBwb3J0L3JlZ2lzdGVyJ1xuaW1wb3J0ICogYXMgY2RrIGZyb20gJ2F3cy1jZGstbGliJ1xuaW1wb3J0IHsgU2NlbnNlaVN0YWNrIH0gZnJvbSAnLi4vbGliL3NjZW5zZWktc3RhY2snXG5cbmNvbnN0IGFwcCA9IG5ldyBjZGsuQXBwKClcblxuLy8gQ29nbml0byBVc2VyIFBvb2wgSUQgKEFnZW50Q29yZSBNMk3nlKjjgajlkIzjgZjjgoLjga7jgpLkvb/nlKgpXG5jb25zdCBjb2duaXRvVXNlclBvb2xJZCA9IGFwcC5ub2RlLnRyeUdldENvbnRleHQoJ2NvZ25pdG9Vc2VyUG9vbElkJykgfHwgJ2FwLW5vcnRoZWFzdC0xXzlZTE9IQVluNidcblxubmV3IFNjZW5zZWlTdGFjayhhcHAsICdTY2Vuc2VpU3RhY2snLCB7XG4gIGVudjoge1xuICAgIGFjY291bnQ6IHByb2Nlc3MuZW52LkNES19ERUZBVUxUX0FDQ09VTlQsXG4gICAgcmVnaW9uOiBwcm9jZXNzLmVudi5DREtfREVGQVVMVF9SRUdJT04gfHwgJ2FwLW5vcnRoZWFzdC0xJyxcbiAgfSxcbiAgY29nbml0b1VzZXJQb29sSWQsXG59KVxuIl19

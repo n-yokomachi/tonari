@@ -1,0 +1,44 @@
+{
+  "$schema": "./app.schema.json",
+  "_comment": "アプリケーション設定（シークレット以外）/ Application settings (non-secrets)",
+
+  "general": {
+    "language": "ja",
+    "changeEnglishToJapanese": false,
+    "backgroundImagePath": "/backgrounds/bg-c.png",
+    "showAssistantText": true,
+    "showCharacterName": true,
+    "showControlPanel": true,
+    "showQuickMenu": true,
+    "useVideoAsBackground": false,
+    "includeTimestampInUserMessage": false,
+    "externalLinkageMode": false,
+    "messageReceiverEnabled": false,
+    "showPresetQuestions": false,
+    "presetQuestions": [],
+    "chatLogWidth": 400
+  },
+
+  "character": {
+    "name": "Scensei",
+    "vrmPath": "/vrm/Scensei.vrm",
+    "lightingIntensity": 1.0
+  },
+
+  "ai": {
+    "service": "anthropic",
+    "model": "claude-haiku-4-5",
+    "temperature": 0.7,
+    "maxTokens": 4096,
+    "maxPastMessages": 10,
+    "useSearchGrounding": false,
+    "dynamicRetrievalThreshold": 0.3,
+    "customModel": false
+  },
+
+  "multiModal": {
+    "enabled": true,
+    "mode": "ai-decide",
+    "imageDisplayPosition": "input"
+  }
+}

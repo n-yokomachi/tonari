@@ -58,7 +58,7 @@ LLMの応答に`**強調**`などのMarkdown記法が含まれ、チャットUI�
 
 #### 実装箇所
 
-- `backend/src/agent/prompts.py` - システムプロンプト修正
+- `agentcore/src/agent/prompts.py` - システムプロンプト修正
 
 ```python
 # 出力フォーマットの指示に追加
@@ -147,7 +147,7 @@ uv add strands-agents-tools
 
 #### 実装箇所
 
-- `backend/src/agent/scensei_agent.py` - ツール追加
+- `agentcore/src/agent/scensei_agent.py` - ツール追加
 
 ```python
 from strands_agents_tools import web_search

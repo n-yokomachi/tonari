@@ -1,6 +1,8 @@
 import React, { useCallback, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useRouter } from 'next/router'
 import Image from 'next/image'
+import Link from 'next/link'
 
 import homeStore from '@/features/stores/home'
 import menuStore from '@/features/stores/menu'
@@ -43,6 +45,7 @@ export const Menu = () => {
   const isMobile = useIsMobile()
 
   const { t } = useTranslation()
+  const router = useRouter()
 
   // ロングタップ処理用の関数
   const handleTouchStart = () => {
@@ -126,12 +129,26 @@ export const Menu = () => {
               />
               <div className="flex gap-[8px]">
                 {showControlPanel && (
-                  <IconButton
-                    iconName="24/Settings"
-                    isProcessing={false}
-                    onClick={() => setShowSettings(true)}
-                    aria-label={t('BasedSettings')}
-                  />
+                  <>
+                    <IconButton
+                      iconName="24/Settings"
+                      isProcessing={false}
+                      onClick={() => setShowSettings(true)}
+                      aria-label={t('BasedSettings')}
+                    />
+                    <Link
+                      href="/admin/perfumes"
+                      className="bg-primary hover:bg-primary-hover active:bg-primary-press rounded-2xl text-sm p-2 text-center inline-flex items-center transition-all duration-200 text-theme"
+                      aria-label={t('PerfumeDataManagement')}
+                    >
+                      <Image
+                        src="/images/icons/database.svg"
+                        alt={t('PerfumeDataManagement')}
+                        width={24}
+                        height={24}
+                      />
+                    </Link>
+                  </>
                 )}
               </div>
             </div>

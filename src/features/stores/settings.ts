@@ -5,6 +5,7 @@ import { SYSTEM_PROMPT } from '@/features/constants/systemPromptConstants'
 import { AIService, Language } from '../constants/settings'
 import { googleSearchGroundingModels } from '../constants/aiModels'
 import { migrateOpenAIModelName } from '@/utils/modelMigration'
+import { getAppConfig } from '@/lib/config'
 
 export type googleSearchGroundingModelKey =
   (typeof googleSearchGroundingModels)[number]
@@ -94,122 +95,101 @@ interface General {
 
 export type SettingsState = APIKeys & ModelProvider & Character & General
 
-// Function to get initial values from environment variables
-const getInitialValuesFromEnv = (): SettingsState => ({
-  // API Keys
-  openaiKey:
-    process.env.NEXT_PUBLIC_OPENAI_API_KEY ||
-    process.env.NEXT_PUBLIC_OPENAI_KEY ||
-    '',
-  anthropicKey: '',
-  googleKey: '',
-  azureKey:
-    process.env.NEXT_PUBLIC_AZURE_API_KEY ||
-    process.env.NEXT_PUBLIC_AZURE_KEY ||
-    '',
-  xaiKey: '',
-  groqKey: '',
-  cohereKey: '',
-  mistralaiKey: '',
-  perplexityKey: '',
-  fireworksKey: '',
-  deepseekKey: '',
-  openrouterKey: '',
-  lmstudioKey: '',
-  ollamaKey: '',
-  azureEndpoint: process.env.NEXT_PUBLIC_AZURE_ENDPOINT || '',
-  customApiUrl: process.env.NEXT_PUBLIC_CUSTOM_API_URL || '',
-  customApiHeaders: process.env.NEXT_PUBLIC_CUSTOM_API_HEADERS || '{}',
-  customApiBody: process.env.NEXT_PUBLIC_CUSTOM_API_BODY || '{}',
-  customApiStream: true,
-  includeSystemMessagesInCustomApi:
-    process.env.NEXT_PUBLIC_INCLUDE_SYSTEM_MESSAGES_IN_CUSTOM_API !== 'false',
-  customApiIncludeMimeType:
-    process.env.NEXT_PUBLIC_CUSTOM_API_INCLUDE_MIME_TYPE !== 'false',
+// Function to get initial values from config files (with env var overrides)
+const getInitialValuesFromEnv = (): SettingsState => {
+  const config = getAppConfig()
 
-  // Model Provider
-  selectAIService:
-    (process.env.NEXT_PUBLIC_SELECT_AI_SERVICE as AIService) || 'anthropic',
-  selectAIModel: process.env.NEXT_PUBLIC_SELECT_AI_MODEL || 'claude-haiku-4-5',
-  localLlmUrl: process.env.NEXT_PUBLIC_LOCAL_LLM_URL || '',
+  return {
+    // API Keys (from env only - secrets)
+    openaiKey:
+      process.env.NEXT_PUBLIC_OPENAI_API_KEY ||
+      process.env.NEXT_PUBLIC_OPENAI_KEY ||
+      '',
+    anthropicKey: '',
+    googleKey: '',
+    azureKey:
+      process.env.NEXT_PUBLIC_AZURE_API_KEY ||
+      process.env.NEXT_PUBLIC_AZURE_KEY ||
+      '',
+    xaiKey: '',
+    groqKey: '',
+    cohereKey: '',
+    mistralaiKey: '',
+    perplexityKey: '',
+    fireworksKey: '',
+    deepseekKey: '',
+    openrouterKey: '',
+    lmstudioKey: '',
+    ollamaKey: '',
+    azureEndpoint: process.env.NEXT_PUBLIC_AZURE_ENDPOINT || '',
+    customApiUrl: process.env.NEXT_PUBLIC_CUSTOM_API_URL || '',
+    customApiHeaders: process.env.NEXT_PUBLIC_CUSTOM_API_HEADERS || '{}',
+    customApiBody: process.env.NEXT_PUBLIC_CUSTOM_API_BODY || '{}',
+    customApiStream: true,
+    includeSystemMessagesInCustomApi:
+      process.env.NEXT_PUBLIC_INCLUDE_SYSTEM_MESSAGES_IN_CUSTOM_API !== 'false',
+    customApiIncludeMimeType:
+      process.env.NEXT_PUBLIC_CUSTOM_API_INCLUDE_MIME_TYPE !== 'false',
 
-  // Character
-  characterName: process.env.NEXT_PUBLIC_CHARACTER_NAME || 'Scensei',
-  showAssistantText:
-    process.env.NEXT_PUBLIC_SHOW_ASSISTANT_TEXT === 'true' ? true : false,
-  showCharacterName:
-    process.env.NEXT_PUBLIC_SHOW_CHARACTER_NAME === 'true' ? true : false,
-  selectedVrmPath:
-    process.env.NEXT_PUBLIC_SELECTED_VRM_PATH || '/vrm/Scensei.vrm',
-  fixedCharacterPosition: false,
-  characterPosition: {
-    x: 0,
-    y: 0,
-    z: 0,
-    scale: 1,
-  },
-  characterRotation: {
-    x: 0,
-    y: 0,
-    z: 0,
-  },
-  lightingIntensity:
-    parseFloat(process.env.NEXT_PUBLIC_LIGHTING_INTENSITY || '1.0') || 1.0,
+    // Model Provider (from config)
+    selectAIService: config.ai.service as AIService,
+    selectAIModel: config.ai.model,
+    localLlmUrl: process.env.NEXT_PUBLIC_LOCAL_LLM_URL || '',
 
-  // General
-  selectLanguage: (process.env.NEXT_PUBLIC_SELECT_LANGUAGE as Language) || 'ja',
-  changeEnglishToJapanese:
-    process.env.NEXT_PUBLIC_CHANGE_ENGLISH_TO_JAPANESE === 'true',
-  includeTimestampInUserMessage:
-    process.env.NEXT_PUBLIC_INCLUDE_TIMESTAMP_IN_USER_MESSAGE === 'true',
-  showControlPanel: process.env.NEXT_PUBLIC_SHOW_CONTROL_PANEL !== 'false',
-  showQuickMenu: process.env.NEXT_PUBLIC_SHOW_QUICK_MENU === 'true',
-  externalLinkageMode: process.env.NEXT_PUBLIC_EXTERNAL_LINKAGE_MODE === 'true',
-  messageReceiverEnabled:
-    process.env.NEXT_PUBLIC_MESSAGE_RECEIVER_ENABLED === 'true',
-  clientId: process.env.NEXT_PUBLIC_CLIENT_ID || '',
-  useSearchGrounding: process.env.NEXT_PUBLIC_USE_SEARCH_GROUNDING === 'true',
-  dynamicRetrievalThreshold:
-    parseFloat(process.env.NEXT_PUBLIC_DYNAMIC_RETRIEVAL_THRESHOLD || '0.3') ||
-    0.3,
-  maxPastMessages:
-    parseInt(process.env.NEXT_PUBLIC_MAX_PAST_MESSAGES || '10') || 10,
-  useVideoAsBackground:
-    process.env.NEXT_PUBLIC_USE_VIDEO_AS_BACKGROUND === 'true',
-  temperature: parseFloat(process.env.NEXT_PUBLIC_TEMPERATURE || '1.0') || 1.0,
-  maxTokens: parseInt(process.env.NEXT_PUBLIC_MAX_TOKENS || '4096') || 4096,
-  presetQuestions: (
-    process.env.NEXT_PUBLIC_PRESET_QUESTIONS?.split(',') || []
-  ).map((text, index) => ({
-    id: `preset-question-${index}`,
-    text: text.trim(),
-    order: index,
-  })),
-  showPresetQuestions:
-    process.env.NEXT_PUBLIC_SHOW_PRESET_QUESTIONS !== 'false',
-  chatLogWidth:
-    parseFloat(process.env.NEXT_PUBLIC_CHAT_LOG_WIDTH || '550') || 550,
-  imageDisplayPosition: (() => {
-    const validPositions = ['input', 'side', 'icon'] as const
-    const envPosition = process.env.NEXT_PUBLIC_IMAGE_DISPLAY_POSITION
-    return validPositions.includes(envPosition as any)
-      ? (envPosition as 'input' | 'side' | 'icon')
-      : 'input'
-  })(),
-  multiModalMode: (() => {
-    const validModes = ['ai-decide', 'always', 'never'] as const
-    const envMode = process.env.NEXT_PUBLIC_MULTIMODAL_MODE
-    return validModes.includes(envMode as any)
-      ? (envMode as 'ai-decide' | 'always' | 'never')
-      : 'ai-decide'
-  })(),
-  multiModalAiDecisionPrompt:
-    process.env.NEXT_PUBLIC_MULTIMODAL_AI_DECISION_PROMPT ||
-    'あなたは画像がユーザーの質問や会話の文脈に関連するかどうかを判断するアシスタントです。直近の会話履歴とユーザーメッセージを考慮して、「はい」または「いいえ」のみで答えてください。',
-  enableMultiModal: process.env.NEXT_PUBLIC_ENABLE_MULTIMODAL !== 'false',
-  colorTheme: 'scensei' as const,
-  customModel: process.env.NEXT_PUBLIC_CUSTOM_MODEL === 'true',
-})
+    // Character (from config)
+    characterName: config.character.name,
+    showAssistantText: config.general.showAssistantText,
+    showCharacterName: config.general.showCharacterName,
+    selectedVrmPath: config.character.vrmPath,
+    fixedCharacterPosition: false,
+    characterPosition: {
+      x: 0,
+      y: 0,
+      z: 0,
+      scale: 1,
+    },
+    characterRotation: {
+      x: 0,
+      y: 0,
+      z: 0,
+    },
+    lightingIntensity: config.character.lightingIntensity,
+
+    // General (from config)
+    selectLanguage: config.general.language as Language,
+    changeEnglishToJapanese: config.general.changeEnglishToJapanese,
+    includeTimestampInUserMessage: config.general.includeTimestampInUserMessage,
+    showControlPanel: config.general.showControlPanel,
+    showQuickMenu: config.general.showQuickMenu,
+    externalLinkageMode: config.general.externalLinkageMode,
+    messageReceiverEnabled: config.general.messageReceiverEnabled,
+    clientId: process.env.NEXT_PUBLIC_CLIENT_ID || '',
+    useSearchGrounding: config.ai.useSearchGrounding,
+    dynamicRetrievalThreshold: config.ai.dynamicRetrievalThreshold,
+    maxPastMessages: config.ai.maxPastMessages,
+    useVideoAsBackground: config.general.useVideoAsBackground,
+    temperature: config.ai.temperature,
+    maxTokens: config.ai.maxTokens,
+    presetQuestions: config.general.presetQuestions.map((text, index) => ({
+      id: `preset-question-${index}`,
+      text: text.trim(),
+      order: index,
+    })),
+    showPresetQuestions: config.general.showPresetQuestions,
+    chatLogWidth: config.general.chatLogWidth,
+    imageDisplayPosition: config.multiModal.imageDisplayPosition as
+      | 'input'
+      | 'side'
+      | 'icon',
+    multiModalMode: config.multiModal.mode as 'ai-decide' | 'always' | 'never',
+    multiModalAiDecisionPrompt:
+      process.env.NEXT_PUBLIC_MULTIMODAL_AI_DECISION_PROMPT ||
+      'あなたは画像がユーザーの質問や会話の文脈に関連するかどうかを判断するアシスタントです。直近の会話履歴とユーザーメッセージを考慮して、「はい」または「いいえ」のみで答えてください。',
+    enableMultiModal: config.multiModal.enabled,
+    colorTheme: 'scensei' as const,
+    customModel: config.ai.customModel,
+  }
+}
 
 const settingsStore = create<SettingsState>()(
   persist((set, get) => getInitialValuesFromEnv(), {

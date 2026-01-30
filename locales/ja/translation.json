@@ -223,5 +223,7 @@
     "userInputTitle": "ユーザー入力を送信する",
     "userInputDescription": "送信したメッセージはAITuberKitの入力フォームから入力された場合と同じ処理がされます。複数送信した場合は順番に処理されます。\nAIモデルはAITuberKitの設定で選択したものが使用されます。\nシステムプロンプトや会話履歴はAITuberKitの値が使用されます。"
   },
-  "NoClientIDSet": "クライアントIDが設定されていません"
+  "NoClientIDSet": "クライアントIDが設定されていません",
+  "DataManagement": "データ管理",
+  "PerfumeDataManagement": "香水データ管理"
 }

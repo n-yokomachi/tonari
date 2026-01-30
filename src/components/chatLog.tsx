@@ -101,6 +101,43 @@ const LoadingIndicator = ({ characterName }: { characterName: string }) => {
   )
 }
 
+// リンクタグをパースしてReact要素に変換
+const parseLinks = (text: string): React.ReactNode[] => {
+  const linkPattern = /\[link:(\/[^\]]+)\]([^\[]+)\[\/link\]/g
+  const parts: React.ReactNode[] = []
+  let lastIndex = 0
+  let match
+
+  while ((match = linkPattern.exec(text)) !== null) {
+    // マッチ前のテキスト
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index))
+    }
+
+    // リンク要素
+    const path = match[1]
+    const linkText = match[2]
+    parts.push(
+      <a
+        key={match.index}
+        href={path}
+        className="text-secondary underline hover:text-secondary-hover transition-colors"
+      >
+        {linkText}
+      </a>
+    )
+
+    lastIndex = match.index + match[0].length
+  }
+
+  // 残りのテキスト
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex))
+  }
+
+  return parts.length > 0 ? parts : [text]
+}
+
 const Chat = ({
   role,
   message,
@@ -118,6 +155,9 @@ const Chat = ({
   const roleText = role !== 'user' ? 'text-secondary' : 'text-primary'
   const offsetX = role === 'user' ? 'pl-10' : 'pr-10'
 
+  // リンクタグをパースしてReact要素に変換
+  const messageContent = parseLinks(processedMessage)
+
   return (
     <div className={`mx-auto ml-0 md:ml-10 lg:ml-20 my-4 ${offsetX}`}>
       {role === 'code' ? (
@@ -132,7 +172,7 @@ const Chat = ({
             {role !== 'user' ? characterName || 'CHARACTER' : 'YOU'}
           </div>
           <div className="px-6 py-4 bg-white rounded-b-lg">
-            <div className={`font-bold ${roleText}`}>{processedMessage}</div>
+            <div className={`font-bold ${roleText}`}>{messageContent}</div>
           </div>
         </>
       )}

@@ -32,7 +32,7 @@ uv add 'bedrock-agentcore[strands-agents]'
 #### AgentCoreMemorySessionManagerの統合
 
 ```python
-# backend/src/agent/scensei_agent.py
+# agentcore/src/agent/scensei_agent.py
 
 from bedrock_agentcore.memory.integrations.strands.config import AgentCoreMemoryConfig
 from bedrock_agentcore.memory.integrations.strands.session_manager import AgentCoreMemorySessionManager
@@ -73,7 +73,7 @@ def create_scensei_agent(session_id: str, actor_id: str = "anonymous") -> Agent:
 #### app.pyの修正
 
 ```python
-# backend/app.py
+# agentcore/app.py
 
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from src.agent.scensei_agent import create_scensei_agent

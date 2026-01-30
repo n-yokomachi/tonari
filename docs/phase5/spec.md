@@ -30,7 +30,7 @@ Strands Agentsを使用したエージェントをAmazon Bedrock AgentCore Runti
 
 ```bash
 # backendディレクトリ作成
-mkdir -p backend/src/agent backend/tests
+mkdir -p agentcore/src/agent agentcore/tests
 cd backend
 
 # pyproject.toml作成（uv推奨）
@@ -42,7 +42,7 @@ uv add --dev pytest pytest-asyncio
 #### ディレクトリ構成
 
 ```
-backend/
+agentcore/
 ├── src/
 │   └── agent/
 │       ├── __init__.py
@@ -62,7 +62,7 @@ backend/
 #### システムプロンプト
 
 ```python
-# backend/src/agent/prompts.py
+# agentcore/src/agent/prompts.py
 
 SCENSEI_SYSTEM_PROMPT = """
 あなたの名前は「Scensei」（センセイ）です。香水の世界に精通した、洗練されたパーソナルフレグランスコンサルタントです。
@@ -85,7 +85,7 @@ SCENSEI_SYSTEM_PROMPT = """
 #### エージェント実装
 
 ```python
-# backend/src/agent/scensei_agent.py
+# agentcore/src/agent/scensei_agent.py
 
 from strands import Agent
 from strands.models import BedrockModel
@@ -113,7 +113,7 @@ def create_scensei_agent() -> Agent:
 #### エントリポイント（ストリーミング対応）
 
 ```python
-# backend/app.py
+# agentcore/app.py
 
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from src.agent.scensei_agent import create_scensei_agent
