@@ -1,0 +1,59 @@
+%% Scensei アーキテクチャ図
+
+graph TD
+    subgraph Client[クライアント]
+        Browser[ブラウザ + VRM + Zustand]
+    end
+
+    subgraph Vercel[Vercel]
+        NextJS[Next.js 14] --> Middleware
+        Middleware --> APIRoutes[API Routes]
+        APIRoutes --> AgentCoreAPI[AgentCore API]
+        APIRoutes --> PerfumeAPI[Perfume API]
+        APIRoutes --> AuthAPI[Auth API]
+        APIRoutes --> BackgroundAPI[Background API]
+    end
+
+    subgraph AWS[AWS]
+        subgraph Cognito[Amazon Cognito]
+            CognitoPool[User Pool M2M]
+        end
+
+        subgraph AgentCore[Bedrock AgentCore]
+            Runtime[Runtime scensei]
+            Memory[Memory STM+LTM]
+            Gateway[MCP Gateway]
+        end
+
+        Claude[Claude Haiku 4.5]
+
+        subgraph APIGW[API Gateway]
+            PerfumeAPIGW[scensei-perfume-api]
+            AuthorizerLambda[Lambda Authorizer]
+        end
+
+        subgraph Lambda[AWS Lambda]
+            SearchLambda[perfume-search]
+            CRUDLambda[perfume-crud]
+        end
+
+        PerfumeTable[(DynamoDB)]
+    end
+
+    Browser --> NextJS
+
+    AgentCoreAPI --> CognitoPool
+    AgentCoreAPI --> Runtime
+    Runtime --> Memory
+    Runtime --> Gateway
+    Runtime --> Claude
+    Gateway --> SearchLambda
+
+    PerfumeAPI --> CognitoPool
+    PerfumeAPI --> PerfumeAPIGW
+    PerfumeAPIGW --> AuthorizerLambda
+    AuthorizerLambda --> CognitoPool
+    PerfumeAPIGW --> CRUDLambda
+
+    SearchLambda --> PerfumeTable
+    CRUDLambda --> PerfumeTable

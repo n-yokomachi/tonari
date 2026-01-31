@@ -3,7 +3,10 @@
 import os
 from typing import Optional
 
-from bedrock_agentcore.memory.integrations.strands.config import AgentCoreMemoryConfig
+from bedrock_agentcore.memory.integrations.strands.config import (
+    AgentCoreMemoryConfig,
+    RetrievalConfig,
+)
 from bedrock_agentcore.memory.integrations.strands.session_manager import (
     AgentCoreMemorySessionManager,
 )
@@ -49,11 +52,21 @@ def create_scensei_agent(
     Returns:
         Agent: セッション管理機能付きのScenseiエージェント
     """
-    # AgentCore Memory設定（STM + LTM）
+    # AgentCore Memory設定（STM + LTM取得）
     memory_config = AgentCoreMemoryConfig(
         memory_id=os.getenv("AGENTCORE_MEMORY_ID", DEFAULT_MEMORY_ID),
         session_id=session_id,
         actor_id=actor_id,
+        retrieval_config={
+            # ユーザーの香り好み（甘い香りが好き、など）
+            "/preferences/{actorId}": RetrievalConfig(top_k=5, relevance_score=0.5),
+            # 事実情報（購入履歴、試した香水など）
+            "/facts/{actorId}": RetrievalConfig(top_k=10, relevance_score=0.4),
+            # セッションサマリー（過去の会話の要約）
+            "/summaries/{actorId}/{sessionId}": RetrievalConfig(
+                top_k=3, relevance_score=0.6
+            ),
+        },
     )
 
     session_manager = AgentCoreMemorySessionManager(
