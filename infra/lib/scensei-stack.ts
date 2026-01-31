@@ -3,12 +3,12 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 import * as lambda from 'aws-cdk-lib/aws-lambda'
 import * as python from '@aws-cdk/aws-lambda-python-alpha'
 import * as apigateway from 'aws-cdk-lib/aws-apigateway'
-import * as cognito from 'aws-cdk-lib/aws-cognito'
 import { Construct } from 'constructs'
 import * as path from 'path'
 
 export interface ScenseiStackProps extends cdk.StackProps {
-  cognitoUserPoolId?: string
+  // Cognito User Pool ID for API Gateway authorization
+  cognitoUserPoolId: string
 }
 
 export class ScenseiStack extends cdk.Stack {
@@ -16,8 +16,10 @@ export class ScenseiStack extends cdk.Stack {
   public readonly searchLambda: lambda.IFunction
   public readonly crudApi: apigateway.RestApi
 
-  constructor(scope: Construct, id: string, props?: ScenseiStackProps) {
+  constructor(scope: Construct, id: string, props: ScenseiStackProps) {
     super(scope, id, props)
+
+    const { cognitoUserPoolId } = props
 
     // DynamoDB Table (PK=brand, SK=name)
     this.perfumeTable = new dynamodb.Table(this, 'PerfumeTable', {
@@ -60,6 +62,19 @@ export class ScenseiStack extends cdk.Stack {
     // Grant full access to CRUD Lambda
     this.perfumeTable.grantReadWriteData(crudLambda)
 
+    // Lambda Authorizer for M2M token validation
+    const authorizerLambda = new python.PythonFunction(this, 'ApiAuthorizerLambda', {
+      functionName: 'scensei-api-authorizer',
+      entry: path.join(__dirname, '../lambda/api-authorizer'),
+      runtime: lambda.Runtime.PYTHON_3_12,
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        USER_POOL_ID: cognitoUserPoolId,
+      },
+    })
+
     // API Gateway
     this.crudApi = new apigateway.RestApi(this, 'PerfumeCrudApi', {
       restApiName: 'scensei-perfume-api',
@@ -71,62 +86,47 @@ export class ScenseiStack extends cdk.Stack {
       },
     })
 
-    // Cognito Authorizer (use existing User Pool)
-    const cognitoUserPoolId = props?.cognitoUserPoolId || 'ap-northeast-1_9YLOHAYn6'
-    const userPool = cognito.UserPool.fromUserPoolId(
-      this,
-      'ExistingUserPool',
-      cognitoUserPoolId
-    )
-
-    const authorizer = new apigateway.CognitoUserPoolsAuthorizer(
-      this,
-      'CognitoAuthorizer',
-      {
-        cognitoUserPools: [userPool],
-        identitySource: 'method.request.header.Authorization',
-      }
-    )
-
     // Lambda integration
     const lambdaIntegration = new apigateway.LambdaIntegration(crudLambda)
 
-    // API Routes
+    // Token authorizer for M2M authentication
+    const tokenAuthorizer = new apigateway.TokenAuthorizer(
+      this,
+      'M2MTokenAuthorizer',
+      {
+        handler: authorizerLambda,
+        identitySource: 'method.request.header.Authorization',
+        resultsCacheTtl: cdk.Duration.minutes(5),
+      }
+    )
+
+    // Method options with authorizer
+    const authorizedMethodOptions: apigateway.MethodOptions = {
+      authorizer: tokenAuthorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    }
+
+    // API Routes (M2M認証: サーバーサイドからのみ呼び出し)
     const perfumes = this.crudApi.root.addResource('perfumes')
 
     // GET /perfumes - List all
-    perfumes.addMethod('GET', lambdaIntegration, {
-      authorizer,
-      authorizationType: apigateway.AuthorizationType.COGNITO,
-    })
+    perfumes.addMethod('GET', lambdaIntegration, authorizedMethodOptions)
 
     // POST /perfumes - Create
-    perfumes.addMethod('POST', lambdaIntegration, {
-      authorizer,
-      authorizationType: apigateway.AuthorizationType.COGNITO,
-    })
+    perfumes.addMethod('POST', lambdaIntegration, authorizedMethodOptions)
 
     // /perfumes/{brand}/{name}
     const perfumeByBrand = perfumes.addResource('{brand}')
     const perfumeByName = perfumeByBrand.addResource('{name}')
 
     // GET /perfumes/{brand}/{name} - Get one
-    perfumeByName.addMethod('GET', lambdaIntegration, {
-      authorizer,
-      authorizationType: apigateway.AuthorizationType.COGNITO,
-    })
+    perfumeByName.addMethod('GET', lambdaIntegration, authorizedMethodOptions)
 
     // PUT /perfumes/{brand}/{name} - Update
-    perfumeByName.addMethod('PUT', lambdaIntegration, {
-      authorizer,
-      authorizationType: apigateway.AuthorizationType.COGNITO,
-    })
+    perfumeByName.addMethod('PUT', lambdaIntegration, authorizedMethodOptions)
 
     // DELETE /perfumes/{brand}/{name} - Delete
-    perfumeByName.addMethod('DELETE', lambdaIntegration, {
-      authorizer,
-      authorizationType: apigateway.AuthorizationType.COGNITO,
-    })
+    perfumeByName.addMethod('DELETE', lambdaIntegration, authorizedMethodOptions)
 
     // Outputs
     new cdk.CfnOutput(this, 'PerfumeTableName', {

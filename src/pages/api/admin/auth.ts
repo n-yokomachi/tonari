@@ -14,7 +14,9 @@ function generateToken(password: string): string {
 }
 
 export function validateAdminToken(req: NextApiRequest): boolean {
-  if (!ADMIN_PASSWORD) return false
+  if (!ADMIN_PASSWORD) {
+    return false
+  }
   const cookies = parse(req.headers.cookie || '')
   const token = cookies[COOKIE_NAME]
   return token === ADMIN_PASSWORD
