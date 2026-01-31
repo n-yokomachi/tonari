@@ -81,4 +81,5 @@ __pycache__/
 # CDK (infra)
 infra/node_modules/
 infra/cdk.out/
+infra/dist/
 

@@ -1,158 +1,104 @@
-"""
-API Gateway Lambda Authorizer for M2M (Client Credentials) Tokens
+"""Lambda Authorizer for API Gateway - M2M Token Validation"""
 
-Validates JWT access tokens from Cognito client_credentials flow.
-"""
 import json
 import os
 import urllib.request
-from typing import Any
-
 from jose import jwt, JWTError
 
-# Cognito User Pool configuration
-USER_POOL_ID = os.environ.get('USER_POOL_ID', '')
-REGION = os.environ.get('AWS_REGION', 'ap-northeast-1')
+# Cognito設定
+COGNITO_REGION = os.environ.get("COGNITO_REGION", "ap-northeast-1")
+COGNITO_USER_POOL_ID = os.environ.get("COGNITO_USER_POOL_ID", "")
+COGNITO_CLIENT_ID = os.environ.get("COGNITO_CLIENT_ID", "")
 
-# Cache for JWKS
-_jwks_cache: dict[str, Any] | None = None
+# JWKSキャッシュ
+_jwks_cache = None
 
 
-def get_jwks() -> dict[str, Any]:
-    """Fetch JWKS from Cognito User Pool (cached)."""
+def get_jwks():
+    """Cognito JWKSを取得"""
     global _jwks_cache
-    if _jwks_cache is not None:
+    if _jwks_cache:
         return _jwks_cache
 
-    jwks_url = f'https://cognito-idp.{REGION}.amazonaws.com/{USER_POOL_ID}/.well-known/jwks.json'
-    with urllib.request.urlopen(jwks_url, timeout=10) as response:
-        _jwks_cache = json.loads(response.read().decode('utf-8'))
+    jwks_url = f"https://cognito-idp.{COGNITO_REGION}.amazonaws.com/{COGNITO_USER_POOL_ID}/.well-known/jwks.json"
+    with urllib.request.urlopen(jwks_url) as response:
+        _jwks_cache = json.loads(response.read().decode())
     return _jwks_cache
 
 
-def validate_token(token: str) -> dict[str, Any]:
-    """
-    Validate JWT access token from Cognito.
-
-    Args:
-        token: JWT access token
-
-    Returns:
-        Decoded token claims if valid
-
-    Raises:
-        JWTError: If token is invalid
-    """
+def verify_token(token: str) -> dict:
+    """JWTトークンを検証"""
     jwks = get_jwks()
 
-    # Get the key ID from the token header
+    # ヘッダーからkidを取得
     unverified_header = jwt.get_unverified_header(token)
-    kid = unverified_header.get('kid')
+    kid = unverified_header.get("kid")
 
-    # Find the matching key
-    key = None
-    for k in jwks.get('keys', []):
-        if k.get('kid') == kid:
-            key = k
+    # 対応するキーを見つける
+    rsa_key = None
+    for key in jwks["keys"]:
+        if key["kid"] == kid:
+            rsa_key = key
             break
 
-    if key is None:
-        raise JWTError('Public key not found in JWKS')
+    if not rsa_key:
+        raise JWTError("Key not found")
 
-    # Verify and decode the token
-    expected_issuer = f'https://cognito-idp.{REGION}.amazonaws.com/{USER_POOL_ID}'
-
-    claims = jwt.decode(
+    # トークンを検証
+    issuer = f"https://cognito-idp.{COGNITO_REGION}.amazonaws.com/{COGNITO_USER_POOL_ID}"
+    payload = jwt.decode(
         token,
-        key,
-        algorithms=['RS256'],
-        issuer=expected_issuer,
-        options={
-            'verify_aud': False,  # M2M tokens don't have aud claim
-        },
+        rsa_key,
+        algorithms=["RS256"],
+        issuer=issuer,
+        options={"verify_aud": False},  # M2Mトークンはaudがないことがある
     )
 
-    # Verify token_use is 'access'
-    if claims.get('token_use') != 'access':
-        raise JWTError('Invalid token_use claim')
+    # client_idの検証
+    if COGNITO_CLIENT_ID and payload.get("client_id") != COGNITO_CLIENT_ID:
+        raise JWTError("Invalid client_id")
 
-    return claims
+    return payload
 
 
-def generate_policy(principal_id: str, effect: str, resource: str) -> dict[str, Any]:
-    """Generate IAM policy for API Gateway."""
-    policy = {
-        'principalId': principal_id,
-        'policyDocument': {
-            'Version': '2012-10-17',
-            'Statement': [
+def generate_policy(principal_id: str, effect: str, resource: str) -> dict:
+    """IAMポリシードキュメントを生成"""
+    return {
+        "principalId": principal_id,
+        "policyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
                 {
-                    'Action': 'execute-api:Invoke',
-                    'Effect': effect,
-                    'Resource': resource,
+                    "Action": "execute-api:Invoke",
+                    "Effect": effect,
+                    "Resource": resource,
                 }
             ],
         },
     }
-    return policy
 
 
-def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
-    """
-    Lambda authorizer handler.
-
-    Args:
-        event: API Gateway authorizer event
-        context: Lambda context
-
-    Returns:
-        IAM policy allowing or denying access
-    """
-    # Extract token from Authorization header
-    auth_header = event.get('authorizationToken', '')
-
-    # Remove 'Bearer ' prefix if present
-    if auth_header.lower().startswith('bearer '):
-        token = auth_header[7:]
-    else:
-        token = auth_header
-
-    if not token:
-        print('No token provided')
-        raise Exception('Unauthorized')
-
+def handler(event, context):
+    """Lambda Authorizer handler"""
     try:
-        claims = validate_token(token)
+        # Authorizationヘッダーからトークンを取得
+        auth_header = event.get("authorizationToken", "")
+        if not auth_header.startswith("Bearer "):
+            return generate_policy("user", "Deny", event["methodArn"])
 
-        # Use client_id as principal for M2M tokens
-        principal_id = claims.get('client_id', claims.get('sub', 'unknown'))
+        token = auth_header[7:]  # "Bearer "を除去
 
-        # Generate Allow policy
-        # Use wildcard for resource to allow all methods/paths
-        method_arn = event.get('methodArn', '')
-        # Convert specific method ARN to wildcard ARN
-        # arn:aws:execute-api:region:account:api-id/stage/method/path
-        # -> arn:aws:execute-api:region:account:api-id/stage/*
-        arn_parts = method_arn.split('/')
-        if len(arn_parts) >= 2:
-            resource_arn = '/'.join(arn_parts[:2]) + '/*'
-        else:
-            resource_arn = method_arn
+        # トークンを検証
+        payload = verify_token(token)
 
-        policy = generate_policy(principal_id, 'Allow', resource_arn)
+        # 認証成功 - APIの全リソースに対してAllowを返す
+        principal_id = payload.get("sub", payload.get("client_id", "user"))
+        # methodArn: arn:aws:execute-api:region:account:api-id/stage/method/path
+        # -> arn:aws:execute-api:region:account:api-id/stage/* にしてキャッシュを有効活用
+        arn_parts = event["methodArn"].split("/")
+        api_arn = "/".join(arn_parts[:2]) + "/*"
+        return generate_policy(principal_id, "Allow", api_arn)
 
-        # Add token claims as context (available in integration mapping)
-        policy['context'] = {
-            'client_id': claims.get('client_id', ''),
-            'scope': claims.get('scope', ''),
-        }
-
-        print(f'Authorized: {principal_id}')
-        return policy
-
-    except JWTError as e:
-        print(f'JWT validation error: {e}')
-        raise Exception('Unauthorized')
     except Exception as e:
-        print(f'Authorization error: {e}')
-        raise Exception('Unauthorized')
+        print(f"Authorization failed: {e}")
+        return generate_policy("user", "Deny", event["methodArn"])

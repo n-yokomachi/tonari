@@ -5,8 +5,8 @@ import { ScenseiStack } from '../lib/scensei-stack'
 
 const app = new cdk.App()
 
-// Cognito User Pool ID (AgentCore M2M用と同じものを使用)
-const cognitoUserPoolId = app.node.tryGetContext('cognitoUserPoolId') || 'ap-northeast-1_9YLOHAYn6'
+const cognitoUserPoolId = app.node.tryGetContext('cognitoUserPoolId')
+const cognitoClientId = app.node.tryGetContext('cognitoClientId')
 
 new ScenseiStack(app, 'ScenseiStack', {
   env: {
@@ -14,4 +14,5 @@ new ScenseiStack(app, 'ScenseiStack', {
     region: process.env.CDK_DEFAULT_REGION || 'ap-northeast-1',
   },
   cognitoUserPoolId,
+  cognitoClientId,
 })

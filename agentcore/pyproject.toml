@@ -10,6 +10,7 @@ dependencies = [
     "strands-agents>=1.23.0",
     "strands-agents-tools>=0.2.19",
     "mcp>=1.0.0",
+    "mcp-proxy-for-aws>=1.1.6",
 ]
 
 [dependency-groups]

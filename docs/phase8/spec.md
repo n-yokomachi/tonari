@@ -1,22 +1,20 @@
-# Phase 8: 外部データ連携（実体験DB & Web検索）
+# Phase 8: 実体験DBの構築
 
 ## 目的
 
-開発者の実体験に基づいた香水データをDynamoDBで管理し、AgentCore Gateway経由でエージェントから参照可能にする。また、Tavily Web検索で実在の香水情報を補完し、より正確で信頼性の高い香水提案を実現する。
+開発者の実体験に基づいた香水データをDynamoDBで管理し、AgentCore Gateway経由でエージェントから参照可能にする。
 
 ## 完了条件
 
-- [ ] CDKでDynamoDB + Lambdaがデプロイできる
-- [ ] 香水管理ページから香水データのCRUD操作ができる
-- [ ] AgentCore Gateway経由でエージェントが香水DBを検索できる
-- [ ] Tavily Web検索でエージェントが実在の香水情報を取得できる
-- [ ] 実体験データを優先した香水提案ができる
+- [x] CDKでDynamoDB + Lambdaがデプロイできる
+- [x] 香水管理ページから香水データのCRUD操作ができる
+- [x] AgentCore Gateway経由でエージェントが香水DBを検索できる
+- [x] 実体験データを優先した香水提案ができる
 
 ## 前提条件
 
 - Phase 7が完了していること
 - AWS CDK CLIがインストール済み
-- Tavily APIキーを取得済み
 
 ---
 

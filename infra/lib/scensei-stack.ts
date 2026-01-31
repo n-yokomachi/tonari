@@ -9,6 +9,8 @@ import * as path from 'path'
 export interface ScenseiStackProps extends cdk.StackProps {
   // Cognito User Pool ID for API Gateway authorization
   cognitoUserPoolId: string
+  // Cognito Client ID for M2M authentication
+  cognitoClientId: string
 }
 
 export class ScenseiStack extends cdk.Stack {
@@ -19,7 +21,7 @@ export class ScenseiStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ScenseiStackProps) {
     super(scope, id, props)
 
-    const { cognitoUserPoolId } = props
+    const { cognitoUserPoolId, cognitoClientId } = props
 
     // DynamoDB Table (PK=brand, SK=name)
     this.perfumeTable = new dynamodb.Table(this, 'PerfumeTable', {
@@ -63,17 +65,23 @@ export class ScenseiStack extends cdk.Stack {
     this.perfumeTable.grantReadWriteData(crudLambda)
 
     // Lambda Authorizer for M2M token validation
-    const authorizerLambda = new python.PythonFunction(this, 'ApiAuthorizerLambda', {
-      functionName: 'scensei-api-authorizer',
-      entry: path.join(__dirname, '../lambda/api-authorizer'),
-      runtime: lambda.Runtime.PYTHON_3_12,
-      handler: 'handler',
-      timeout: cdk.Duration.seconds(10),
-      memorySize: 128,
-      environment: {
-        USER_POOL_ID: cognitoUserPoolId,
-      },
-    })
+    const authorizerLambda = new python.PythonFunction(
+      this,
+      'ApiAuthorizerLambda',
+      {
+        functionName: 'scensei-api-authorizer',
+        entry: path.join(__dirname, '../lambda/api-authorizer'),
+        runtime: lambda.Runtime.PYTHON_3_12,
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 128,
+        environment: {
+          COGNITO_REGION: 'ap-northeast-1',
+          COGNITO_USER_POOL_ID: cognitoUserPoolId,
+          COGNITO_CLIENT_ID: cognitoClientId,
+        },
+      }
+    )
 
     // API Gateway
     this.crudApi = new apigateway.RestApi(this, 'PerfumeCrudApi', {
@@ -89,20 +97,19 @@ export class ScenseiStack extends cdk.Stack {
     // Lambda integration
     const lambdaIntegration = new apigateway.LambdaIntegration(crudLambda)
 
-    // Token authorizer for M2M authentication
-    const tokenAuthorizer = new apigateway.TokenAuthorizer(
+    // Lambda Authorizer for M2M authentication
+    const lambdaAuthorizer = new apigateway.TokenAuthorizer(
       this,
-      'M2MTokenAuthorizer',
+      'LambdaAuthorizer',
       {
         handler: authorizerLambda,
-        identitySource: 'method.request.header.Authorization',
         resultsCacheTtl: cdk.Duration.minutes(5),
       }
     )
 
     // Method options with authorizer
     const authorizedMethodOptions: apigateway.MethodOptions = {
-      authorizer: tokenAuthorizer,
+      authorizer: lambdaAuthorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,
     }
 

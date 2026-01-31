@@ -15,10 +15,15 @@ function generateToken(password: string): string {
 
 export function validateAdminToken(req: NextApiRequest): boolean {
   if (!ADMIN_PASSWORD) {
+    console.error('ADMIN_PASSWORD is not set')
     return false
   }
   const cookies = parse(req.headers.cookie || '')
   const token = cookies[COOKIE_NAME]
+  console.log('Cookie validation:', {
+    hasToken: !!token,
+    matches: token === ADMIN_PASSWORD,
+  })
   return token === ADMIN_PASSWORD
 }
 
