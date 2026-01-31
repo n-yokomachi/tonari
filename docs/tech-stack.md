@@ -103,7 +103,6 @@ Scensei（センセイ）は、香水ソムリエAIキャラクターを実装�
 | エンドポイント | メソッド | 機能 |
 |--------------|---------|------|
 | `/api/ai/agentcore` | POST | AWS AgentCore統合（ストリーミング） |
-| `/api/ai/vercel` | POST | Vercel AI SDK統合 |
 | `/api/ai/custom` | POST | カスタムAPI統合 |
 | `/api/admin/auth` | POST/DELETE | Admin認証（ログイン/ログアウト） |
 | `/api/admin/webauthn/register-options` | POST | WebAuthn登録オプション生成 |
@@ -122,22 +121,11 @@ Scensei（センセイ）は、香水ソムリエAIキャラクターを実装�
 
 ### AIプロバイダ統合
 
-| プロバイダ | SDK | デフォルトモデル |
-|----------|-----|----------------|
-| Anthropic | @ai-sdk/anthropic | Claude Haiku 4.5 |
-| AWS Bedrock | @aws-sdk/client-bedrock-agentcore | Claude Haiku 4.5 |
-| OpenAI | @ai-sdk/openai | GPT-4.1 |
-| Google | @ai-sdk/google | Gemini 2.5 |
-| Azure | @ai-sdk/azure | Azure OpenAI |
-| xAI | @ai-sdk/xai | Grok-3 |
-| Cohere | @ai-sdk/cohere | Command R+ |
-| Mistral | @ai-sdk/mistral | Mistral Large |
-| DeepSeek | @ai-sdk/deepseek | DeepSeek V3 |
-| Groq | @ai-sdk/groq | Llama 3.3 |
-| OpenRouter | @openrouter/ai-sdk-provider | 70+モデル統一 |
-| Ollama | ollama-ai-provider | ローカルLLM |
+| プロバイダ | SDK | モデル |
+|----------|-----|--------|
+| AWS Bedrock AgentCore | @aws-sdk/client-bedrock-agentcore | Claude Haiku 4.5 |
 
-**Vercel AI SDK:** `ai@4.1`
+**備考:** AIチャットはAWS Bedrock AgentCoreを経由して処理される
 
 ### ファイル処理
 
@@ -203,7 +191,7 @@ Scensei（センセイ）は、香水ソムリエAIキャラクターを実装�
 | Agent ID | scensei-xajQ0R77kv |
 | Runtime | Python 3.12 |
 | Model | Claude Haiku 4.5 (jp.anthropic.claude-haiku-4-5-20251001-v1:0) |
-| Memory | STM (Short-Term Memory) |
+| Memory | STM + LTM（Short-Term + Long-Term Memory） |
 | Region | ap-northeast-1 |
 
 ### Python依存関係
@@ -228,7 +216,15 @@ Scensei（センセイ）は、香水ソムリエAIキャラクターを実装�
 | Memory ID | scensei_mem-INEd7K94yX |
 | session_id | セッション単位（タブ/ウィンドウごと） |
 | actor_id | ユーザー単位（ブラウザで永続化） |
-| Mode | STM_ONLY（Short-Term Memory） |
+| Mode | STM_AND_LTM（Short-Term + Long-Term Memory） |
+
+**LTM Retrieval設定:**
+
+| Namespace | 用途 | top_k |
+|-----------|------|-------|
+| `/preferences/{actorId}` | ユーザーの香り好み | 5 |
+| `/facts/{actorId}` | 購入履歴・試した香水 | 10 |
+| `/summaries/{actorId}/{sessionId}` | セッションサマリー | 3 |
 
 ### MCP (Model Context Protocol)
 
