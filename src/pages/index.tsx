@@ -57,9 +57,14 @@ const Home = () => {
       ? {}
       : backgroundImageUrl === 'green'
         ? { backgroundColor: '#00FF00' }
-        : backgroundImageUrl
-          ? { backgroundImage: bgUrl }
-          : { backgroundColor: '#E8E8E8' }
+        : backgroundImageUrl === 'gradient'
+          ? {
+              background:
+                'linear-gradient(135deg, #f5f0e8 0%, #f0ece4 40%, #e8efe6 70%, #e0ebe0 100%)',
+            }
+          : backgroundImageUrl
+            ? { backgroundImage: bgUrl }
+            : { backgroundColor: '#E8E8E8' }
 
   // SSR時はローディング表示
   if (isMobile === null) {

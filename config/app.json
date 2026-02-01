@@ -5,7 +5,7 @@
   "general": {
     "language": "ja",
     "changeEnglishToJapanese": false,
-    "backgroundImagePath": "",
+    "backgroundImagePath": "gradient",
     "showAssistantText": true,
     "showCharacterName": true,
     "showControlPanel": true,
