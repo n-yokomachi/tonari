@@ -10,6 +10,7 @@ import settingsStore from '@/features/stores/settings'
 import { ChatLog } from './chatLog'
 import { IconButton } from './iconButton'
 import Settings from './settings'
+import { VRM_MODELS } from '@/features/constants/settings'
 
 // モバイルデバイス検出用のカスタムフック
 const useIsMobile = () => {
@@ -63,6 +64,15 @@ export const Menu = () => {
   const handleTouchCancel = () => {
     setTouchStartTime(null)
   }
+
+  const handleSwitchVrmModel = useCallback(() => {
+    const currentPath = settingsStore.getState().selectedVrmPath
+    const nextPath =
+      currentPath === VRM_MODELS[0] ? VRM_MODELS[1] : VRM_MODELS[0]
+    settingsStore.setState({ selectedVrmPath: nextPath })
+    const { viewer } = homeStore.getState()
+    viewer.loadVrm(nextPath)
+  }, [])
 
   const handleChangeVrmFile = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -130,6 +140,12 @@ export const Menu = () => {
               <div className="flex gap-[8px]">
                 {showControlPanel && (
                   <>
+                    <IconButton
+                      iconName="24/Swap"
+                      isProcessing={false}
+                      onClick={handleSwitchVrmModel}
+                      aria-label="モデル切り替え"
+                    />
                     <IconButton
                       iconName="24/Settings"
                       isProcessing={false}
