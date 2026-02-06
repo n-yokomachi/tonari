@@ -5,8 +5,7 @@ import { IconButton } from './iconButton'
 import Settings from './settings'
 import homeStore from '@/features/stores/home'
 import settingsStore from '@/features/stores/settings'
-
-const VRM_MODELS = ['/vrm/scensei_f.vrm', '/vrm/scensei_m.vrm'] as const
+import { VRM_MODELS } from '@/features/constants/settings'
 
 export const MobileHeader = () => {
   const [showSettings, setShowSettings] = useState(false)

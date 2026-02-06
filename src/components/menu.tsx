@@ -10,9 +10,7 @@ import settingsStore from '@/features/stores/settings'
 import { ChatLog } from './chatLog'
 import { IconButton } from './iconButton'
 import Settings from './settings'
-
-const VRM_MODELS = ['/vrm/scensei_f.vrm', '/vrm/scensei_m.vrm'] as const
-const DEFAULT_VRM = VRM_MODELS[0]
+import { VRM_MODELS } from '@/features/constants/settings'
 
 // モバイルデバイス検出用のカスタムフック
 const useIsMobile = () => {

@@ -2,7 +2,12 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 import { SYSTEM_PROMPT } from '@/features/constants/systemPromptConstants'
-import { AIService, Language } from '../constants/settings'
+import {
+  AIService,
+  DEFAULT_VRM,
+  Language,
+  VRM_MODELS,
+} from '../constants/settings'
 import { googleSearchGroundingModels } from '../constants/aiModels'
 import { migrateOpenAIModelName } from '@/utils/modelMigration'
 import { getAppConfig } from '@/lib/config'
@@ -222,9 +227,12 @@ const settingsStore = create<SettingsState>()(
 
       // Fallback to default VRM if saved path is not a known model
       if (state) {
-        const knownVrmPaths = ['/vrm/scensei_f.vrm', '/vrm/scensei_m.vrm']
-        if (!knownVrmPaths.includes(state.selectedVrmPath)) {
-          state.selectedVrmPath = '/vrm/scensei_f.vrm'
+        if (
+          !VRM_MODELS.includes(
+            state.selectedVrmPath as (typeof VRM_MODELS)[number]
+          )
+        ) {
+          state.selectedVrmPath = DEFAULT_VRM
         }
       }
     },
