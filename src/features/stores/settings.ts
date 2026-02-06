@@ -219,6 +219,14 @@ const settingsStore = create<SettingsState>()(
           state.characterName = envValues.characterName
         }
       }
+
+      // Fallback to default VRM if saved path is not a known model
+      if (state) {
+        const knownVrmPaths = ['/vrm/scensei_f.vrm', '/vrm/scensei_m.vrm']
+        if (!knownVrmPaths.includes(state.selectedVrmPath)) {
+          state.selectedVrmPath = '/vrm/scensei_f.vrm'
+        }
+      }
     },
     partialize: (state) => ({
       openaiKey: state.openaiKey,
