@@ -17,6 +17,7 @@
 - ビジネスロジックとドメイン固有の処理
 - 機能単位でディレクトリ分割 (`chat/`, `vrmViewer/`, `lipSync/`)
 - Zustandストアは `features/stores/` に配置
+- 定数・設定値は `features/constants/` に配置（例: `VRM_MODELS`, `DEFAULT_VRM`）
 
 **Pages** (`/src/pages/`)
 - Next.js Pages Router規約に従う
@@ -51,7 +52,7 @@ infra/
 
 | File | Purpose |
 |------|---------|
-| `app.json` | フロントエンド設定（シークレット以外） |
+| `app.json` | フロントエンド設定（シークレット以外、背景・キャラクター・AI設定等） |
 | `agentcore.json` | AgentCore Runtime設定 |
 | `infra.json` | CDKインフラ設定 |
 

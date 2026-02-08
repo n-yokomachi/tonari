@@ -23,7 +23,7 @@
 ### Frontend
 - **Language**: TypeScript 5.0 (strict mode)
 - **Framework**: Next.js 14 (Pages Router)
-- **Runtime**: Node.js 20+
+- **Runtime**: Node.js 22+ (Volta管理)
 
 ### Backend
 - **Language**: Python 3.12
@@ -38,7 +38,7 @@
 | 3D/VRM | Three.js + @pixiv/three-vrm | VRMアバター表示・制御 |
 | スタイリング | Tailwind CSS | ユーティリティファーストCSS |
 | バリデーション | Zod | スキーマ検証・型推論 |
-| AI SDK | Vercel AI SDK | ストリーミング応答 |
+| AI通信 | AgentCore SSE | ストリーミング応答（Server-Sent Events） |
 
 ## Development Standards
 
@@ -59,7 +59,7 @@
 ## Development Environment
 
 ### Required Tools
-- Node.js 22+ (Volta管理)
+- Node.js 22+ (Volta管理: 22.22.0)
 - Python 3.12+ (uv管理)
 - AWS CLI (AgentCoreデプロイ用)
 
@@ -89,7 +89,7 @@ cd agentcore && uv run agentcore deploy
 
 ### 機能削除方針
 - Scenseiに不要な機能は積極的に削除
-- 削除済み: カラーテーマ切替、音声入出力、TTS関連
+- 削除済み: カラーテーマ切替、音声入出力、TTS関連、Vercel AI SDK直接呼び出し
 
 ---
 _Document standards and patterns, not every dependency_
