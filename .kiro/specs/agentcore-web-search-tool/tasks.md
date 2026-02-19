@@ -1,22 +1,15 @@
 # Implementation Plan
 
-- [ ] 1. インフラストラクチャのセットアップ
-- [ ] 1.1 Tavily APIキーのCredential Providerを作成する
-  - AWS CLIの `create-api-key-credential-provider` コマンドでTavily APIキー用のCredential Providerを作成する
-  - 環境変数経由でAPIキーを渡し、コマンド履歴への漏洩を防ぐ
-  - 出力された `credentialProviderArn` を記録し、次のタスクで使用する
-  - 作成結果を確認し、Secrets Managerにシークレットが保存されていることを検証する
-  - _Requirements: 1.1, 1.2, 1.3, 1.4_
-
-- [ ] 1.2 AgentCore GatewayにTavily統合ターゲットを追加する
-  - AWS Management Consoleから既存Gateway（`scenseigateway-*`）を開く
+- [x] 1. インフラストラクチャのセットアップ
+- [x] 1.1 AgentCore GatewayにTavily統合ターゲットを追加する（コンソール経由）
+  - AWS Management Consoleから既存Gateway（`scenseigateway-zxdprxgrqx`）を開く
   - Targetsタブから「Integration」タイプのターゲットを追加する
-  - Target Nameを `web_search`、ProviderにTavily、Credential Providerに `tavily-api-key` を設定する
-  - MCPClientの `list_tools_sync()` で `web_search__TavilySearchPost` がツール一覧に含まれることを確認する
-  - タスク1.1で作成したCredential Providerが必要
-  - _Requirements: 2.1, 2.2, 2.3, 2.4_
+  - Target Nameを `TavilyTarget`、ProviderにTavilyを設定する
+  - Credential Providerはコンソールが自動作成（`tavily-api-key`）
+  - ツール名: `TavilyTarget__TavilySearchPost`
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 2.4_
 
-- [ ] 2. システムプロンプトにWeb検索ガイドラインを追加する
+- [x] 2. システムプロンプトにWeb検索ガイドラインを追加する
   - `prompts.py` の `SCENSEI_SYSTEM_PROMPT` にWeb検索ツールの使用セクションを追加する
   - 使用タイミング（search_perfumesで見つからない場合、未知のブランド名、最新情報が必要な場合）を記述する
   - 検索クエリ作成のコツ（具体的なブランド名・商品名を含める、一般的な検索は避ける）を記述する
@@ -27,9 +20,9 @@
   - _Requirements: 3.1, 3.2, 3.3, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3_
 
 - [ ] 3. デプロイと動作確認
-- [ ] 3.1 AgentCore Runtimeにデプロイする
+- [x] 3.1 AgentCore Runtimeにデプロイする
   - `agentcore deploy` でプロンプト変更を含むエージェントをデプロイする
-  - デプロイ後、エージェントが正常に起動しツール一覧に `web_search__TavilySearchPost` が含まれることを確認する
+  - デプロイ完了: `scensei-xajQ0R77kv`
   - _Requirements: 3.1_
 
 - [ ] 3.2 E2Eテストを実施する
