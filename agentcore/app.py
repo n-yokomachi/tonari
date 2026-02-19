@@ -2,9 +2,9 @@
 
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 
-from src.agent.scensei_agent import (
-    create_scensei_agent,
-    create_scensei_agent_with_gateway,
+from src.agent.tonari_agent import (
+    create_tonari_agent,
+    create_tonari_agent_with_gateway,
 )
 
 app = BedrockAgentCoreApp()
@@ -18,7 +18,7 @@ async def invoke(payload: dict):
     actor_id = payload.get("actor_id", "anonymous")
 
     # Gateway統合エージェントを作成
-    agent, mcp_client = create_scensei_agent_with_gateway(
+    agent, mcp_client = create_tonari_agent_with_gateway(
         session_id=session_id, actor_id=actor_id
     )
 
@@ -26,7 +26,7 @@ async def invoke(payload: dict):
         # MCPClient context内でエージェントを実行
         with mcp_client:
             tools = mcp_client.list_tools_sync()
-            agent = create_scensei_agent(
+            agent = create_tonari_agent(
                 session_id=session_id,
                 actor_id=actor_id,
                 mcp_tools=tools,

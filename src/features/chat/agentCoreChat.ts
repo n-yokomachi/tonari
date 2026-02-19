@@ -3,7 +3,7 @@
  * リロードしても同一セッションとして扱われる
  */
 const getSessionId = (): string => {
-  const key = 'scensei_session_id'
+  const key = 'tonari_session_id'
   let sessionId = localStorage.getItem(key)
   if (!sessionId) {
     sessionId = `session-${crypto.randomUUID()}`
@@ -18,7 +18,7 @@ const getSessionId = (): string => {
  * セッションを跨いでも同一ユーザーとして記憶される
  */
 const getActorId = (): string => {
-  const key = 'scensei_actor_id'
+  const key = 'tonari_actor_id'
   let actorId = localStorage.getItem(key)
   if (!actorId) {
     actorId = `user-${crypto.randomUUID()}`

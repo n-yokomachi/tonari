@@ -20,8 +20,8 @@
   },
 
   "character": {
-    "name": "Scensei",
-    "vrmPath": "/vrm/scensei_f.vrm",
+    "name": "Tonari",
+    "vrmPath": "/vrm/tonari_f.vrm",
     "lightingIntensity": 1.0
   },
 

@@ -20,7 +20,7 @@ allowed-tools: Bash
 
 - バックエンドのコード（`agentcore/`配下）を変更した時
 - システムプロンプト（`prompts.py`）を変更した時
-- エージェントの設定（`scensei_agent.py`）を変更した時
+- エージェントの設定（`tonari_agent.py`）を変更した時
 - ツールを追加・変更した時
 
 ## 注意事項

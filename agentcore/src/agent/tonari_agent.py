@@ -1,4 +1,4 @@
-"""Scensei エージェント実装"""
+"""Tonari エージェント実装"""
 
 import os
 from typing import Optional
@@ -15,7 +15,7 @@ from strands import Agent
 from strands.models import BedrockModel
 from strands.tools.mcp import MCPClient
 
-from .prompts import SCENSEI_SYSTEM_PROMPT
+from .prompts import TONARI_SYSTEM_PROMPT
 
 # デフォルトのMemory ID（AgentCore CLIで作成済み）
 DEFAULT_MEMORY_ID = "scensei_mem-INEd7K94yX"
@@ -37,12 +37,12 @@ def create_mcp_client(gateway_url: str, region: str) -> MCPClient:
     return MCPClient(create_transport)
 
 
-def create_scensei_agent(
+def create_tonari_agent(
     session_id: str = "default-session",
     actor_id: str = "anonymous",
     mcp_tools: Optional[list] = None,
 ) -> Agent:
-    """Scenseiエージェントを作成（セッション管理付き）
+    """Tonariエージェントを作成（セッション管理付き）
 
     Args:
         session_id: セッションID（タブ単位で管理）
@@ -50,7 +50,7 @@ def create_scensei_agent(
         mcp_tools: MCPから取得したツールリスト（オプション）
 
     Returns:
-        Agent: セッション管理機能付きのScenseiエージェント
+        Agent: セッション管理機能付きのTonariエージェント
     """
     # AgentCore Memory設定（STM + LTM取得）
     memory_config = AgentCoreMemoryConfig(
@@ -58,7 +58,7 @@ def create_scensei_agent(
         session_id=session_id,
         actor_id=actor_id,
         retrieval_config={
-            # ユーザーの香り好み（甘い香りが好き、など）
+            # ユーザーの好み
             "/preferences/{actorId}": RetrievalConfig(top_k=5, relevance_score=0.5),
             # 事実情報（購入履歴、試した香水など）
             "/facts/{actorId}": RetrievalConfig(top_k=10, relevance_score=0.4),
@@ -85,18 +85,18 @@ def create_scensei_agent(
 
     agent = Agent(
         model=bedrock_model,
-        system_prompt=SCENSEI_SYSTEM_PROMPT,
+        system_prompt=TONARI_SYSTEM_PROMPT,
         session_manager=session_manager,
         tools=mcp_tools or [],
     )
     return agent
 
 
-def create_scensei_agent_with_gateway(
+def create_tonari_agent_with_gateway(
     session_id: str = "default-session",
     actor_id: str = "anonymous",
 ) -> tuple[Agent, MCPClient]:
-    """Gateway統合済みのScenseiエージェントを作成（IAM認証）
+    """Gateway統合済みのTonariエージェントを作成（IAM認証）
 
     Returns:
         tuple: (Agent, MCPClient) - MCPClientはcontext managerとして使用する必要あり
@@ -107,4 +107,4 @@ def create_scensei_agent_with_gateway(
     # IAM認証でMCPClient作成
     mcp_client = create_mcp_client(gateway_url, region)
 
-    return create_scensei_agent(session_id, actor_id), mcp_client
+    return create_tonari_agent(session_id, actor_id), mcp_client

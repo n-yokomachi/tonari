@@ -56,9 +56,8 @@ public/scripts/*
 
 # VRM files
 /public/vrm/*
-!/public/vrm/Scensei.vrm
-!/public/vrm/scensei_f.vrm
-!/public/vrm/scensei_m.vrm
+!/public/vrm/tonari_f.vrm
+!/public/vrm/tonari_m.vrm
 
 # Background files
 /public/backgrounds/*

@@ -23,7 +23,7 @@ export class Model {
 
   constructor(lookAtTargetParent: THREE.Object3D) {
     this._lookAtTargetParent = lookAtTargetParent
-    // Scenseiでは音声出力機能を削除しているため、LipSyncは作成しない
+    // Tonariでは音声出力機能を削除しているため、LipSyncは作成しない
   }
 
   public async loadVRM(url: string): Promise<void> {
@@ -71,7 +71,7 @@ export class Model {
 
   /**
    * 音声を再生し、リップシンクを行う
-   * Scenseiでは音声出力機能を削除しているため、表情のみ設定
+   * Tonariでは音声出力機能を削除しているため、表情のみ設定
    */
   public async speak(
     buffer: ArrayBuffer,
@@ -86,7 +86,7 @@ export class Model {
    * 現在の音声再生を停止
    */
   public stopSpeaking() {
-    // Scenseiでは音声出力機能を削除しているため、何もしない
+    // Tonariでは音声出力機能を削除しているため、何もしない
   }
 
   /**
@@ -104,7 +104,7 @@ export class Model {
   }
 
   public update(delta: number): void {
-    // Scenseiでは音声出力機能を削除しているため、リップシンク処理はスキップ
+    // Tonariでは音声出力機能を削除しているため、リップシンク処理はスキップ
 
     // 表情・瞬きの更新（ジェスチャー以外）
     this.emoteController?.updateExpression(delta)

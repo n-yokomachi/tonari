@@ -1,7 +1,7 @@
 [project]
-name = "scensei-backend"
+name = "tonari-backend"
 version = "0.1.0"
-description = "Scensei - 香水ソムリエAIエージェント"
+description = "Tonari - パーソナルAIアシスタント"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

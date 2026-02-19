@@ -86,7 +86,7 @@ interface General {
   multiModalMode: 'ai-decide' | 'always' | 'never'
   multiModalAiDecisionPrompt: string
   enableMultiModal: boolean
-  colorTheme: 'scensei'
+  colorTheme: 'tonari'
   customModel: boolean
 }
 
@@ -178,7 +178,7 @@ const getInitialValuesFromEnv = (): SettingsState => {
       process.env.NEXT_PUBLIC_MULTIMODAL_AI_DECISION_PROMPT ||
       'あなたは画像がユーザーの質問や会話の文脈に関連するかどうかを判断するアシスタントです。直近の会話履歴とユーザーメッセージを考慮して、「はい」または「いいえ」のみで答えてください。',
     enableMultiModal: config.multiModal.enabled,
-    colorTheme: 'scensei' as const,
+    colorTheme: 'tonari' as const,
     customModel: config.ai.customModel,
   }
 }

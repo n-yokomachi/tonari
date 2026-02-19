@@ -6,26 +6,26 @@ import * as apigateway from 'aws-cdk-lib/aws-apigateway'
 import { Construct } from 'constructs'
 import * as path from 'path'
 
-export interface ScenseiStackProps extends cdk.StackProps {
+export interface TonariStackProps extends cdk.StackProps {
   // Cognito User Pool ID for API Gateway authorization
   cognitoUserPoolId: string
   // Cognito Client ID for M2M authentication
   cognitoClientId: string
 }
 
-export class ScenseiStack extends cdk.Stack {
+export class TonariStack extends cdk.Stack {
   public readonly perfumeTable: dynamodb.Table
   public readonly searchLambda: lambda.IFunction
   public readonly crudApi: apigateway.RestApi
 
-  constructor(scope: Construct, id: string, props: ScenseiStackProps) {
+  constructor(scope: Construct, id: string, props: TonariStackProps) {
     super(scope, id, props)
 
     const { cognitoUserPoolId, cognitoClientId } = props
 
     // DynamoDB Table (PK=brand, SK=name)
     this.perfumeTable = new dynamodb.Table(this, 'PerfumeTable', {
-      tableName: 'scensei-perfumes',
+      tableName: 'tonari-perfumes',
       partitionKey: { name: 'brand', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'name', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
@@ -34,7 +34,7 @@ export class ScenseiStack extends cdk.Stack {
 
     // Lambda for perfume search (AgentCore Gateway Target)
     this.searchLambda = new python.PythonFunction(this, 'PerfumeSearchLambda', {
-      functionName: 'scensei-perfume-search',
+      functionName: 'tonari-perfume-search',
       entry: path.join(__dirname, '../lambda/perfume-search'),
       runtime: lambda.Runtime.PYTHON_3_12,
       handler: 'handler',
@@ -50,7 +50,7 @@ export class ScenseiStack extends cdk.Stack {
 
     // Lambda for CRUD operations (API Gateway)
     const crudLambda = new python.PythonFunction(this, 'PerfumeCrudLambda', {
-      functionName: 'scensei-perfume-crud',
+      functionName: 'tonari-perfume-crud',
       entry: path.join(__dirname, '../lambda/perfume-crud'),
       runtime: lambda.Runtime.PYTHON_3_12,
       handler: 'handler',
@@ -69,7 +69,7 @@ export class ScenseiStack extends cdk.Stack {
       this,
       'ApiAuthorizerLambda',
       {
-        functionName: 'scensei-api-authorizer',
+        functionName: 'tonari-api-authorizer',
         entry: path.join(__dirname, '../lambda/api-authorizer'),
         runtime: lambda.Runtime.PYTHON_3_12,
         handler: 'handler',
@@ -85,8 +85,8 @@ export class ScenseiStack extends cdk.Stack {
 
     // API Gateway
     this.crudApi = new apigateway.RestApi(this, 'PerfumeCrudApi', {
-      restApiName: 'scensei-perfume-api',
-      description: 'Scensei Perfume CRUD API',
+      restApiName: 'tonari-perfume-api',
+      description: 'Tonari Perfume CRUD API',
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: apigateway.Cors.ALL_METHODS,

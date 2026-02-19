@@ -6,7 +6,7 @@ export const GitHubLink = () => {
     <div className="absolute right-0 z-15 m-6">
       <a
         draggable={false}
-        href="https://github.com/n-yokomachi/scensei"
+        href="https://github.com/n-yokomachi/tonari"
         rel="noopener noreferrer"
         target="_blank"
       >
