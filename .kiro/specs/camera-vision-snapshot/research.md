@@ -20,8 +20,8 @@
   - `messageInput.tsx`: 画像プレビュー、ドラッグ&ドロップ、ファイルバリデーション（10MB、4096x4096）実装済み
   - `isMultiModalAvailable()`: モデル対応状況 + 設定 + モードの包括的判定関数あり
 - **Implications**:
-  - 既存のVideoDisplayはドラッグ/リサイズ/背景動画など過剰な機能を含み、Scenseiには不要
-  - `isMultiModalAvailable()`等のマルチサービス判定もScenseiでは不要（AgentCoreのみ）
+  - 既存のVideoDisplayはドラッグ/リサイズ/背景動画など過剰な機能を含み、Tonariには不要
+  - `isMultiModalAvailable()`等のマルチサービス判定もTonariでは不要（AgentCoreのみ）
   - **方針**: 複雑な既存コードを削除し、シンプルなCameraPreviewコンポーネントを新規作成
   - 状態管理パターン（`modalImage` / `triggerShutter` / `webcamStatus`）のみ流用
 
@@ -70,7 +70,7 @@
 
 | Option | Description | Strengths | Risks / Limitations | Notes |
 |--------|-------------|-----------|---------------------|-------|
-| 既存インフラ拡張 | VideoDisplay + modalImage + triggerShutterを流用し、APIパイプラインのみ追加 | 変更最小限 | VideoDisplayの複雑さがScenseiに不要、保守性低下 | 不採用 |
+| 既存インフラ拡張 | VideoDisplay + modalImage + triggerShutterを流用し、APIパイプラインのみ追加 | 変更最小限 | VideoDisplayの複雑さがTonariに不要、保守性低下 | 不採用 |
 | 既存コード簡素化 + 新規構築 | 複雑な既存コードを削除し、状態管理パターンのみ流用。シンプルなCameraPreviewを新規作成 | クリーンな設計、保守性高い | 多少の工数増 | **選択** |
 
 ## Design Decisions
@@ -81,7 +81,7 @@
   1. 既存インフラ流用 — VideoDisplay, triggerShutter, modalImageをそのまま活用
   2. 既存コード削除 + 新規構築 — 複雑なコードを削除し、状態管理パターンのみ流用
 - **Selected Approach**: 既存コード削除 + 新規構築
-- **Rationale**: AITuber-kitのVideoDisplayはドラッグ/リサイズ/背景動画などScenseiに不要な機能が多く、保守性が低い。マルチサービスのマルチモーダル判定（isMultiModalAvailable等）もScenseiはAgentCore専用のため不要。状態管理パターン（modalImage/triggerShutter/webcamStatus）のみ流用し、シンプルなCameraPreviewコンポーネントを新規作成する。
+- **Rationale**: AITuber-kitのVideoDisplayはドラッグ/リサイズ/背景動画などTonariに不要な機能が多く、保守性が低い。マルチサービスのマルチモーダル判定（isMultiModalAvailable等）もTonariはAgentCore専用のため不要。状態管理パターン（modalImage/triggerShutter/webcamStatus）のみ流用し、シンプルなCameraPreviewコンポーネントを新規作成する。
 - **Trade-offs**: 多少の工数増だが、保守性とコードの理解しやすさが大幅に向上
 - **Follow-up**: 削除対象ファイルの依存関係確認、useDraggable/useResizableの他箇所での使用確認
 

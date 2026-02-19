@@ -2,11 +2,11 @@
 
 ## Overview
 
-**Purpose**: カメラ連携機能により、Scenseiエージェントがユーザーの視覚情報（服装、シーンなど）に基づいた香水提案を行えるようにする。
+**Purpose**: カメラ連携機能により、Tonariエージェントがユーザーの視覚情報（服装、シーンなど）に基づいた香水提案を行えるようにする。
 
 **Users**: 香水ソムリエAIに「見せて相談したい」ユーザーがWebカメラのスナップショットを送信し、視覚情報を含めたアドバイスを受ける。
 
-**Impact**: 既存のテキストのみのチャットフローに画像送信パイプラインを追加する。AITuber-kit由来の複雑なマルチモーダルコードは削除し、Scensei専用のシンプルなカメラ機能を新規構築する。状態管理パターン（`modalImage` / `triggerShutter`）のみ流用する。
+**Impact**: 既存のテキストのみのチャットフローに画像送信パイプラインを追加する。AITuber-kit由来の複雑なマルチモーダルコードは削除し、Tonari専用のシンプルなカメラ機能を新規構築する。状態管理パターン（`modalImage` / `triggerShutter`）のみ流用する。
 
 ### Goals
 - Phase 1: ユーザーが手動でスナップショットを撮影し、テキストと共にエージェントに送信できるようにする
@@ -31,10 +31,10 @@
 - `homeStore.webcamStatus`: カメラ有効/無効フラグ
 - `Message`型: マルチモーダルcontent対応済み（`[{ type: 'text', text }, { type: 'image', image }]`）
 
-**削除する既存コード**（AITuber-kit由来、Scenseiには不要）:
+**削除する既存コード**（AITuber-kit由来、Tonariには不要）:
 - `src/components/common/VideoDisplay.tsx`: ドラッグ/リサイズ/背景動画など過剰な機能を含む
 - `src/components/modalImage.tsx`: サイドパネル表示（新UIに置き換え）
-- `src/features/constants/aiModels.ts`内のマルチサービスマルチモーダル判定: `isMultiModalAvailable()`, `multiModalModels`等（ScenseiはAgentCoreのみ）
+- `src/features/constants/aiModels.ts`内のマルチサービスマルチモーダル判定: `isMultiModalAvailable()`, `multiModalModels`等（TonariはAgentCoreのみ）
 - `src/components/form.tsx`内の`multiModalMode`/`isMultiModalAvailable`ロジック: 3モード切替（always/never/ai-decide）は不要
 - `src/features/stores/settings.ts`内の`multiModalMode`, `enableMultiModal`, `imageDisplayPosition`関連設定
 
@@ -83,7 +83,7 @@ sequenceDiagram
 - Selected pattern: 既存コード簡素化 + APIパイプライン拡張
 - Domain boundaries: フロントエンドはキャプチャ+エンコード、バックエンドは画像→ContentBlock変換
 - Existing patterns preserved: SSEストリーミング、Zustand状態管理、AgentCore Memory統合
-- Code cleanup: AITuber-kit由来の複雑なマルチモーダルコードを削除し、Scensei専用のシンプルな実装に置き換え
+- Code cleanup: AITuber-kit由来の複雑なマルチモーダルコードを削除し、Tonari専用のシンプルな実装に置き換え
 - New components: `CameraPreview`（getUserMedia + Canvas + 撮影UI）を新規作成
 - Steering compliance: TypeScript strict mode、ESLint/Prettier、`any`不使用
 
@@ -253,7 +253,7 @@ interface CameraState {
 - `src/components/modalImage.tsx`: 全削除
 - `src/hooks/useDraggable.ts`, `src/hooks/useResizable.ts`: VideoDisplay専用フック、全削除（他で未使用の場合）
 - `src/components/form.tsx`: `multiModalMode`, `isMultiModalAvailable`, `enableMultiModal`, `customModel`関連ロジックを削除。シンプルにmodalImageの有無のみで判定するように簡素化
-- `src/features/constants/aiModels.ts`: `isMultiModalAvailable()`, `isMultiModalModelWithToggle()`, `multiModalModels`関連関数を削除（ScenseiはAgentCoreのみ使用）
+- `src/features/constants/aiModels.ts`: `isMultiModalAvailable()`, `isMultiModalModelWithToggle()`, `multiModalModels`関連関数を削除（TonariはAgentCoreのみ使用）
 - `src/features/stores/settings.ts`: `multiModalMode`, `enableMultiModal`, `imageDisplayPosition`関連の状態を削除
 - `src/components/messageInput.tsx`: マルチモーダル判定ロジックの参照を削除
 
