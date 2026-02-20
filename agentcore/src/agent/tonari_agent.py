@@ -58,14 +58,15 @@ def create_tonari_agent(
         session_id=session_id,
         actor_id=actor_id,
         retrieval_config={
-            # ユーザーの好み
-            "/preferences/{actorId}": RetrievalConfig(top_k=5, relevance_score=0.5),
-            # 事実情報（購入履歴、試した香水など）
-            "/facts/{actorId}": RetrievalConfig(top_k=10, relevance_score=0.4),
-            # セッションサマリー（過去の会話の要約）
-            "/summaries/{actorId}/{sessionId}": RetrievalConfig(
-                top_k=3, relevance_score=0.6
-            ),
+            # ユーザーの好み（オーナー単位）
+            "/preferences/{actorId}/": RetrievalConfig(top_k=5, relevance_score=0.5),
+            # 事実情報（購入履歴、試した香水など、オーナー単位）
+            "/facts/{actorId}/": RetrievalConfig(top_k=10, relevance_score=0.4),
+            # セッションサマリー（全セッション横断取得）
+            "/summaries/{actorId}/": RetrievalConfig(top_k=3, relevance_score=0.6),
+            # エピソード記憶+リフレクション（全セッション横断取得）
+            # リフレクションは /episodes/{actorId}/ 配下に保存されるため同一prefixで取得
+            "/episodes/{actorId}/": RetrievalConfig(top_k=5, relevance_score=0.5),
         },
     )
 
