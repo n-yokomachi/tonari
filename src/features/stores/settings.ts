@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-import { SYSTEM_PROMPT } from '@/features/constants/systemPromptConstants'
 import {
   AIService,
   DEFAULT_VRM,
