@@ -27,7 +27,7 @@ export const MobileHeader = () => {
         className="flex-shrink-0 px-4 py-2 flex items-center justify-between"
         role="banner"
       >
-        <Image src="/logo.png" alt="Tonari" width={120} height={40} priority />
+        <Image src="/logo.png" alt="TONaRi" width={120} height={40} priority />
         {showControlPanel && (
           <nav className="flex gap-2" aria-label="Main navigation">
             <IconButton

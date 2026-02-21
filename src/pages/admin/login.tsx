@@ -173,7 +173,7 @@ export default function AdminLogin() {
     return (
       <>
         <Head>
-          <title>Touch ID - Tonari</title>
+          <title>Touch ID - TONaRi</title>
         </Head>
         <div className="min-h-screen bg-base-light flex flex-col items-center justify-center px-4">
           <button
@@ -213,7 +213,7 @@ export default function AdminLogin() {
   return (
     <>
       <Head>
-        <title>Admin - Tonari</title>
+        <title>Admin - TONaRi</title>
       </Head>
       <div className="min-h-screen bg-base-light flex flex-col items-center justify-center px-4">
         {/* メインエリア */}

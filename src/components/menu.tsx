@@ -132,7 +132,7 @@ export const Menu = () => {
             <div className="flex items-center gap-3">
               <Image
                 src="/logo.png"
-                alt="Tonari"
+                alt="TONaRi"
                 width={120}
                 height={40}
                 priority

@@ -1,6 +1,6 @@
 import Head from 'next/head'
 export const Meta = () => {
-  const title = 'Tonari'
+  const title = 'TONaRi'
   const description = 'あなたの暮らしに寄り添うパーソナルAIアシスタント'
   const imageUrl = '/ogp.png'
   return (

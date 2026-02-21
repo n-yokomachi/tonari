@@ -292,7 +292,7 @@ export default function AdminPerfumes() {
   return (
     <>
       <Head>
-        <title>香水データ管理 - Tonari</title>
+        <title>香水データ管理 - TONaRi</title>
       </Head>
       <div className="min-h-screen bg-gray-100">
         <header className="bg-white shadow">
