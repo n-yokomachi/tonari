@@ -21,6 +21,15 @@ const getActorId = (): string => {
 }
 
 /**
+ * セッションIDをリセットして新しいセッションを開始する
+ */
+export function resetSessionId(): void {
+  const key = 'tonari_session_id'
+  const newSessionId = `session-${crypto.randomUUID()}`
+  localStorage.setItem(key, newSessionId)
+}
+
+/**
  * AgentCore APIを呼び出してレスポンスストリームを取得する
  * 会話履歴はAgentCore Memoryが管理するため、最新のユーザーメッセージのみ送信
  */

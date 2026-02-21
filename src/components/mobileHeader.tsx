@@ -5,12 +5,18 @@ import { IconButton } from './iconButton'
 import Settings from './settings'
 import homeStore from '@/features/stores/home'
 import settingsStore from '@/features/stores/settings'
+import { resetSessionId } from '@/features/chat/agentCoreChat'
 import { VRM_MODELS } from '@/features/constants/settings'
 
 export const MobileHeader = () => {
   const [showSettings, setShowSettings] = useState(false)
   const showControlPanel = settingsStore((s) => s.showControlPanel)
   const { t } = useTranslation()
+
+  const handleNewSession = useCallback(() => {
+    resetSessionId()
+    homeStore.setState({ chatLog: [] })
+  }, [])
 
   const handleSwitchVrmModel = useCallback(() => {
     const currentPath = settingsStore.getState().selectedVrmPath
@@ -30,6 +36,12 @@ export const MobileHeader = () => {
         <Image src="/logo.png" alt="TONaRi" width={120} height={40} priority />
         {showControlPanel && (
           <nav className="flex gap-2" aria-label="Main navigation">
+            <IconButton
+              iconName="24/Refresh"
+              isProcessing={false}
+              onClick={handleNewSession}
+              aria-label="新しいセッション"
+            />
             <IconButton
               iconName="24/Swap"
               isProcessing={false}
