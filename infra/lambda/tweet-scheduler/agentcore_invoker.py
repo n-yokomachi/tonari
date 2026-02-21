@@ -25,20 +25,26 @@ def _build_prompt(owner_tweets: list[OwnerTweet]) -> str:
     Returns:
         Prompt string for AgentCore Runtime.
     """
+    now_str = datetime.now(JST).strftime("%Y年%m月%d日 %H:%M")
+
     if owner_tweets:
         tweets_text = "\n".join(
             f"- {tweet.text}" for tweet in owner_tweets
         )
         return (
-            f"あなたのオーナーが今日Twitterでこんなことを投稿しています:\n"
+            f"現在{now_str}（JST）です。あなた（TONaRi）のTwitterアカウント（@tonari_with）からツイートする時間です。\n\n"
+            f"オーナー（@_cityside）が今日こんなことを投稿していました:\n"
             f"{tweets_text}\n\n"
-            f"これを踏まえて、あなた（TONaRi）としてのツイートを1つ作ってください。\n"
+            f"あなたはこれから自分のアカウントでツイートします。"
+            f"オーナーの投稿を踏まえて、あなたが投稿したい内容を決めてください。\n"
             f"ルール: 140文字以内、感情タグやジェスチャータグは不要、ツイート本文のみ出力"
         )
     else:
         return (
-            "今日のオーナーのTwitter投稿はまだありません。\n"
-            "あなた（TONaRi）として、日常の何気ない可愛い系のツイートを1つ作ってください。\n"
+            f"現在{now_str}（JST）です。あなた（TONaRi）のTwitterアカウント（@tonari_with）からツイートする時間です。\n\n"
+            "今日はまだオーナー（@_cityside）のTwitter投稿はありません。\n"
+            "あなたはこれから自分のアカウントでツイートします。"
+            "日常の何気ないことや、最近オーナーと話したことなど、あなたが投稿したい内容を決めてください。\n"
             "ルール: 140文字以内、センシティブな個人情報は含めない、"
             "感情タグやジェスチャータグは不要、ツイート本文のみ出力"
         )
