@@ -205,3 +205,41 @@ def invoke_tonari_for_tweet(
     except Exception:
         logger.exception("Failed to generate tweet via AgentCore")
         return None
+
+
+def notify_tweet_posted(
+    tweet_text: str,
+    cognito_client_id: str,
+    cognito_client_secret: str,
+    cognito_token_endpoint: str,
+    cognito_scope: str,
+    runtime_arn: str,
+    region: str,
+) -> None:
+    """Notify AgentCore that a tweet was posted, so it gets stored in LTM.
+
+    Args:
+        tweet_text: The tweet that was posted.
+        cognito_*: Cognito M2M auth parameters.
+        runtime_arn: AgentCore Runtime ARN.
+        region: AWS region.
+    """
+    now_str = datetime.now(JST).strftime("%Y年%m月%d日 %H:%M")
+    prompt = (
+        f"【投稿完了通知】{now_str}（JST）に、あなたのTwitterアカウント（@tonari_with）から"
+        f"以下のツイートが投稿されました:\n\n"
+        f"「{tweet_text}」\n\n"
+        f"このツイートはあなた自身の言葉として投稿されたものです。覚えておいてください。\n"
+        f"ルール: 「了解」「わかった」など短い確認の返答のみ出力"
+    )
+    try:
+        access_token = _get_cognito_token(
+            cognito_client_id,
+            cognito_client_secret,
+            cognito_token_endpoint,
+            cognito_scope,
+        )
+        _call_agentcore(prompt, access_token, runtime_arn, region)
+        logger.info("Tweet post notification sent to AgentCore")
+    except Exception:
+        logger.warning("Failed to notify AgentCore of tweet post", exc_info=True)

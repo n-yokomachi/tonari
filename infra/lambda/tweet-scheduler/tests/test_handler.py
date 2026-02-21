@@ -23,14 +23,15 @@ class TestHandler(unittest.TestCase):
         },
     )
     @patch("index._get_ssm_parameter", return_value="mock-cognito-secret")
+    @patch("index.notify_tweet_posted")
     @patch("index.post_tweet")
     @patch("index.invoke_tonari_for_tweet")
     @patch("index.fetch_owner_tweets")
     @patch("index.TwitterClient")
     def test_full_pipeline_success(
-        self, mock_tc_cls, mock_fetch, mock_invoke, mock_post, mock_ssm
+        self, mock_tc_cls, mock_fetch, mock_invoke, mock_post, mock_notify, mock_ssm
     ):
-        """正常系: 取得→生成→投稿のパイプラインが成功する。"""
+        """正常系: 取得→生成→投稿→LTM通知のパイプラインが成功する。"""
         from index import handler
 
         mock_tc = MagicMock()
@@ -48,6 +49,8 @@ class TestHandler(unittest.TestCase):
         mock_fetch.assert_called_once()
         mock_invoke.assert_called_once()
         mock_post.assert_called_once_with(mock_tc.client, "Tonariのツイート")
+        mock_notify.assert_called_once()
+        self.assertEqual(mock_notify.call_args[1]["tweet_text"], "Tonariのツイート")
 
     @patch.dict(
         "os.environ",

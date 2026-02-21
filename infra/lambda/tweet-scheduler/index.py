@@ -7,7 +7,7 @@ import boto3
 
 from twitter_client import TwitterClient
 from tweet_fetcher import fetch_owner_tweets
-from agentcore_invoker import invoke_tonari_for_tweet
+from agentcore_invoker import invoke_tonari_for_tweet, notify_tweet_posted
 from tweet_poster import post_tweet
 
 logger = logging.getLogger()
@@ -68,6 +68,16 @@ def handler(event: dict, context) -> dict:
     tweet_id = post_tweet(twitter.client, generated_text)
 
     if tweet_id:
+        # Step 5: Notify AgentCore of the posted tweet (for LTM storage)
+        notify_tweet_posted(
+            tweet_text=generated_text,
+            cognito_client_id=cognito_client_id,
+            cognito_client_secret=cognito_client_secret,
+            cognito_token_endpoint=cognito_endpoint,
+            cognito_scope=cognito_scope,
+            runtime_arn=runtime_arn,
+            region=region,
+        )
         logger.info("Pipeline completed: tweet_id=%s", tweet_id)
         return {"statusCode": 200, "body": f"Tweet posted: {tweet_id}"}
     else:
