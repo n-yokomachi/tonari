@@ -24,16 +24,19 @@ class TestBuildPrompt(unittest.TestCase):
         ]
         prompt = _build_prompt(tweets)
 
+        self.assertIn("@tonari_with", prompt)
+        self.assertIn("@_cityside", prompt)
         self.assertIn("Today is sunny!", prompt)
         self.assertIn("Coffee time", prompt)
         self.assertIn("140文字以内", prompt)
         self.assertIn("感情タグ", prompt)
 
     def test_cute_mode_without_owner_tweets(self):
-        """オーナーのツイートがない場合、可愛い系モードのプロンプトを生成する。"""
+        """オーナーのツイートがない場合、自由投稿モードのプロンプトを生成する。"""
         prompt = _build_prompt([])
 
-        self.assertIn("可愛い系", prompt)
+        self.assertIn("@tonari_with", prompt)
+        self.assertIn("投稿はありません", prompt)
         self.assertIn("140文字以内", prompt)
         self.assertIn("センシティブ", prompt)
 
