@@ -7,6 +7,7 @@ const app = new cdk.App()
 
 const cognitoUserPoolId = app.node.tryGetContext('cognitoUserPoolId')
 const cognitoClientId = app.node.tryGetContext('cognitoClientId')
+const tweetSchedulerConfig = app.node.tryGetContext('tweetScheduler')
 
 new TonariStack(app, 'TonariStack', {
   env: {
@@ -15,4 +16,5 @@ new TonariStack(app, 'TonariStack', {
   },
   cognitoUserPoolId,
   cognitoClientId,
+  tweetScheduler: tweetSchedulerConfig,
 })

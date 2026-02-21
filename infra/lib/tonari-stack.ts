@@ -3,6 +3,9 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 import * as lambda from 'aws-cdk-lib/aws-lambda'
 import * as python from '@aws-cdk/aws-lambda-python-alpha'
 import * as apigateway from 'aws-cdk-lib/aws-apigateway'
+import * as iam from 'aws-cdk-lib/aws-iam'
+import * as scheduler from 'aws-cdk-lib/aws-scheduler'
+import * as targets from 'aws-cdk-lib/aws-scheduler-targets'
 import { Construct } from 'constructs'
 import * as path from 'path'
 
@@ -11,6 +14,15 @@ export interface TonariStackProps extends cdk.StackProps {
   cognitoUserPoolId: string
   // Cognito Client ID for M2M authentication
   cognitoClientId: string
+  // Tweet scheduler config (optional)
+  tweetScheduler?: {
+    ownerTwitterUserId: string
+    ssmTwitterPrefix: string
+    agentcoreRuntimeArn: string
+    cognitoTokenEndpoint: string
+    cognitoScope: string
+    ssmCognitoClientSecret: string
+  }
 }
 
 export class TonariStack extends cdk.Stack {
@@ -134,6 +146,70 @@ export class TonariStack extends cdk.Stack {
 
     // DELETE /perfumes/{brand}/{name} - Delete
     perfumeByName.addMethod('DELETE', lambdaIntegration, authorizedMethodOptions)
+
+    // ========== Tweet Scheduler ==========
+    if (props.tweetScheduler) {
+      const ts = props.tweetScheduler
+
+      const tweetSchedulerLambda = new python.PythonFunction(
+        this,
+        'TweetSchedulerLambda',
+        {
+          functionName: 'tonari-tweet-scheduler',
+          entry: path.join(__dirname, '../lambda/tweet-scheduler'),
+          runtime: lambda.Runtime.PYTHON_3_12,
+          handler: 'handler',
+          timeout: cdk.Duration.minutes(5),
+          memorySize: 256,
+          environment: {
+            OWNER_TWITTER_USER_ID: ts.ownerTwitterUserId,
+            SSM_TWITTER_PREFIX: ts.ssmTwitterPrefix,
+            AGENTCORE_REGION: 'ap-northeast-1',
+            AGENTCORE_RUNTIME_ARN: ts.agentcoreRuntimeArn,
+            COGNITO_TOKEN_ENDPOINT: ts.cognitoTokenEndpoint,
+            COGNITO_CLIENT_ID: props.cognitoClientId,
+            COGNITO_SCOPE: ts.cognitoScope,
+            SSM_COGNITO_CLIENT_SECRET: ts.ssmCognitoClientSecret,
+          },
+        }
+      )
+
+      // SSM Parameter Store read permission (including SecureString decryption)
+      tweetSchedulerLambda.addToRolePolicy(
+        new iam.PolicyStatement({
+          actions: ['ssm:GetParameter', 'ssm:GetParametersByPath'],
+          resources: [
+            `arn:aws:ssm:ap-northeast-1:${this.account}:parameter${ts.ssmTwitterPrefix}`,
+            `arn:aws:ssm:ap-northeast-1:${this.account}:parameter${ts.ssmTwitterPrefix}/*`,
+            `arn:aws:ssm:ap-northeast-1:${this.account}:parameter${ts.ssmCognitoClientSecret}`,
+          ],
+        })
+      )
+
+      const tweetTarget = new targets.LambdaInvoke(tweetSchedulerLambda)
+
+      // EventBridge Schedule: 12:00 JST
+      new scheduler.Schedule(this, 'TweetScheduleNoon', {
+        scheduleName: 'tonari-tweet-noon',
+        schedule: scheduler.ScheduleExpression.cron({
+          minute: '0',
+          hour: '12',
+          timeZone: cdk.TimeZone.ASIA_TOKYO,
+        }),
+        target: tweetTarget,
+      })
+
+      // EventBridge Schedule: 18:00 JST
+      new scheduler.Schedule(this, 'TweetScheduleEvening', {
+        scheduleName: 'tonari-tweet-evening',
+        schedule: scheduler.ScheduleExpression.cron({
+          minute: '0',
+          hour: '18',
+          timeZone: cdk.TimeZone.ASIA_TOKYO,
+        }),
+        target: tweetTarget,
+      })
+    }
 
     // Outputs
     new cdk.CfnOutput(this, 'PerfumeTableName', {
