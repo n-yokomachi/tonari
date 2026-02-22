@@ -21,7 +21,6 @@
     "cognitoClientId": "1qemnml5e11reu81d0jap2ele3",
     "tweetScheduler": {
       "ownerTwitterUserId": "1330596368",
-      "ssmTwitterPrefix": "/tonari/twitter",
       "agentcoreRuntimeArn": "arn:aws:bedrock-agentcore:ap-northeast-1:765653276628:runtime/tonari-Vn6wcIC19Q",
       "cognitoTokenEndpoint": "https://tonari-m2m-identity.auth.ap-northeast-1.amazoncognito.com/oauth2/token",
       "cognitoScope": "agentcore-m2m-03ce8ee4/read agentcore-m2m-03ce8ee4/write",
