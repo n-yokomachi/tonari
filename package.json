@@ -22,7 +22,6 @@
     "@headlessui/react": "^2.1.2",
     "@hello-pangea/dnd": "^18.0.1",
     "@heroicons/react": "^2.1.5",
-    "@openrouter/ai-sdk-provider": "^0.4.5",
     "@pixiv/three-vrm": "^3.0.0",
     "@simplewebauthn/browser": "^13.2.2",
     "@simplewebauthn/server": "^13.2.2",
