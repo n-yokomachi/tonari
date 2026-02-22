@@ -231,6 +231,17 @@ export class TonariStack extends cdk.Stack {
 
       const tweetTarget = new targets.LambdaInvoke(tweetTriggerLambda)
 
+      // EventBridge Schedule: 09:00 JST
+      new scheduler.Schedule(this, 'TweetScheduleMorning', {
+        scheduleName: 'tonari-tweet-morning',
+        schedule: scheduler.ScheduleExpression.cron({
+          minute: '0',
+          hour: '9',
+          timeZone: cdk.TimeZone.ASIA_TOKYO,
+        }),
+        target: tweetTarget,
+      })
+
       // EventBridge Schedule: 12:00 JST
       new scheduler.Schedule(this, 'TweetScheduleNoon', {
         scheduleName: 'tonari-tweet-noon',
