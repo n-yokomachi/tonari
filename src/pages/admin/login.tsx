@@ -7,7 +7,7 @@ import {
   browserSupportsWebAuthn,
 } from '@simplewebauthn/browser'
 
-const CREDENTIAL_STORAGE_KEY = 'scensei-admin-webauthn-credential'
+const CREDENTIAL_STORAGE_KEY = 'tonari-admin-webauthn-credential'
 
 type StoredCredential = {
   id: string
@@ -173,7 +173,7 @@ export default function AdminLogin() {
     return (
       <>
         <Head>
-          <title>Touch ID - Scensei</title>
+          <title>Touch ID - TONaRi</title>
         </Head>
         <div className="min-h-screen bg-base-light flex flex-col items-center justify-center px-4">
           <button
@@ -213,7 +213,7 @@ export default function AdminLogin() {
   return (
     <>
       <Head>
-        <title>Admin - Scensei</title>
+        <title>Admin - TONaRi</title>
       </Head>
       <div className="min-h-screen bg-base-light flex flex-col items-center justify-center px-4">
         {/* メインエリア */}

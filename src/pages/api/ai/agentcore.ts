@@ -10,7 +10,7 @@ export const config = {
 }
 
 // セッションIDを生成（33文字以上必要）
-const generateSessionId = () => `scensei-${randomUUID()}-${Date.now()}`
+const generateSessionId = () => `tonari-${randomUUID()}-${Date.now()}`
 
 // SSEのdata値からテキストを抽出（JSON文字列またはプレーンテキスト）
 function parseJsonString(value: string): string {

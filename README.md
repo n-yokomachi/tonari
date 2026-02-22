@@ -1,4 +1,4 @@
-# Scensei
+# Tonari
 
-Scensei（Scent + Sensei, センセイ）は、香水ソムリエAIキャラクターです。
+Tonari（トナリ）は、パーソナルAIアシスタントです。香水ソムリエとしての専門知識も備えています。
 AITuberKitをベースに制作中です。

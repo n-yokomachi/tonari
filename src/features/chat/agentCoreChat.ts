@@ -3,7 +3,7 @@
  * リロードしても同一セッションとして扱われる
  */
 const getSessionId = (): string => {
-  const key = 'scensei_session_id'
+  const key = 'tonari_session_id'
   let sessionId = localStorage.getItem(key)
   if (!sessionId) {
     sessionId = `session-${crypto.randomUUID()}`
@@ -13,18 +13,20 @@ const getSessionId = (): string => {
 }
 
 /**
- * アクターIDを取得（localStorage: ブラウザ単位で永続化）
- * LTM（長期記憶）でユーザーを識別するためのID
- * セッションを跨いでも同一ユーザーとして記憶される
+ * オーナー固定のアクターIDを返却
+ * Tonariはオーナー1人の専属エージェントのため、全端末・全セッションで同一のIDを使用
  */
 const getActorId = (): string => {
-  const key = 'scensei_actor_id'
-  let actorId = localStorage.getItem(key)
-  if (!actorId) {
-    actorId = `user-${crypto.randomUUID()}`
-    localStorage.setItem(key, actorId)
-  }
-  return actorId
+  return 'tonari-owner'
+}
+
+/**
+ * セッションIDをリセットして新しいセッションを開始する
+ */
+export function resetSessionId(): void {
+  const key = 'tonari_session_id'
+  const newSessionId = `session-${crypto.randomUUID()}`
+  localStorage.setItem(key, newSessionId)
 }
 
 /**

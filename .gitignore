@@ -29,6 +29,10 @@ yarn-error.log*
 .env
 .env*.local
 
+# secrets
+x_secrets.txt
+*_secrets.txt
+
 # vercel
 .vercel
 
@@ -56,9 +60,9 @@ public/scripts/*
 
 # VRM files
 /public/vrm/*
-!/public/vrm/Scensei.vrm
-!/public/vrm/scensei_f.vrm
-!/public/vrm/scensei_m.vrm
+!/public/vrm/Tonari_normal.vrm
+!/public/vrm/Tonari_glasses.vrm
+!/public/vrm/tonari.vroid
 
 # Background files
 /public/backgrounds/*

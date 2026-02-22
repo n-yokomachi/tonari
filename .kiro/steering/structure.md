@@ -34,7 +34,7 @@
 agentcore/
 ├── app.py              # AgentCore Runtime エントリポイント
 ├── src/agent/          # エージェント実装
-│   ├── scensei_agent.py
+│   ├── tonari_agent.py
 │   └── prompts.py
 └── pyproject.toml      # Python依存関係
 ```
@@ -43,7 +43,7 @@ agentcore/
 
 ```
 infra/
-├── lib/scensei-stack.ts  # CDKスタック定義
+├── lib/tonari-stack.ts  # CDKスタック定義
 ├── lambda/               # Lambda関数コード
 └── bin/infra.ts          # CDKアプリエントリ
 ```
@@ -61,7 +61,7 @@ infra/
 - **React Components**: PascalCase (`MessageInput.tsx`)
 - **Utility Files**: camelCase (`buildUrl.ts`)
 - **API Routes**: kebab-case (`save-chat-log.ts`)
-- **Python**: snake_case (`scensei_agent.py`)
+- **Python**: snake_case (`tonari_agent.py`)
 
 ## Import Organization
 

@@ -7,6 +7,7 @@ import Link from 'next/link'
 import homeStore from '@/features/stores/home'
 import menuStore from '@/features/stores/menu'
 import settingsStore from '@/features/stores/settings'
+import { resetSessionId } from '@/features/chat/agentCoreChat'
 import { ChatLog } from './chatLog'
 import { IconButton } from './iconButton'
 import Settings from './settings'
@@ -64,6 +65,11 @@ export const Menu = () => {
   const handleTouchCancel = () => {
     setTouchStartTime(null)
   }
+
+  const handleNewSession = useCallback(() => {
+    resetSessionId()
+    homeStore.setState({ chatLog: [] })
+  }, [])
 
   const handleSwitchVrmModel = useCallback(() => {
     const currentPath = settingsStore.getState().selectedVrmPath
@@ -132,7 +138,7 @@ export const Menu = () => {
             <div className="flex items-center gap-3">
               <Image
                 src="/logo.png"
-                alt="Scensei"
+                alt="TONaRi"
                 width={120}
                 height={40}
                 priority
@@ -140,6 +146,12 @@ export const Menu = () => {
               <div className="flex gap-[8px]">
                 {showControlPanel && (
                   <>
+                    <IconButton
+                      iconName="24/Refresh"
+                      isProcessing={false}
+                      onClick={handleNewSession}
+                      aria-label="新しいセッション"
+                    />
                     <IconButton
                       iconName="24/Swap"
                       isProcessing={false}

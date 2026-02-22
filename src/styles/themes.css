@@ -51,7 +51,7 @@ div {
   color: inherit;
 }
 
-/* Scensei テーマ（香水ソムリエ） - デフォルト */
+/* Tonari テーマ - デフォルト */
 :root {
   --color-primary: #9d7e4a;
   --color-primary-hover: #c9a96e;
@@ -67,12 +67,12 @@ div {
   --color-base-light: #fbf7f2;
   --color-base-dark: #1a1a1a;
 
-  /* Scensei専用の追加変数 */
-  --scensei-primary: #9d7e4a;
-  --scensei-primary-light: #c9a96e;
-  --scensei-secondary: #5c4b7d;
-  --scensei-background: #1a1a1a;
-  --scensei-surface: #2d2d2d;
-  --scensei-text: #f5f0e8;
-  --scensei-accent: #e8c4a0;
+  /* Tonari専用の追加変数 */
+  --tonari-primary: #9d7e4a;
+  --tonari-primary-light: #c9a96e;
+  --tonari-secondary: #5c4b7d;
+  --tonari-background: #1a1a1a;
+  --tonari-surface: #2d2d2d;
+  --tonari-text: #f5f0e8;
+  --tonari-accent: #e8c4a0;
 }

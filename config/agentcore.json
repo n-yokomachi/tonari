@@ -1,8 +1,8 @@
 {
   "region": "ap-northeast-1",
-  "runtimeArn": "arn:aws:bedrock-agentcore:ap-northeast-1:765653276628:runtime/scensei-xajQ0R77kv",
+  "runtimeArn": "arn:aws:bedrock-agentcore:ap-northeast-1:765653276628:runtime/tonari-Vn6wcIC19Q",
   "cognito": {
-    "tokenEndpoint": "https://scensei-m2m-identity.auth.ap-northeast-1.amazoncognito.com/oauth2/token",
+    "tokenEndpoint": "https://tonari-m2m-identity.auth.ap-northeast-1.amazoncognito.com/oauth2/token",
     "clientId": "1qemnml5e11reu81d0jap2ele3",
     "scope": "agentcore-m2m-03ce8ee4/read agentcore-m2m-03ce8ee4/write"
   }

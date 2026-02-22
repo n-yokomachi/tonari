@@ -147,7 +147,7 @@ Scensei（センセイ）は、香水ソムリエAIキャラクターを実装�
 | Lambda | scensei-perfume-crud | CRUD API |
 | Lambda | scensei-api-authorizer | M2M認証 |
 | API Gateway | scensei-perfume-api | REST API |
-| Cognito | scensei-m2m-identity | M2M認証 |
+| Cognito | tonari-m2m-identity | M2M認証 |
 | Bedrock AgentCore | scensei-xajQ0R77kv | AIエージェントランタイム |
 | AgentCore Memory | scensei_mem-INEd7K94yX | 会話メモリ |
 | AgentCore Gateway | scenseigateway-zxdprxgrqx | MCPゲートウェイ |
@@ -278,7 +278,7 @@ https://scenseigateway-zxdprxgrqx.gateway.bedrock-agentcore.ap-northeast-1.amazo
 |-----|-----|
 | Grant Type | Client Credentials |
 | User Pool | ap-northeast-1_9YLOHAYn6 |
-| Token Endpoint | https://scensei-m2m-identity.auth.ap-northeast-1.amazoncognito.com/oauth2/token |
+| Token Endpoint | https://tonari-m2m-identity.auth.ap-northeast-1.amazoncognito.com/oauth2/token |
 | Scope | agentcore-m2m-03ce8ee4/read, write |
 
 ---
@@ -424,7 +424,7 @@ AgentCore Runtime設定
 |-----|-----|
 | region | ap-northeast-1 |
 | runtimeArn | arn:aws:bedrock-agentcore:ap-northeast-1:765653276628:runtime/scensei-xajQ0R77kv |
-| cognito.tokenEndpoint | https://scensei-m2m-identity.auth.ap-northeast-1.amazoncognito.com/oauth2/token |
+| cognito.tokenEndpoint | https://tonari-m2m-identity.auth.ap-northeast-1.amazoncognito.com/oauth2/token |
 | cognito.clientId | 1qemnml5e11reu81d0jap2ele3 |
 | cognito.scope | agentcore-m2m-03ce8ee4/read write |
 

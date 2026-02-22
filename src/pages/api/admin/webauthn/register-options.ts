@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { generateRegistrationOptions } from '@simplewebauthn/server'
 
-const rpName = 'Scensei Admin'
+const rpName = 'TONaRi Admin'
 const rpID = process.env.WEBAUTHN_RP_ID || 'localhost'
 
 export default async function handler(

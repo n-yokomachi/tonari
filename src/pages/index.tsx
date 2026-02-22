@@ -16,7 +16,7 @@ import { buildUrl } from '@/utils/buildUrl'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { MobileHeader } from '@/components/mobileHeader'
 
-const CHAT_WIDTH_KEY = 'scensei-chat-width'
+const CHAT_WIDTH_KEY = 'tonari-chat-width'
 const DEFAULT_CHAT_WIDTH = 500
 const MIN_CHAT_WIDTH = 300
 const MAX_CHAT_WIDTH = 900

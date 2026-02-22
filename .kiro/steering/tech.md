@@ -2,7 +2,7 @@
 
 ## Architecture
 
-フロントエンド（Next.js on Vercel）とバックエンド（AWS Bedrock AgentCore）の分離アーキテクチャ。フロントエンドはAITuber-kitをベースに香水ソムリエ向けにカスタマイズ。
+フロントエンド（Next.js on Vercel）とバックエンド（AWS Bedrock AgentCore）の分離アーキテクチャ。フロントエンドはAITuber-kitをベースにパーソナルAIアシスタント向けにカスタマイズ。
 
 ```
 ┌─────────────────────────────┐
@@ -88,7 +88,7 @@ cd agentcore && uv run agentcore deploy
 - Memory/Gateway/Identityを活用
 
 ### 機能削除方針
-- Scenseiに不要な機能は積極的に削除
+- Tonariに不要な機能は積極的に削除
 - 削除済み: カラーテーマ切替、音声入出力、TTS関連、Vercel AI SDK直接呼び出し
 
 ---
