@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { MessageInput } from '@/components/messageInput'
+import homeStore from '@/features/stores/home'
 
 type Props = {
   onChatProcessStart: (text: string) => void
@@ -15,7 +16,8 @@ export const MessageInputContainer = ({ onChatProcessStart }: Props) => {
   }
 
   const handleSendMessage = () => {
-    if (userMessage.trim()) {
+    const hasImage = !!homeStore.getState().modalImage
+    if (userMessage.trim() || hasImage) {
       onChatProcessStart(userMessage)
       setUserMessage('')
     }

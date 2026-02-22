@@ -5,51 +5,36 @@ import { TextButton } from '../../textButton'
 import {
   getModels,
   googleSearchGroundingModels,
-  isMultiModalModel,
 } from '@/features/constants/aiModels'
-import { AIService } from '@/features/constants/settings'
 
 interface GoogleConfigProps {
   googleKey: string
   selectAIModel: string
   customModel: boolean
-  enableMultiModal: boolean
   useSearchGrounding: boolean
   dynamicRetrievalThreshold: number
-  updateMultiModalModeForModel: (service: AIService, model: string) => void
 }
 
 export const GoogleConfig = ({
   googleKey,
   selectAIModel,
   customModel,
-  enableMultiModal,
   useSearchGrounding,
   dynamicRetrievalThreshold,
-  updateMultiModalModeForModel,
 }: GoogleConfigProps) => {
   const { t } = useTranslation()
 
-  const handleModelChange = useCallback(
-    (model: string) => {
-      settingsStore.setState({ selectAIModel: model })
+  const handleModelChange = useCallback((model: string) => {
+    settingsStore.setState({ selectAIModel: model })
 
-      if (!googleSearchGroundingModels.includes(model as any)) {
-        settingsStore.setState({ useSearchGrounding: false })
-      }
-
-      updateMultiModalModeForModel('google' as AIService, model)
-    },
-    [updateMultiModalModeForModel]
-  )
+    if (!googleSearchGroundingModels.includes(model as any)) {
+      settingsStore.setState({ useSearchGrounding: false })
+    }
+  }, [])
 
   const handleCustomModelToggle = useCallback(() => {
     settingsStore.setState({ customModel: !customModel })
   }, [customModel])
-
-  const handleMultiModalToggle = useCallback(() => {
-    settingsStore.setState({ enableMultiModal: !enableMultiModal })
-  }, [enableMultiModal])
 
   return (
     <>
@@ -106,13 +91,10 @@ export const GoogleConfig = ({
               onChange={(e) => handleModelChange(e.target.value)}
             >
               {getModels('google').map((model) => {
-                const isMultiModal = isMultiModalModel('google', model)
                 const isSearchEnabled = googleSearchGroundingModels.includes(
                   model as any
                 )
-                let icons = ''
-                if (isMultiModal) icons += '📷'
-                if (isSearchEnabled) icons += '🔍'
+                const icons = isSearchEnabled ? '🔍' : ''
                 return (
                   <option key={model} value={model}>
                     {model} {icons}
@@ -122,22 +104,6 @@ export const GoogleConfig = ({
             </select>
           )}
         </div>
-
-        {customModel && (
-          <div className="my-6">
-            <div className="my-4 text-xl font-bold">
-              {t('EnableMultiModal')}
-            </div>
-            <div className="my-2">
-              <TextButton onClick={handleMultiModalToggle}>
-                {enableMultiModal ? t('StatusOn') : t('StatusOff')}
-              </TextButton>
-            </div>
-            <div className="my-2 text-sm">
-              {t('EnableMultiModalDescription')}
-            </div>
-          </div>
-        )}
       </div>
 
       <div className="my-6">

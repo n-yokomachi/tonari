@@ -8,7 +8,7 @@ export interface AIServiceConfig {
   linkUrl?: string
   linkLabel?: string
   description?: string
-  showMultiModalToggle?: boolean
+
   customModelValidation?: boolean
 }
 
@@ -40,7 +40,6 @@ export const getServiceConfigByKey = (
     keyPlaceholder: 'sk-...',
     linkUrl: 'https://platform.openai.com/account/api-keys',
     linkLabel: 'OpenAI',
-    showMultiModalToggle: true,
   },
   anthropic: {
     value: 'anthropic',
@@ -49,7 +48,6 @@ export const getServiceConfigByKey = (
     keyPlaceholder: 'sk-...',
     linkUrl: 'https://console.anthropic.com',
     linkLabel: 'Anthropic',
-    showMultiModalToggle: true,
   },
   google: {
     value: 'google',
@@ -57,7 +55,6 @@ export const getServiceConfigByKey = (
     keyLabel: t('GoogleAPIKeyLabel'),
     linkUrl: 'https://aistudio.google.com/app/apikey?hl=ja',
     linkLabel: 'Google AI Studio',
-    showMultiModalToggle: true,
   },
   azure: {
     value: 'azure',
@@ -73,7 +70,6 @@ export const getServiceConfigByKey = (
     keyLabel: t('XAIAPIKeyLabel'),
     linkUrl: 'https://x.ai/api',
     linkLabel: 'xAI Dashboard',
-    showMultiModalToggle: true,
   },
   groq: {
     value: 'groq',
@@ -82,7 +78,6 @@ export const getServiceConfigByKey = (
     keyPlaceholder: 'xai-...',
     linkUrl: 'https://console.groq.com/keys',
     linkLabel: 'Groq Dashboard',
-    showMultiModalToggle: true,
   },
   cohere: {
     value: 'cohere',
@@ -90,7 +85,6 @@ export const getServiceConfigByKey = (
     keyLabel: t('CohereAPIKeyLabel'),
     linkUrl: 'https://dashboard.cohere.com/api-keys',
     linkLabel: 'Cohere Dashboard',
-    showMultiModalToggle: true,
   },
   mistralai: {
     value: 'mistralai',
@@ -98,7 +92,6 @@ export const getServiceConfigByKey = (
     keyLabel: t('MistralAIAPIKeyLabel'),
     linkUrl: 'https://console.mistral.ai/api-keys/',
     linkLabel: 'Mistral AI Dashboard',
-    showMultiModalToggle: true,
   },
   perplexity: {
     value: 'perplexity',
@@ -106,7 +99,6 @@ export const getServiceConfigByKey = (
     keyLabel: t('PerplexityAPIKeyLabel'),
     linkUrl: 'https://www.perplexity.ai/settings/api',
     linkLabel: 'Perplexity Dashboard',
-    showMultiModalToggle: true,
   },
   fireworks: {
     value: 'fireworks',
@@ -114,7 +106,6 @@ export const getServiceConfigByKey = (
     keyLabel: t('FireworksAPIKeyLabel'),
     linkUrl: 'https://fireworks.ai/account/api-keys',
     linkLabel: 'Fireworks Dashboard',
-    showMultiModalToggle: true,
   },
   deepseek: {
     value: 'deepseek',
@@ -123,7 +114,6 @@ export const getServiceConfigByKey = (
     keyPlaceholder: 'sk-...',
     linkUrl: 'https://platform.deepseek.com/api_keys',
     linkLabel: 'DeepSeek',
-    showMultiModalToggle: true,
   },
   openrouter: {
     value: 'openrouter',
@@ -132,24 +122,23 @@ export const getServiceConfigByKey = (
     keyPlaceholder: 'sk-...',
     linkUrl: 'https://openrouter.ai/keys',
     linkLabel: t('OpenRouterDashboardLink', 'OpenRouter Dashboard'),
-    showMultiModalToggle: true,
+
     customModelValidation: false,
   },
   lmstudio: {
     value: 'lmstudio',
     label: 'LM Studio',
-    showMultiModalToggle: true,
+
     customModelValidation: false,
   },
   ollama: {
     value: 'ollama',
     label: 'Ollama',
-    showMultiModalToggle: true,
+
     customModelValidation: false,
   },
   'custom-api': {
     value: 'custom-api',
     label: 'Custom API',
-    showMultiModalToggle: true,
   },
 })

@@ -138,16 +138,6 @@ export const defaultModels: Record<AIService, string> = Object.fromEntries(
 ) as Record<AIService, string>
 
 /**
- * マルチモーダル対応モデル一覧
- */
-export const multiModalModels: Record<AIService, string[]> = Object.fromEntries(
-  Object.entries(modelDefinitions).map(([service, models]) => [
-    service,
-    models.filter((model) => model.multiModal).map((model) => model.name),
-  ])
-) as Record<AIService, string[]>
-
-/**
  * AIサービス名からデフォルトモデルを取得する
  * @param service AIサービス名
  * @returns デフォルトモデル
@@ -163,88 +153,6 @@ export function getDefaultModel(service: AIService): string {
  */
 export function getModels(service: AIService): string[] {
   return aiModels[service] || []
-}
-
-/**
- * AIサービス名からマルチモーダル対応モデル一覧を取得する
- * @param service AIサービス名
- * @returns マルチモーダル対応モデル一覧
- */
-export function getMultiModalModels(service: AIService): string[] {
-  return multiModalModels[service] || []
-}
-
-/**
- * モデルがマルチモーダル対応かどうかを判定する
- * @param service AIサービス名
- * @param model モデル名
- * @returns マルチモーダル対応の場合はtrue
- */
-export function isMultiModalModel(service: AIService, model: string): boolean {
-  return multiModalModels[service]?.includes(model) || false
-}
-
-/**
- * トグルボタンの状態を考慮してマルチモーダル機能が利用可能かどうかを判定する
- * @param service AIサービス名
- * @param model モデル名
- * @param enableMultiModal マルチモーダルトグルの状態
- * @param customModel カスタムモデルかどうか
- * @returns マルチモーダル機能が利用可能な場合はtrue
- */
-export function isMultiModalModelWithToggle(
-  service: AIService,
-  model: string,
-  enableMultiModal: boolean,
-  customModel?: boolean
-): boolean {
-  // 一部のサービスではモデル単位での判定ができないため、トグルボタンの状態のみで判定
-  if (
-    ['azure', 'openrouter', 'lmstudio', 'ollama', 'custom-api'].includes(
-      service
-    )
-  ) {
-    return enableMultiModal
-  }
-
-  // カスタムモデルの場合は、トグルボタンの状態で判定
-  if (customModel) {
-    return enableMultiModal
-  }
-
-  // その他のサービスは従来通りモデル定義に基づく判定
-  return isMultiModalModel(service, model)
-}
-
-/**
- * マルチモーダル機能が実際に使用可能かどうかを包括的に判定する
- * モデル対応状況、設定、利用モードの全てを考慮する
- * @param service AIサービス名
- * @param model モデル名
- * @param enableMultiModal マルチモーダルトグルの状態
- * @param multiModalMode マルチモーダル利用モード
- * @param customModel カスタムモデルかどうか
- * @returns マルチモーダル機能が使用可能な場合はtrue
- */
-export function isMultiModalAvailable(
-  service: AIService,
-  model: string,
-  enableMultiModal: boolean,
-  multiModalMode: 'ai-decide' | 'always' | 'never',
-  customModel?: boolean
-): boolean {
-  // 利用モードが'never'の場合は常にfalse
-  if (multiModalMode === 'never') {
-    return false
-  }
-
-  // モデル・設定による基本的な判定
-  return isMultiModalModelWithToggle(
-    service,
-    model,
-    enableMultiModal,
-    customModel
-  )
 }
 
 export const googleSearchGroundingModels = [

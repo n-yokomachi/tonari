@@ -1,7 +1,7 @@
 export { ServiceLogo } from './ServiceLogo'
 export { ApiKeyInput } from './ApiKeyInput'
 export { ModelSelector } from './ModelSelector'
-export { MultiModalToggle } from './MultiModalToggle'
+
 export { GenericAIServiceConfig } from './GenericAIServiceConfig'
 export { GoogleConfig } from './GoogleConfig'
 export { useModelProviderState } from './hooks/useModelProviderState'

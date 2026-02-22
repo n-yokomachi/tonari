@@ -66,10 +66,10 @@ export default async function handler(
   }
 
   try {
-    const { message, sessionId, actorId } = req.body
+    const { message, sessionId, actorId, imageBase64, imageFormat } = req.body
 
-    if (!message) {
-      return res.status(400).json({ error: 'Message is required' })
+    if (!message && !imageBase64) {
+      return res.status(400).json({ error: 'Message or image is required' })
     }
 
     // Cognito からアクセストークンを取得
@@ -93,9 +93,13 @@ export default async function handler(
         Accept: 'text/event-stream',
       },
       body: JSON.stringify({
-        prompt: message,
+        prompt: message || '',
         session_id: sessionId, // AgentCore Memory STM用（セッション単位）
         actor_id: actorId, // AgentCore Memory LTM用（ユーザー単位）
+        ...(imageBase64 && {
+          image_base64: imageBase64,
+          image_format: imageFormat || 'jpeg',
+        }),
       }),
     })
 
