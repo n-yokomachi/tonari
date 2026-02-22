@@ -17,7 +17,6 @@ export interface TonariStackProps extends cdk.StackProps {
   // Tweet scheduler config (optional)
   tweetScheduler?: {
     ownerTwitterUserId: string
-    ssmTwitterPrefix: string
     agentcoreRuntimeArn: string
     cognitoTokenEndpoint: string
     cognitoScope: string
@@ -51,7 +50,7 @@ export class TonariStack extends cdk.Stack {
       runtime: lambda.Runtime.PYTHON_3_12,
       handler: 'handler',
       timeout: cdk.Duration.seconds(30),
-      memorySize: 256,
+      memorySize: 128,
       environment: {
         TABLE_NAME: this.perfumeTable.tableName,
       },
@@ -67,7 +66,7 @@ export class TonariStack extends cdk.Stack {
       runtime: lambda.Runtime.PYTHON_3_12,
       handler: 'handler',
       timeout: cdk.Duration.seconds(30),
-      memorySize: 256,
+      memorySize: 128,
       environment: {
         TABLE_NAME: this.perfumeTable.tableName,
       },
@@ -147,23 +146,70 @@ export class TonariStack extends cdk.Stack {
     // DELETE /perfumes/{brand}/{name} - Delete
     perfumeByName.addMethod('DELETE', lambdaIntegration, authorizedMethodOptions)
 
-    // ========== Tweet Scheduler ==========
+    // ========== Twitter Gateway Tools ==========
     if (props.tweetScheduler) {
       const ts = props.tweetScheduler
 
-      const tweetSchedulerLambda = new python.PythonFunction(
+      // Twitter Read Lambda (AgentCore Gateway Target)
+      const twitterReadLambda = new python.PythonFunction(
         this,
-        'TweetSchedulerLambda',
+        'TwitterReadLambda',
         {
-          functionName: 'tonari-tweet-scheduler',
-          entry: path.join(__dirname, '../lambda/tweet-scheduler'),
+          functionName: 'tonari-twitter-read',
+          entry: path.join(__dirname, '../lambda/twitter-read'),
+          runtime: lambda.Runtime.PYTHON_3_12,
+          handler: 'handler',
+          timeout: cdk.Duration.seconds(30),
+          memorySize: 128,
+        }
+      )
+
+      twitterReadLambda.addToRolePolicy(
+        new iam.PolicyStatement({
+          actions: ['ssm:GetParameter'],
+          resources: [
+            `arn:aws:ssm:ap-northeast-1:${this.account}:parameter/tonari/twitter/bearer_token`,
+          ],
+        })
+      )
+
+      // Twitter Write Lambda (AgentCore Gateway Target)
+      const twitterWriteLambda = new python.PythonFunction(
+        this,
+        'TwitterWriteLambda',
+        {
+          functionName: 'tonari-twitter-write',
+          entry: path.join(__dirname, '../lambda/twitter-write'),
+          runtime: lambda.Runtime.PYTHON_3_12,
+          handler: 'handler',
+          timeout: cdk.Duration.seconds(30),
+          memorySize: 128,
+        }
+      )
+
+      twitterWriteLambda.addToRolePolicy(
+        new iam.PolicyStatement({
+          actions: ['ssm:GetParametersByPath'],
+          resources: [
+            `arn:aws:ssm:ap-northeast-1:${this.account}:parameter/tonari/twitter`,
+            `arn:aws:ssm:ap-northeast-1:${this.account}:parameter/tonari/twitter/*`,
+          ],
+        })
+      )
+
+      // Tweet Trigger Lambda (replaces tweet-scheduler)
+      const tweetTriggerLambda = new python.PythonFunction(
+        this,
+        'TweetTriggerLambda',
+        {
+          functionName: 'tonari-tweet-trigger',
+          entry: path.join(__dirname, '../lambda/tweet-trigger'),
           runtime: lambda.Runtime.PYTHON_3_12,
           handler: 'handler',
           timeout: cdk.Duration.minutes(5),
-          memorySize: 256,
+          memorySize: 128,
           environment: {
             OWNER_TWITTER_USER_ID: ts.ownerTwitterUserId,
-            SSM_TWITTER_PREFIX: ts.ssmTwitterPrefix,
             AGENTCORE_REGION: 'ap-northeast-1',
             AGENTCORE_RUNTIME_ARN: ts.agentcoreRuntimeArn,
             COGNITO_TOKEN_ENDPOINT: ts.cognitoTokenEndpoint,
@@ -174,19 +220,16 @@ export class TonariStack extends cdk.Stack {
         }
       )
 
-      // SSM Parameter Store read permission (including SecureString decryption)
-      tweetSchedulerLambda.addToRolePolicy(
+      tweetTriggerLambda.addToRolePolicy(
         new iam.PolicyStatement({
-          actions: ['ssm:GetParameter', 'ssm:GetParametersByPath'],
+          actions: ['ssm:GetParameter'],
           resources: [
-            `arn:aws:ssm:ap-northeast-1:${this.account}:parameter${ts.ssmTwitterPrefix}`,
-            `arn:aws:ssm:ap-northeast-1:${this.account}:parameter${ts.ssmTwitterPrefix}/*`,
             `arn:aws:ssm:ap-northeast-1:${this.account}:parameter${ts.ssmCognitoClientSecret}`,
           ],
         })
       )
 
-      const tweetTarget = new targets.LambdaInvoke(tweetSchedulerLambda)
+      const tweetTarget = new targets.LambdaInvoke(tweetTriggerLambda)
 
       // EventBridge Schedule: 12:00 JST
       new scheduler.Schedule(this, 'TweetScheduleNoon', {
@@ -208,6 +251,17 @@ export class TonariStack extends cdk.Stack {
           timeZone: cdk.TimeZone.ASIA_TOKYO,
         }),
         target: tweetTarget,
+      })
+
+      // Outputs for Gateway target registration
+      new cdk.CfnOutput(this, 'TwitterReadLambdaArn', {
+        value: twitterReadLambda.functionArn,
+        description: 'Lambda ARN for Twitter Read Gateway Target',
+      })
+
+      new cdk.CfnOutput(this, 'TwitterWriteLambdaArn', {
+        value: twitterWriteLambda.functionArn,
+        description: 'Lambda ARN for Twitter Write Gateway Target',
       })
     }
 
