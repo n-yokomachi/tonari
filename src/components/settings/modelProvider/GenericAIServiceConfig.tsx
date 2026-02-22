@@ -9,15 +9,12 @@ interface GenericAIServiceConfigProps {
   apiKey: string
   selectAIModel: string
   customModel: boolean
-  enableMultiModal: boolean
-  updateMultiModalModeForModel: (service: AIService, model: string) => void
   config: {
     keyLabel?: string
     keyPlaceholder?: string
     linkUrl?: string
     linkLabel?: string
     description?: string
-    showMultiModalToggle?: boolean
     customModelValidation?: boolean
   }
 }
@@ -27,25 +24,15 @@ export const GenericAIServiceConfig = ({
   apiKey,
   selectAIModel,
   customModel,
-  enableMultiModal,
-  updateMultiModalModeForModel,
   config,
 }: GenericAIServiceConfigProps) => {
-  const handleModelChange = useCallback(
-    (model: string) => {
-      settingsStore.setState({ selectAIModel: model })
-      updateMultiModalModeForModel(service, model)
-    },
-    [service, updateMultiModalModeForModel]
-  )
+  const handleModelChange = useCallback((model: string) => {
+    settingsStore.setState({ selectAIModel: model })
+  }, [])
 
   const handleCustomModelToggle = useCallback(() => {
     settingsStore.setState({ customModel: !customModel })
   }, [customModel])
-
-  const handleMultiModalToggle = useCallback(() => {
-    settingsStore.setState({ enableMultiModal: !enableMultiModal })
-  }, [enableMultiModal])
 
   const handleApiKeyChange = useCallback(
     (value: string) => {
@@ -89,11 +76,8 @@ export const GenericAIServiceConfig = ({
         aiService={service}
         selectedModel={selectAIModel}
         customModel={customModel}
-        enableMultiModal={enableMultiModal}
         onModelChange={handleModelChange}
         onCustomModelToggle={handleCustomModelToggle}
-        onMultiModalToggle={handleMultiModalToggle}
-        showMultiModalToggle={config.showMultiModalToggle}
         customModelValidation={config.customModelValidation}
       />
     </>

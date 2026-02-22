@@ -46,7 +46,6 @@ export interface AppConfig {
   multiModal: {
     enabled: boolean
     mode: string
-    imageDisplayPosition: string
   }
 }
 
@@ -217,10 +216,6 @@ export const getAppConfig = (): AppConfig => ({
     mode: getEnvOrConfig(
       process.env.NEXT_PUBLIC_MULTIMODAL_MODE,
       appConfig.multiModal.mode
-    ),
-    imageDisplayPosition: getEnvOrConfig(
-      process.env.NEXT_PUBLIC_IMAGE_DISPLAY_POSITION,
-      appConfig.multiModal.imageDisplayPosition
     ),
   },
 })

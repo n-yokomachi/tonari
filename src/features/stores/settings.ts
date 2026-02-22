@@ -81,12 +81,9 @@ interface General {
   maxTokens: number
   showPresetQuestions: boolean
   chatLogWidth: number
-  imageDisplayPosition: 'input' | 'side' | 'icon'
-  multiModalMode: 'ai-decide' | 'always' | 'never'
-  multiModalAiDecisionPrompt: string
-  enableMultiModal: boolean
   colorTheme: 'tonari'
   customModel: boolean
+  enableAutoCapture: boolean
 }
 
 export type SettingsState = APIKeys & ModelProvider & Character & General
@@ -168,17 +165,9 @@ const getInitialValuesFromEnv = (): SettingsState => {
     maxTokens: config.ai.maxTokens,
     showPresetQuestions: config.general.showPresetQuestions,
     chatLogWidth: config.general.chatLogWidth,
-    imageDisplayPosition: config.multiModal.imageDisplayPosition as
-      | 'input'
-      | 'side'
-      | 'icon',
-    multiModalMode: config.multiModal.mode as 'ai-decide' | 'always' | 'never',
-    multiModalAiDecisionPrompt:
-      process.env.NEXT_PUBLIC_MULTIMODAL_AI_DECISION_PROMPT ||
-      'あなたは画像がユーザーの質問や会話の文脈に関連するかどうかを判断するアシスタントです。直近の会話履歴とユーザーメッセージを考慮して、「はい」または「いいえ」のみで答えてください。',
-    enableMultiModal: config.multiModal.enabled,
     colorTheme: 'tonari' as const,
     customModel: config.ai.customModel,
+    enableAutoCapture: true,
   }
 }
 
@@ -203,10 +192,14 @@ const settingsStore = create<SettingsState>()(
         Object.assign(state, envValues)
       }
 
-      // Refresh character name if it's old default
+      // Refresh character name if it's an old or default value
       if (state) {
         const envValues = getInitialValuesFromEnv()
-        if (state.characterName === 'CHARACTER' || !state.characterName) {
+        if (
+          state.characterName === 'CHARACTER' ||
+          state.characterName === 'Scensei' ||
+          !state.characterName
+        ) {
           state.characterName = envValues.characterName
         }
       }
@@ -269,12 +262,9 @@ const settingsStore = create<SettingsState>()(
       includeSystemMessagesInCustomApi: state.includeSystemMessagesInCustomApi,
       customApiIncludeMimeType: state.customApiIncludeMimeType,
       chatLogWidth: state.chatLogWidth,
-      imageDisplayPosition: state.imageDisplayPosition,
-      multiModalMode: state.multiModalMode,
-      multiModalAiDecisionPrompt: state.multiModalAiDecisionPrompt,
-      enableMultiModal: state.enableMultiModal,
       colorTheme: state.colorTheme,
       customModel: state.customModel,
+      enableAutoCapture: state.enableAutoCapture,
     }),
   })
 )

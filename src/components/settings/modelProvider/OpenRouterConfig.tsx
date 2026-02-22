@@ -1,25 +1,17 @@
 import { useTranslation } from 'react-i18next'
-import { useCallback } from 'react'
 import settingsStore from '@/features/stores/settings'
 import { ApiKeyInput } from './ApiKeyInput'
-import { MultiModalToggle } from './MultiModalToggle'
 
 interface OpenRouterConfigProps {
   openrouterKey: string
   selectAIModel: string
-  enableMultiModal: boolean
 }
 
 export const OpenRouterConfig = ({
   openrouterKey,
   selectAIModel,
-  enableMultiModal,
 }: OpenRouterConfigProps) => {
   const { t } = useTranslation()
-
-  const handleMultiModalToggle = useCallback(() => {
-    settingsStore.setState({ enableMultiModal: !enableMultiModal })
-  }, [enableMultiModal])
 
   return (
     <>
@@ -42,11 +34,6 @@ export const OpenRouterConfig = ({
           }
         />
       </div>
-
-      <MultiModalToggle
-        enabled={enableMultiModal}
-        onToggle={handleMultiModalToggle}
-      />
     </>
   )
 }

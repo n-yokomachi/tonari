@@ -23,6 +23,7 @@ export interface TransientState {
   modalImage: string
   triggerShutter: boolean
   webcamStatus: boolean
+  cameraOpen: boolean
   isSpeaking: boolean
 }
 
@@ -112,6 +113,7 @@ const homeStore = create<HomeState>()(
       modalImage: '',
       triggerShutter: false,
       webcamStatus: false,
+      cameraOpen: false,
       isSpeaking: false,
     }),
     {

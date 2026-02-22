@@ -225,5 +225,16 @@
   },
   "NoClientIDSet": "クライアントIDが設定されていません",
   "DataManagement": "データ管理",
-  "PerfumeDataManagement": "香水データ管理"
+  "PerfumeDataManagement": "香水データ管理",
+  "OpenCamera": "カメラを開く",
+  "CloseCamera": "カメラを閉じる",
+  "TakePhoto": "撮影",
+  "Retake": "撮り直し",
+  "UsePhoto": "この写真を使う",
+  "CameraDenied": "カメラへのアクセスが許可されていません。ブラウザの設定からカメラの使用を許可してください。",
+  "Close": "閉じる",
+  "AutoCaptureComplete": "自動撮影しました",
+  "AutoCapture": "自動撮影",
+  "AutoCaptureEnabled": "自動撮影ON",
+  "AutoCaptureDisabled": "自動撮影OFF"
 }

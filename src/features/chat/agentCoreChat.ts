@@ -34,9 +34,10 @@ export function resetSessionId(): void {
  * 会話履歴はAgentCore Memoryが管理するため、最新のユーザーメッセージのみ送信
  */
 export async function getAgentCoreChatResponseStream(
-  userMessage: string
+  userMessage: string,
+  imageBase64?: string
 ): Promise<ReadableStream<string> | null> {
-  if (!userMessage) {
+  if (!userMessage && !imageBase64) {
     return null
   }
 
@@ -49,6 +50,10 @@ export async function getAgentCoreChatResponseStream(
       message: userMessage,
       sessionId: getSessionId(),
       actorId: getActorId(),
+      ...(imageBase64 && {
+        imageBase64,
+        imageFormat: 'jpeg',
+      }),
     }),
   })
 

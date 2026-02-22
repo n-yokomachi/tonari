@@ -76,6 +76,8 @@ export const IconButton = ({
         alt={ariaLabel || label || iconName}
         width={24}
         height={24}
+        priority
+        unoptimized
         className={isProcessing ? 'animate-pulse' : ''}
       />
       {label && <div className="mx-2 font-bold">{label}</div>}

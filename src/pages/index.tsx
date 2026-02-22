@@ -3,7 +3,7 @@ import { Form } from '@/components/form'
 import MessageReceiver from '@/components/messageReceiver'
 import { Menu } from '@/components/menu'
 import { Meta } from '@/components/meta'
-import ModalImage from '@/components/modalImage'
+
 import VrmViewer from '@/components/vrmViewer'
 import { Toasts } from '@/components/toasts'
 import { WebSocketManager } from '@/components/websocketManager'
@@ -127,7 +127,6 @@ const Home = () => {
           </div>
         </>
       )}
-      <ModalImage />
       {messageReceiverEnabled && <MessageReceiver />}
       <Toasts />
       <WebSocketManager />

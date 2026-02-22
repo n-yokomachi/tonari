@@ -7,6 +7,7 @@ import webSocketStore from '@/features/stores/websocketStore'
 import i18next from 'i18next'
 import toastStore from '@/features/stores/toast'
 import { generateMessageId } from '@/utils/messageUtils'
+import { isCameraSupported } from '@/components/cameraPreview'
 
 /**
  * ストリーミング完了後に表情をニュートラルに戻す
@@ -47,12 +48,12 @@ const detectAndTriggerGestures = (
 }
 
 /**
- * ジェスチャータグをテキストから除去する
+ * ジェスチャータグとカメラタグをテキストから除去する
  * @param text 入力テキスト
- * @returns ジェスチャータグを除去したテキスト
+ * @returns タグを除去したテキスト
  */
 const removeGestureTags = (text: string): string => {
-  return text.replace(/\[(bow|present)\]/g, '')
+  return text.replace(/\[(bow|present|camera)\]/g, '')
 }
 
 // セッションIDを生成する関数
@@ -314,11 +315,111 @@ export const speakMessageHandler = async (receivedMessage: string) => {
 }
 
 /**
+ * カメラから1フレームをキャプチャしてbase64データURLを返す。
+ * CameraPreview UIを開かず、直接getUserMediaでストリームを取得する。
+ */
+const captureOneFrame = async (): Promise<string | null> => {
+  let stream: MediaStream | null = null
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user' },
+    })
+
+    const video = document.createElement('video')
+    video.srcObject = stream
+    video.playsInline = true
+    video.muted = true
+
+    // メタデータ読み込みを待ってから再生（videoWidth/heightを確定させる）
+    await new Promise<void>((resolve) => {
+      video.onloadedmetadata = () => resolve()
+    })
+    await video.play()
+
+    // フレームが安定するまで少し待つ
+    await new Promise((r) => setTimeout(r, 300))
+
+    const vw = video.videoWidth
+    const vh = video.videoHeight
+    const canvas = document.createElement('canvas')
+    const scale = Math.min(1, 1024 / Math.max(vw, vh))
+    canvas.width = vw * scale
+    canvas.height = vh * scale
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return null
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+
+    return canvas.toDataURL('image/jpeg', 0.85)
+  } catch (e) {
+    console.error('captureOneFrame failed:', e)
+    return null
+  } finally {
+    if (stream) {
+      stream.getTracks().forEach((t) => t.stop())
+    }
+  }
+}
+
+/**
+ * [camera]タグ検出後の自動キャプチャと送信を処理する
+ */
+const handleAutoCaptureAndSend = async () => {
+  const ss = settingsStore.getState()
+  if (!ss.enableAutoCapture) return
+
+  if (!isCameraSupported()) {
+    await processAIResponse(
+      '[system: カメラが利用できない環境です。テキストのみで会話を続けてください。]'
+    )
+    return
+  }
+
+  homeStore.setState({ chatProcessing: true })
+
+  try {
+    const dataUrl = await captureOneFrame()
+
+    if (!dataUrl) {
+      homeStore.setState({ chatProcessing: false })
+      await processAIResponse(
+        '[system: 撮影に失敗しました。テキストのみで会話を続けてください。]'
+      )
+      return
+    }
+
+    const base64 = extractBase64FromDataUrl(dataUrl)
+
+    toastStore.getState().addToast({
+      message: i18next.t('AutoCaptureComplete'),
+      type: 'info',
+      tag: 'auto-capture',
+    })
+
+    homeStore.getState().upsertMessage({
+      role: 'user',
+      content: [
+        { type: 'text', text: '' },
+        { type: 'image', image: dataUrl },
+      ],
+      timestamp: new Date().toISOString(),
+    })
+
+    await processAIResponse('[自動撮影した画像です]', base64)
+  } catch (e) {
+    console.error('Auto-capture failed:', e)
+    homeStore.setState({ chatProcessing: false })
+  }
+}
+
+/**
  * AIからの応答を処理する関数
  * 会話履歴はAgentCore Memoryが管理するため、最新のユーザーメッセージのみ送信
  * @param userMessage ユーザーのメッセージ
  */
-export const processAIResponse = async (userMessage: string) => {
+export const processAIResponse = async (
+  userMessage: string,
+  imageBase64?: string
+) => {
   const sessionId = generateSessionId()
   homeStore.setState({ chatProcessing: true })
   let stream
@@ -326,7 +427,7 @@ export const processAIResponse = async (userMessage: string) => {
   const assistantMessageListRef = { current: [] as string[] }
 
   try {
-    stream = await getAIChatResponseStream(userMessage)
+    stream = await getAIChatResponseStream(userMessage, imageBase64)
   } catch (e) {
     console.error(e)
     toastStore.getState().addToast({
@@ -352,6 +453,7 @@ export const processAIResponse = async (userMessage: string) => {
   let isCodeBlock = false
   let codeBlockContent = ''
   const triggeredGestures = new Set<GestureTag>() // トリガー済みジェスチャーを追跡
+  let cameraTagDetected = false
 
   try {
     while (true) {
@@ -390,6 +492,15 @@ export const processAIResponse = async (userMessage: string) => {
         }
 
         receivedChunksForSpeech += value
+
+        // [camera]タグを検出して除去（発話テキストから除外）
+        if (receivedChunksForSpeech.includes('[camera]')) {
+          cameraTagDetected = true
+          receivedChunksForSpeech = receivedChunksForSpeech.replace(
+            /\[camera\]/g,
+            ''
+          )
+        }
 
         // ジェスチャータグを検出してトリガー
         detectAndTriggerGestures(receivedChunksForSpeech, triggeredGestures)
@@ -643,12 +754,26 @@ export const processAIResponse = async (userMessage: string) => {
       content: codeBlockContent,
     })
   }
+
+  // [camera]タグが検出された場合、自動キャプチャを実行
+  // 画像分析リクエスト（imageBase64あり）からの再帰呼び出しでは実行しない
+  if (cameraTagDetected && !imageBase64) {
+    await handleAutoCaptureAndSend()
+  }
 }
 
 /**
  * アシスタントとの会話を行う
  * 画面のチャット欄から入力されたときに実行される処理
  */
+/**
+ * data URLからbase64データ部分を抽出する
+ */
+const extractBase64FromDataUrl = (dataUrl: string): string => {
+  const commaIndex = dataUrl.indexOf(',')
+  return commaIndex !== -1 ? dataUrl.slice(commaIndex + 1) : dataUrl
+}
+
 export const handleSendChatFn = () => async (text: string) => {
   const newMessage = text
   const timestamp = new Date().toISOString()
@@ -657,6 +782,15 @@ export const handleSendChatFn = () => async (text: string) => {
 
   const ss = settingsStore.getState()
   const wsManager = webSocketStore.getState().wsManager
+
+  // 画像データを取得してクリア
+  const modalImage = homeStore.getState().modalImage
+  const imageBase64 = modalImage
+    ? extractBase64FromDataUrl(modalImage)
+    : undefined
+  if (modalImage) {
+    homeStore.setState({ modalImage: '' })
+  }
 
   if (ss.externalLinkageMode) {
     homeStore.setState({ chatProcessing: true })
@@ -685,15 +819,27 @@ export const handleSendChatFn = () => async (text: string) => {
     homeStore.setState({ chatProcessing: true })
 
     // ユーザーメッセージをチャットログに追加（画面表示用）
-    homeStore.getState().upsertMessage({
-      role: 'user',
-      content: newMessage,
-      timestamp: timestamp,
-    })
+    if (modalImage) {
+      // 画像付きメッセージ: マルチモーダル形式で保存
+      homeStore.getState().upsertMessage({
+        role: 'user',
+        content: [
+          { type: 'text', text: newMessage || '' },
+          { type: 'image', image: modalImage },
+        ],
+        timestamp: timestamp,
+      })
+    } else {
+      homeStore.getState().upsertMessage({
+        role: 'user',
+        content: newMessage,
+        timestamp: timestamp,
+      })
+    }
 
     try {
       // 会話履歴はAgentCore Memoryが管理するため、最新のユーザーメッセージのみ送信
-      await processAIResponse(newMessage)
+      await processAIResponse(newMessage, imageBase64)
     } catch (e) {
       console.error(e)
       toastStore.getState().addToast({

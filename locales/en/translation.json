@@ -225,5 +225,16 @@
   },
   "NoClientIDSet": "Client ID is not set",
   "DataManagement": "Data Management",
-  "PerfumeDataManagement": "Perfume Data Management"
+  "PerfumeDataManagement": "Perfume Data Management",
+  "OpenCamera": "Open camera",
+  "CloseCamera": "Close camera",
+  "TakePhoto": "Take photo",
+  "Retake": "Retake",
+  "UsePhoto": "Use this photo",
+  "CameraDenied": "Camera access is not allowed. Please enable camera access in your browser settings.",
+  "Close": "Close",
+  "AutoCaptureComplete": "Auto captured",
+  "AutoCapture": "Auto capture",
+  "AutoCaptureEnabled": "Auto capture ON",
+  "AutoCaptureDisabled": "Auto capture OFF"
 }

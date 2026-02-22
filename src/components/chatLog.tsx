@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import { useEffect, useRef } from 'react'
 import { EMOTIONS } from '@/features/messages/messages'
 
@@ -49,11 +48,13 @@ export const ChatLog = () => {
               />
             ) : (
               <>
-                <Chat
-                  role={msg.role}
-                  message={msg.content ? msg.content[0].text : ''}
-                  characterName={characterName}
-                />
+                {msg.content?.[0]?.text ? (
+                  <Chat
+                    role={msg.role}
+                    message={msg.content[0].text}
+                    characterName={characterName}
+                  />
+                ) : null}
                 <ChatImage
                   role={msg.role}
                   imageUrl={msg.content ? msg.content[1].image : ''}
@@ -183,22 +184,21 @@ const Chat = ({
 const ChatImage = ({
   role,
   imageUrl,
-  characterName,
 }: {
   role: string
   imageUrl: string
   characterName: string
 }) => {
-  const offsetX = role === 'user' ? 'pl-40' : 'pr-40'
+  const offsetX = role === 'user' ? 'pl-10' : 'pr-10'
 
   return (
-    <div className={`mx-auto ml-0 md:ml-10 lg:ml-20 my-4 ${offsetX}`}>
-      <Image
+    <div className={`mx-auto ml-0 md:ml-10 lg:ml-20 my-1 ${offsetX}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
         src={imageUrl}
-        alt="Generated Image"
+        alt="Sent image"
         className="rounded-lg"
-        width={512}
-        height={512}
+        style={{ maxWidth: 120, maxHeight: 120 }}
       />
     </div>
   )

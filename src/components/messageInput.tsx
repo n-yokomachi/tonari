@@ -3,9 +3,8 @@ import { useTranslation } from 'react-i18next'
 import Image from 'next/image'
 
 import homeStore from '@/features/stores/home'
-import settingsStore from '@/features/stores/settings'
-import { isMultiModalAvailable } from '@/features/constants/aiModels'
 import { IconButton } from './iconButton'
+import { CameraPreview, CameraButton } from './cameraPreview'
 
 // ファイルバリデーションの設定
 const FILE_VALIDATION = {
@@ -35,30 +34,11 @@ export const MessageInput = ({
 }: Props) => {
   const chatProcessing = homeStore((s) => s.chatProcessing)
   const modalImage = homeStore((s) => s.modalImage)
-  const selectAIService = settingsStore((s) => s.selectAIService)
-  const selectAIModel = settingsStore((s) => s.selectAIModel)
-  const imageDisplayPosition = settingsStore((s) => s.imageDisplayPosition)
-  const enableMultiModal = settingsStore((s) => s.enableMultiModal)
-  const multiModalMode = settingsStore((s) => s.multiModalMode)
-  const customModel = settingsStore((s) => s.customModel)
   const [rows, setRows] = useState(1)
   const [fileError, setFileError] = useState<string>('')
-  const [showImageActions, setShowImageActions] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const { t } = useTranslation()
-
-  // マルチモーダル対応かどうかを判定
-  const isMultiModalSupported = isMultiModalAvailable(
-    selectAIService,
-    selectAIModel,
-    enableMultiModal,
-    multiModalMode,
-    customModel
-  )
-
-  // アイコン表示の条件
-  const showIconDisplay = modalImage && imageDisplayPosition === 'icon'
 
   // チャット処理完了後にテキストエリアをフォーカス
   useEffect(() => {
@@ -82,15 +62,12 @@ export const MessageInput = ({
   // テキスト内容に基づいて適切な行数を計算
   const calculateRows = useCallback((text: string): number => {
     const MIN_ROWS = 1
-    const MAX_ROWS = 5 // 最大行数を制限（UIの見栄えを考慮して調整）
-    const CHARS_PER_LINE = 50 // 平均的な1行の文字数（概算）
+    const MAX_ROWS = 5
+    const CHARS_PER_LINE = 50
     const lines = text.split('\n')
 
-    // 各行の幅を考慮してテキストの折り返しを計算
-    // 簡単な実装では改行文字の数 + 1を使用
     const baseRows = Math.max(MIN_ROWS, lines.length)
 
-    // 長い行がある場合、追加の行を考慮（おおよその計算）
     const extraRows = lines.reduce((acc, line) => {
       const lineRows = Math.ceil(line.length / CHARS_PER_LINE)
       return acc + Math.max(0, lineRows - 1)
@@ -127,7 +104,6 @@ export const MessageInput = ({
   // ファイルバリデーション関数
   const validateFile = useCallback(
     (file: File): { isValid: boolean; error?: string } => {
-      // ファイルサイズチェック
       if (file.size > FILE_VALIDATION.maxSizeBytes) {
         return {
           isValid: false,
@@ -137,7 +113,6 @@ export const MessageInput = ({
         }
       }
 
-      // ファイルタイプチェック
       if (!FILE_VALIDATION.allowedTypes.includes(file.type as any)) {
         return {
           isValid: false,
@@ -177,7 +152,6 @@ export const MessageInput = ({
         reader.onload = (e) => {
           const base64Image = e.target?.result as string
 
-          // 画像の寸法チェック（オプション）
           const img = document.createElement('img')
           img.onload = () => {
             if (!validateImageDimensions(img)) {
@@ -216,11 +190,6 @@ export const MessageInput = ({
   // クリップボードからの画像ペースト処理
   const handlePaste = useCallback(
     async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
-      if (!isMultiModalSupported) {
-        updateRowsWithDelay(event.target as HTMLTextAreaElement)
-        return
-      }
-
       const clipboardData = event.clipboardData
       if (!clipboardData) {
         updateRowsWithDelay(event.target as HTMLTextAreaElement)
@@ -242,31 +211,21 @@ export const MessageInput = ({
         }
       }
 
-      // 画像がない場合のみ通常のペースト処理を実行
       if (!hasImage) {
         updateRowsWithDelay(event.target as HTMLTextAreaElement)
       }
     },
-    [isMultiModalSupported, processImageFile, updateRowsWithDelay]
+    [processImageFile, updateRowsWithDelay]
   )
 
   // ドラッグ＆ドロップ処理
-  const handleDragOver = useCallback(
-    (event: React.DragEvent) => {
-      if (!isMultiModalSupported) {
-        return
-      }
-      event.preventDefault()
-      event.stopPropagation()
-    },
-    [isMultiModalSupported]
-  )
+  const handleDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+  }, [])
 
   const handleDrop = useCallback(
     async (event: React.DragEvent) => {
-      if (!isMultiModalSupported) {
-        return
-      }
       event.preventDefault()
       event.stopPropagation()
 
@@ -280,33 +239,30 @@ export const MessageInput = ({
         }
       }
     },
-    [isMultiModalSupported, processImageFile, t]
+    [processImageFile, t]
   )
 
   const handleKeyPress = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (
-      // IME 文字変換中を除外しつつ、半角/全角キー（Backquote）による IME トグルは無視
       !event.nativeEvent.isComposing &&
       event.code !== 'Backquote' &&
       event.key === 'Enter' &&
       !event.shiftKey
     ) {
-      event.preventDefault() // デフォルトの挙動を防止
-      if (userMessage.trim() !== '') {
+      event.preventDefault()
+      if (userMessage.trim() !== '' || modalImage) {
         onClickSendButton(
           event as unknown as React.MouseEvent<HTMLButtonElement>
         )
         setRows(1)
       }
     } else if (event.key === 'Enter' && event.shiftKey) {
-      // Shift+Enterの場合、calculateRowsで自動計算されるため、手動で行数を増やす必要なし
       updateRowsWithDelay(event.target as HTMLTextAreaElement)
     } else if (
       event.key === 'Backspace' &&
       rows > 1 &&
       userMessage.slice(-1) === '\n'
     ) {
-      // Backspaceの場合も、calculateRowsで自動計算されるため、手動で行数を減らす必要なし
       updateRowsWithDelay(event.target as HTMLTextAreaElement)
     }
   }
@@ -321,8 +277,10 @@ export const MessageInput = ({
               {fileError}
             </div>
           )}
-          {/* 画像プレビュー - 入力欄表示設定の場合のみ */}
-          {modalImage && imageDisplayPosition === 'input' && (
+          {/* カメラプレビュー */}
+          <CameraPreview />
+          {/* 画像プレビュー */}
+          {modalImage && (
             <div
               className="mb-2 p-2 bg-gray-100 rounded-lg relative"
               onDragOver={handleDragOver}
@@ -347,48 +305,6 @@ export const MessageInput = ({
 
           <div className="flex gap-2 items-end">
             <div className="flex-1 relative">
-              {/* 画像添付インジケーター - アイコンのみ表示設定の場合 */}
-              {showIconDisplay && (
-                <div className="absolute left-3 top-3 z-10">
-                  <div
-                    className="relative cursor-pointer"
-                    onMouseEnter={() => setShowImageActions(true)}
-                    onMouseLeave={() => setShowImageActions(false)}
-                    onFocus={() => setShowImageActions(true)}
-                    onBlur={() => setShowImageActions(false)}
-                    tabIndex={0}
-                    role="button"
-                    aria-label={t('RemoveImage')}
-                  >
-                    <svg
-                      className="w-4 h-4 text-gray-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                      />
-                    </svg>
-                    {showImageActions && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleRemoveImage()
-                          setShowImageActions(false)
-                        }}
-                        className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-theme rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
-                        title={t('RemoveImage')}
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
               <textarea
                 ref={textareaRef}
                 placeholder=""
@@ -404,47 +320,25 @@ export const MessageInput = ({
                 aria-label={t('EnterYourQuestion')}
                 style={{
                   lineHeight: '1.5',
-                  padding: showIconDisplay ? '8px 16px 8px 32px' : '8px 16px',
+                  padding: '8px 16px',
                   resize: 'none',
                   whiteSpace: 'pre-wrap',
                 }}
               ></textarea>
             </div>
             <div className="flex-shrink-0 pb-[0.3rem]">
+              <CameraButton />
+            </div>
+            <div className="flex-shrink-0 pb-[0.3rem]">
               <IconButton
                 iconName="24/Send"
                 className="bg-secondary hover:bg-secondary-hover active:bg-secondary-press disabled:bg-secondary-disabled disabled:opacity-50 disabled:cursor-not-allowed"
                 isProcessing={chatProcessing}
-                disabled={chatProcessing || !userMessage}
+                disabled={chatProcessing || (!userMessage && !modalImage)}
                 onClick={onClickSendButton}
                 aria-label={t('SendMessage.directSendTitle')}
               />
             </div>
-            {/* ジェスチャーテストボタン（開発用・非表示）
-            <div className="flex-shrink-0 pb-[0.3rem] flex gap-1">
-              <button
-                onClick={() => {
-                  console.log('Bow button clicked')
-                  const model = homeStore.getState().viewer?.model
-                  console.log('Model:', model)
-                  model?.playGesture('bow')
-                }}
-                className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded"
-                title="お辞儀"
-              >
-                🙇
-              </button>
-              <button
-                onClick={() =>
-                  homeStore.getState().viewer?.model?.playGesture('present')
-                }
-                className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded"
-                title="紹介"
-              >
-                👐
-              </button>
-            </div>
-            */}
           </div>
         </div>
       </div>
