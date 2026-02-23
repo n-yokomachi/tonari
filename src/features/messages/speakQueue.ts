@@ -3,7 +3,7 @@ import homeStore from '@/features/stores/home'
 
 type SpeakTask = {
   sessionId: string
-  audioBuffer: ArrayBuffer
+  audioBuffer: ArrayBuffer | Promise<ArrayBuffer>
   talk: Talk
   isNeedDecode: boolean
   onComplete?: () => void
@@ -105,7 +105,8 @@ export class SpeakQueue {
           continue
         }
         try {
-          const { audioBuffer, talk, isNeedDecode, onComplete } = task
+          const audioBuffer = await Promise.resolve(task.audioBuffer)
+          const { talk, isNeedDecode, onComplete } = task
           await hs.viewer.model?.speak(audioBuffer, talk, isNeedDecode)
           onComplete?.()
         } catch (error) {
@@ -116,6 +117,8 @@ export class SpeakQueue {
           if (error instanceof Error) {
             console.error('Error details:', error.message)
           }
+          // TTS取得や再生に失敗してもonCompleteを呼んでカウントを正しく減算
+          task.onComplete?.()
         }
       }
     }

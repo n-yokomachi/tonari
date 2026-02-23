@@ -124,6 +124,23 @@ export class TonariStack extends cdk.Stack {
       authorizationType: apigateway.AuthorizationType.CUSTOM,
     }
 
+    // TTS Lambda (Amazon Polly音声合成)
+    const ttsLambda = new python.PythonFunction(this, 'TtsLambda', {
+      functionName: 'tonari-tts',
+      entry: path.join(__dirname, '../lambda/tts'),
+      runtime: lambda.Runtime.PYTHON_3_12,
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 128,
+    })
+
+    ttsLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['polly:SynthesizeSpeech'],
+        resources: ['*'],
+      })
+    )
+
     // API Routes (M2M認証: サーバーサイドからのみ呼び出し)
     const perfumes = this.crudApi.root.addResource('perfumes')
 
@@ -145,6 +162,14 @@ export class TonariStack extends cdk.Stack {
 
     // DELETE /perfumes/{brand}/{name} - Delete
     perfumeByName.addMethod('DELETE', lambdaIntegration, authorizedMethodOptions)
+
+    // POST /tts - Text-to-Speech
+    const tts = this.crudApi.root.addResource('tts')
+    tts.addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(ttsLambda),
+      authorizedMethodOptions
+    )
 
     // ========== Twitter Gateway Tools ==========
     if (props.tweetScheduler) {

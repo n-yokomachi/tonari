@@ -1,5 +1,7 @@
 import { Talk } from './messages'
+import { SpeakQueue } from './speakQueue'
 import homeStore from '@/features/stores/home'
+import settingsStore from '@/features/stores/settings'
 import { VRMExpressionPresetName } from '@pixiv/three-vrm'
 
 // 口パクアニメーション用のタイマーID
@@ -216,11 +218,76 @@ const textToVowelSequence = (text: string): LipSyncType[] => {
 }
 
 /**
- * キャラクターの表情を設定し、口パク（リップシンク）アニメーションを実行する
- * 音声出力は無効化されているが、表情と口パクは動作する
+ * キャラクターの表情を設定し、リップシンクアニメーションを実行する
+ * voiceEnabled=ON: TTS APIで音声合成→SpeakQueueで再生→音声波形リップシンク
+ * voiceEnabled=OFF: テキストベースの母音リップシンク（従来動作）
  */
 export const speakCharacter = (
-  _sessionId: string,
+  sessionId: string,
+  talk: Talk,
+  onStart?: () => void,
+  onComplete?: () => void
+) => {
+  const { voiceEnabled } = settingsStore.getState()
+
+  if (voiceEnabled) {
+    speakWithAudio(sessionId, talk, onStart, onComplete)
+  } else {
+    speakWithTextLipSync(talk, onStart, onComplete)
+  }
+}
+
+/**
+ * 音声パス: TTS APIで音声を合成し、SpeakQueue経由で再生する
+ * fetchを即座に開始しつつ、タスクを同期的にキューに追加することで
+ * 文の再生順序を保証する
+ */
+const speakWithAudio = (
+  sessionId: string,
+  talk: Talk,
+  onStart?: () => void,
+  onComplete?: () => void
+) => {
+  onStart?.()
+
+  const { viewer } = homeStore.getState()
+  viewer.model?.initLipSync()
+
+  const { voiceModel } = settingsStore.getState()
+
+  // TTS fetchを即座に開始（Promiseとして保持）
+  const audioPromise = fetch('/api/tts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      text: talk.message,
+      emotion: talk.emotion,
+      voice: voiceModel,
+    }),
+  }).then((response) => {
+    if (!response.ok) {
+      throw new Error(`TTS API error: ${response.status}`)
+    }
+    return response.arrayBuffer()
+  })
+
+  // タスクを即座にキューに追加（順序を保証）
+  // audioBufferはPromiseのまま渡し、キュー処理時に解決される
+  const queue = SpeakQueue.getInstance()
+  queue.checkSessionId(sessionId)
+  queue.addTask({
+    sessionId,
+    audioBuffer: audioPromise,
+    talk,
+    isNeedDecode: false,
+    onComplete,
+  })
+}
+
+/**
+ * テキストパス: テキストベースの母音リップシンクアニメーション
+ */
+const speakWithTextLipSync = (
   talk: Talk,
   onStart?: () => void,
   onComplete?: () => void
@@ -229,29 +296,20 @@ export const speakCharacter = (
 
   const { viewer } = homeStore.getState()
 
-  // 表情を適用
   if (viewer?.model?.emoteController) {
     viewer.model.emoteController.playEmotion(talk.emotion)
   }
 
-  // 前回の口パクアニメーションがあれば停止
   if (lipSyncTimeout) {
     clearTimeout(lipSyncTimeout)
   }
 
-  // 口パク中は発話中状態にする
   homeStore.setState({ isSpeaking: true })
 
-  // テキストを母音シーケンスに変換
   const vowelSequence = textToVowelSequence(talk.message)
-
-  // 1音あたりの時間（ミリ秒）- 自然な発話速度に近づける
   const msPerPhoneme = 80
-
-  // 現在の母音インデックス
   let currentIndex = 0
 
-  // 前の母音表情をリセットする関数
   const resetLipSync = () => {
     if (viewer?.model?.emoteController) {
       ;(['aa', 'ih', 'ou', 'ee', 'oh'] as VRMExpressionPresetName[]).forEach(
@@ -262,10 +320,8 @@ export const speakCharacter = (
     }
   }
 
-  // 口パクアニメーションを実行する関数
   const animateLipSync = () => {
     if (currentIndex >= vowelSequence.length) {
-      // アニメーション完了
       resetLipSync()
       homeStore.setState({ isSpeaking: false })
       onComplete?.()
@@ -275,23 +331,19 @@ export const speakCharacter = (
     const currentVowel = vowelSequence[currentIndex]
 
     if (viewer?.model?.emoteController) {
-      // 前の母音をリセット
       resetLipSync()
 
       if (currentVowel === 'pause') {
-        // 一時停止：口を閉じたまま少し待つ（句読点は長めに）
         lipSyncTimeout = setTimeout(() => {
           currentIndex++
           animateLipSync()
         }, msPerPhoneme * 3)
       } else if (currentVowel === 'closed') {
-        // 「ん」：口を閉じる
         lipSyncTimeout = setTimeout(() => {
           currentIndex++
           animateLipSync()
         }, msPerPhoneme)
       } else {
-        // 母音を適用
         viewer.model.emoteController.lipSync(
           currentVowel as VRMExpressionPresetName,
           0.8
@@ -302,12 +354,10 @@ export const speakCharacter = (
         }, msPerPhoneme)
       }
     } else {
-      // emoteControllerがない場合は完了
       homeStore.setState({ isSpeaking: false })
       onComplete?.()
     }
   }
 
-  // アニメーション開始
   animateLipSync()
 }
