@@ -7,12 +7,35 @@ from bedrock_agentcore.runtime import BedrockAgentCoreApp
 
 from src.agent.tonari_agent import (
     create_tonari_agent,
+    create_tonari_agent_light,
     create_tonari_agent_with_gateway,
 )
 
 logger = logging.getLogger(__name__)
 
 app = BedrockAgentCoreApp()
+
+# ツール使用が必要なキーワード（香水検索、Web検索、SNS関連）
+TOOL_KEYWORDS = [
+    "香水",
+    "パフューム",
+    "perfume",
+    "フレグランス",
+    "fragrance",
+    "検索",
+    "調べ",
+    "探し",
+    "おすすめ",
+    "ツイート",
+    "tweet",
+    "投稿",
+]
+
+
+def needs_tools(prompt: str) -> bool:
+    """プロンプトにツール使用が必要なキーワードが含まれるか判定"""
+    prompt_lower = prompt.lower()
+    return any(kw in prompt_lower for kw in TOOL_KEYWORDS)
 
 
 def build_content_blocks(
@@ -70,23 +93,31 @@ async def invoke(payload: dict):
 
     content = build_content_blocks(prompt, image_base64, image_format)
 
-    # Gateway統合を試み、失敗時はツールなしで実行
-    try:
-        agent, mcp_client = create_tonari_agent_with_gateway(
-            session_id=session_id, actor_id=actor_id
-        )
-        with mcp_client:
-            tools = mcp_client.list_tools_sync()
-            agent = create_tonari_agent(
-                session_id=session_id,
-                actor_id=actor_id,
-                mcp_tools=tools,
+    if needs_tools(prompt):
+        # フルモード: Gateway + LTM + ツール
+        try:
+            agent, mcp_client = create_tonari_agent_with_gateway(
+                session_id=session_id, actor_id=actor_id
             )
+            with mcp_client:
+                tools = mcp_client.list_tools_sync()
+                agent = create_tonari_agent(
+                    session_id=session_id,
+                    actor_id=actor_id,
+                    mcp_tools=tools,
+                )
+                async for text in _stream_response(agent, content):
+                    yield text
+        except Exception as e:
+            logger.warning("Gateway connection failed, running without tools: %s", e)
+            agent = create_tonari_agent(session_id=session_id, actor_id=actor_id)
             async for text in _stream_response(agent, content):
                 yield text
-    except Exception as e:
-        logger.warning("Gateway connection failed, running without tools: %s", e)
-        agent = create_tonari_agent(session_id=session_id, actor_id=actor_id)
+    else:
+        # 軽量モード: STMのみ、ツールなし、LTM検索なし
+        agent = create_tonari_agent_light(
+            session_id=session_id, actor_id=actor_id
+        )
         async for text in _stream_response(agent, content):
             yield text
 

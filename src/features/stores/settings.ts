@@ -84,6 +84,8 @@ interface General {
   colorTheme: 'tonari'
   customModel: boolean
   enableAutoCapture: boolean
+  voiceEnabled: boolean
+  voiceModel: 'Tomoko' | 'Kazuha'
 }
 
 export type SettingsState = APIKeys & ModelProvider & Character & General
@@ -168,6 +170,8 @@ const getInitialValuesFromEnv = (): SettingsState => {
     colorTheme: 'tonari' as const,
     customModel: config.ai.customModel,
     enableAutoCapture: true,
+    voiceEnabled: false,
+    voiceModel: 'Tomoko',
   }
 }
 
@@ -265,6 +269,8 @@ const settingsStore = create<SettingsState>()(
       colorTheme: state.colorTheme,
       customModel: state.customModel,
       enableAutoCapture: state.enableAutoCapture,
+      voiceEnabled: state.voiceEnabled,
+      voiceModel: state.voiceModel,
     }),
   })
 )

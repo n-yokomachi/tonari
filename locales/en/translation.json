@@ -236,5 +236,8 @@
   "AutoCaptureComplete": "Auto captured",
   "AutoCapture": "Auto capture",
   "AutoCaptureEnabled": "Auto capture ON",
-  "AutoCaptureDisabled": "Auto capture OFF"
+  "AutoCaptureDisabled": "Auto capture OFF",
+  "VoiceOutput": "Voice Output",
+  "VoiceOutputDescription": "Read AI responses aloud",
+  "VoiceModel": "Voice Model"
 }

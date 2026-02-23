@@ -37,12 +37,56 @@ def create_mcp_client(gateway_url: str, region: str) -> MCPClient:
     return MCPClient(create_transport)
 
 
+def _create_bedrock_model() -> BedrockModel:
+    """共通のBedrockModelインスタンスを作成"""
+    return BedrockModel(
+        model_id=os.getenv(
+            "BEDROCK_MODEL_ID", "jp.anthropic.claude-haiku-4-5-20251001-v1:0"
+        ),
+        region_name=os.getenv("AWS_REGION", "ap-northeast-1"),
+        streaming=True,
+    )
+
+
+def _create_memory_config(
+    session_id: str,
+    actor_id: str,
+    use_ltm: bool = True,
+) -> AgentCoreMemoryConfig:
+    """AgentCore Memory設定を作成
+
+    Args:
+        session_id: セッションID（タブ単位で管理）
+        actor_id: ユーザーID（ブラウザ単位で永続化）
+        use_ltm: LTM（長期記憶）検索を有効にするか
+    """
+    retrieval_config = {}
+    if use_ltm:
+        retrieval_config = {
+            # ユーザーの好み（オーナー単位）
+            "/preferences/{actorId}/": RetrievalConfig(top_k=5, relevance_score=0.5),
+            # 事実情報（購入履歴、試した香水など、オーナー単位）
+            "/facts/{actorId}/": RetrievalConfig(top_k=10, relevance_score=0.4),
+            # セッションサマリー（全セッション横断取得）
+            "/summaries/{actorId}/": RetrievalConfig(top_k=3, relevance_score=0.6),
+            # エピソード記憶+リフレクション（全セッション横断取得）
+            "/episodes/{actorId}/": RetrievalConfig(top_k=5, relevance_score=0.5),
+        }
+
+    return AgentCoreMemoryConfig(
+        memory_id=os.getenv("AGENTCORE_MEMORY_ID", DEFAULT_MEMORY_ID),
+        session_id=session_id,
+        actor_id=actor_id,
+        retrieval_config=retrieval_config,
+    )
+
+
 def create_tonari_agent(
     session_id: str = "default-session",
     actor_id: str = "anonymous",
     mcp_tools: Optional[list] = None,
 ) -> Agent:
-    """Tonariエージェントを作成（セッション管理付き）
+    """Tonariエージェントを作成（フルモード：LTM + ツール付き）
 
     Args:
         session_id: セッションID（タブ単位で管理）
@@ -52,43 +96,41 @@ def create_tonari_agent(
     Returns:
         Agent: セッション管理機能付きのTonariエージェント
     """
-    # AgentCore Memory設定（STM + LTM取得）
-    memory_config = AgentCoreMemoryConfig(
-        memory_id=os.getenv("AGENTCORE_MEMORY_ID", DEFAULT_MEMORY_ID),
-        session_id=session_id,
-        actor_id=actor_id,
-        retrieval_config={
-            # ユーザーの好み（オーナー単位）
-            "/preferences/{actorId}/": RetrievalConfig(top_k=5, relevance_score=0.5),
-            # 事実情報（購入履歴、試した香水など、オーナー単位）
-            "/facts/{actorId}/": RetrievalConfig(top_k=10, relevance_score=0.4),
-            # セッションサマリー（全セッション横断取得）
-            "/summaries/{actorId}/": RetrievalConfig(top_k=3, relevance_score=0.6),
-            # エピソード記憶+リフレクション（全セッション横断取得）
-            # リフレクションは /episodes/{actorId}/ 配下に保存されるため同一prefixで取得
-            "/episodes/{actorId}/": RetrievalConfig(top_k=5, relevance_score=0.5),
-        },
-    )
-
+    memory_config = _create_memory_config(session_id, actor_id, use_ltm=True)
     session_manager = AgentCoreMemorySessionManager(
         agentcore_memory_config=memory_config,
         region_name=os.getenv("AWS_REGION", "ap-northeast-1"),
     )
 
-    # Bedrock経由でClaude Haiku 4.5を使用
-    bedrock_model = BedrockModel(
-        model_id=os.getenv(
-            "BEDROCK_MODEL_ID", "jp.anthropic.claude-haiku-4-5-20251001-v1:0"
-        ),
-        region_name=os.getenv("AWS_REGION", "ap-northeast-1"),
-        streaming=True,
-    )
-
     agent = Agent(
-        model=bedrock_model,
+        model=_create_bedrock_model(),
         system_prompt=TONARI_SYSTEM_PROMPT,
         session_manager=session_manager,
         tools=mcp_tools or [],
+    )
+    return agent
+
+
+def create_tonari_agent_light(
+    session_id: str = "default-session",
+    actor_id: str = "anonymous",
+) -> Agent:
+    """Tonariエージェントを作成（軽量モード：STMのみ、ツールなし）
+
+    雑談などツールもLTM検索も不要なリクエスト用。
+    STM（会話履歴）は維持されるため、会話の文脈は保たれる。
+    """
+    memory_config = _create_memory_config(session_id, actor_id, use_ltm=False)
+    session_manager = AgentCoreMemorySessionManager(
+        agentcore_memory_config=memory_config,
+        region_name=os.getenv("AWS_REGION", "ap-northeast-1"),
+    )
+
+    agent = Agent(
+        model=_create_bedrock_model(),
+        system_prompt=TONARI_SYSTEM_PROMPT,
+        session_manager=session_manager,
+        tools=[],
     )
     return agent
 

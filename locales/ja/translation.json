@@ -236,5 +236,8 @@
   "AutoCaptureComplete": "自動撮影しました",
   "AutoCapture": "自動撮影",
   "AutoCaptureEnabled": "自動撮影ON",
-  "AutoCaptureDisabled": "自動撮影OFF"
+  "AutoCaptureDisabled": "自動撮影OFF",
+  "VoiceOutput": "音声出力",
+  "VoiceOutputDescription": "AIの応答を音声で読み上げます",
+  "VoiceModel": "音声モデル"
 }

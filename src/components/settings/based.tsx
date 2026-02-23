@@ -15,6 +15,8 @@ const Based = () => {
   const showAssistantText = settingsStore((s) => s.showAssistantText)
   const showCharacterName = settingsStore((s) => s.showCharacterName)
   const showControlPanel = settingsStore((s) => s.showControlPanel)
+  const voiceEnabled = settingsStore((s) => s.voiceEnabled)
+  const voiceModel = settingsStore((s) => s.voiceModel)
   const useVideoAsBackground = settingsStore((s) => s.useVideoAsBackground)
   const changeEnglishToJapanese = settingsStore(
     (s) => s.changeEnglishToJapanese
@@ -239,6 +241,42 @@ const Based = () => {
             {showControlPanel ? t('StatusOn') : t('StatusOff')}
           </TextButton>
         </div>
+      </div>
+
+      {/* 音声出力設定 */}
+      <div className="my-6">
+        <div className="my-4 text-xl font-bold">{t('VoiceOutput')}</div>
+        <div className="my-4 whitespace-pre-wrap">
+          {t('VoiceOutputDescription')}
+        </div>
+        <div className="my-2">
+          <TextButton
+            onClick={() =>
+              settingsStore.setState((s) => ({
+                voiceEnabled: !s.voiceEnabled,
+              }))
+            }
+          >
+            {voiceEnabled ? t('StatusOn') : t('StatusOff')}
+          </TextButton>
+        </div>
+        {voiceEnabled && (
+          <div className="my-4">
+            <div className="my-2 font-bold">{t('VoiceModel')}</div>
+            <div className="my-2 flex gap-2">
+              <TextButton
+                onClick={() => settingsStore.setState({ voiceModel: 'Tomoko' })}
+              >
+                Tomoko{voiceModel === 'Tomoko' ? ' ✓' : ''}
+              </TextButton>
+              <TextButton
+                onClick={() => settingsStore.setState({ voiceModel: 'Kazuha' })}
+              >
+                Kazuha{voiceModel === 'Kazuha' ? ' ✓' : ''}
+              </TextButton>
+            </div>
+          </div>
+        )}
       </div>
     </>
   )
