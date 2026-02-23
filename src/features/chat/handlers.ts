@@ -63,15 +63,17 @@ const generateSessionId = () => generateMessageId()
 const CODE_DELIMITER = '```'
 
 /**
- * テキストから感情タグ `[...]` を抽出する
+ * テキストから感情タグ `[...]` を抽出する（有効な感情タグのみ）
  * @param text 入力テキスト
  * @returns 感情タグと残りのテキスト
  */
 const extractEmotion = (
   text: string
 ): { emotionTag: string; remainingText: string } => {
-  // 先頭のスペースを無視して、感情タグを検出
-  const emotionMatch = text.match(/^\s*\[(.*?)\]/)
+  // 有効な感情タグのみマッチする（ジェスチャーやリンク等の他タグを誤認識しない）
+  const emotionMatch = text.match(
+    /^\s*\[(neutral|happy|angry|sad|relaxed|surprised)\]/
+  )
   if (emotionMatch?.[0]) {
     return {
       emotionTag: emotionMatch[0].trim(), // タグ自体の前後のスペースは除去
@@ -158,7 +160,10 @@ export const speakMessageHandler = async (receivedMessage: string) => {
   let isCodeBlock: boolean = false
   let codeBlockContent: string = ''
   let accumulatedAssistantText: string = ''
+  // ジェスチャータグとリンクタグを発話テキストから除去
   let remainingMessage = receivedMessage
+    .replace(/\[(bow|present|camera)\]/g, '')
+    .replace(/\[link:[^\]]*\](.*?)\[\/link\]/g, '$1')
   let currentMessageId: string = generateMessageId()
   let persistentEmotion: EmotionType = 'neutral' // レスポンス全体で保持する感情
 
@@ -504,6 +509,12 @@ export const processAIResponse = async (
 
         // ジェスチャータグを検出してトリガー
         detectAndTriggerGestures(receivedChunksForSpeech, triggeredGestures)
+
+        // ジェスチャータグとリンクタグを発話テキストから除去
+        // （TTSが「bow」「present」等をテキストとして読み上げるのを防止）
+        receivedChunksForSpeech = receivedChunksForSpeech
+          .replace(/\[(bow|present)\]/g, '')
+          .replace(/\[link:[^\]]*\](.*?)\[\/link\]/g, '$1')
       }
 
       let processableTextForSpeech = receivedChunksForSpeech

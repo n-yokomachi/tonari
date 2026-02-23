@@ -10,6 +10,7 @@ import { VRMAnimation } from '../../lib/VRMAnimation/VRMAnimation'
 import { VRMLookAtSmootherLoaderPlugin } from '@/lib/VRMLookAtSmootherLoaderPlugin/VRMLookAtSmootherLoaderPlugin'
 import { EmoteController } from '../emoteController/emoteController'
 import { Talk } from '../messages/messages'
+import { LipSync } from '../lipSync/lipSync'
 
 /**
  * 3Dキャラクターを管理するクラス
@@ -20,10 +21,10 @@ export class Model {
   public emoteController?: EmoteController
 
   private _lookAtTargetParent: THREE.Object3D
+  private _lipSync?: LipSync
 
   constructor(lookAtTargetParent: THREE.Object3D) {
     this._lookAtTargetParent = lookAtTargetParent
-    // Tonariでは音声出力機能を削除しているため、LipSyncは作成しない
   }
 
   public async loadVRM(url: string): Promise<void> {
@@ -70,23 +71,48 @@ export class Model {
   }
 
   /**
+   * LipSyncインスタンスを遅延初期化する
+   */
+  public initLipSync(): void {
+    if (this._lipSync) return
+    const audioContext = new AudioContext()
+    this._lipSync = new LipSync(audioContext)
+  }
+
+  /**
    * 音声を再生し、リップシンクを行う
-   * Tonariでは音声出力機能を削除しているため、表情のみ設定
    */
   public async speak(
     buffer: ArrayBuffer,
     talk: Talk,
     isNeedDecode: boolean = true
-  ) {
+  ): Promise<void> {
     this.emoteController?.playEmotion(talk.emotion)
-    // 音声再生なしのため即座に完了
+
+    if (!this._lipSync) {
+      return
+    }
+
+    return new Promise((resolve) => {
+      this._lipSync!.playFromArrayBuffer(
+        buffer,
+        () => {
+          // 再生完了時に口を閉じる
+          this.emoteController?.lipSync('aa', 0)
+          resolve()
+        },
+        isNeedDecode,
+        16000
+      )
+    })
   }
 
   /**
    * 現在の音声再生を停止
    */
   public stopSpeaking() {
-    // Tonariでは音声出力機能を削除しているため、何もしない
+    this._lipSync?.stopCurrentPlayback()
+    this.emoteController?.lipSync('aa', 0)
   }
 
   /**
@@ -104,7 +130,11 @@ export class Model {
   }
 
   public update(delta: number): void {
-    // Tonariでは音声出力機能を削除しているため、リップシンク処理はスキップ
+    // 音声リップシンク：音量に応じて口の開閉を駆動
+    if (this._lipSync) {
+      const { volume } = this._lipSync.update()
+      this.emoteController?.lipSync('aa', volume)
+    }
 
     // 表情・瞬きの更新（ジェスチャー以外）
     this.emoteController?.updateExpression(delta)
