@@ -2,6 +2,13 @@ import * as THREE from 'three'
 import { VRM, VRMExpressionPresetName } from '@pixiv/three-vrm'
 import { ExpressionController } from './expressionController'
 import { GestureController, GestureType } from './gestureController'
+import {
+  GestureType as GType,
+  VrmaPose,
+  gestureDefinitions,
+  loadVrmaPose,
+} from './gestures'
+import { buildUrl } from '@/utils/buildUrl'
 
 /**
  * 感情表現としてExpressionとMotionを操作する為のクラス
@@ -9,10 +16,29 @@ import { GestureController, GestureType } from './gestureController'
 export class EmoteController {
   private _expressionController: ExpressionController
   private _gestureController: GestureController
+  private _vrm: VRM
 
   constructor(vrm: VRM, camera: THREE.Object3D) {
+    this._vrm = vrm
     this._expressionController = new ExpressionController(vrm, camera)
     this._gestureController = new GestureController(vrm)
+  }
+
+  /** Load all VRMA pose files referenced by gesture definitions */
+  public async loadVrmaPoses(): Promise<void> {
+    for (const [gestureType, definition] of gestureDefinitions) {
+      if (definition.vrmaUrl) {
+        try {
+          const pose = await loadVrmaPose(
+            buildUrl(definition.vrmaUrl),
+            this._vrm
+          )
+          this._gestureController.registerVrmaPose(gestureType as GType, pose)
+        } catch (e) {
+          console.warn(`Failed to load VRMA pose for ${gestureType}:`, e)
+        }
+      }
+    }
   }
 
   public playEmotion(preset: VRMExpressionPresetName) {
@@ -43,6 +69,14 @@ export class EmoteController {
     const skipAutoBlink =
       this._gestureController.isClosingEyes && !isEmotionActive
     this._expressionController.update(delta, skipAutoBlink)
+  }
+
+  /**
+   * Apply VRMA gesture rotations to normalized bones.
+   * Must be called BEFORE vrm.update().
+   */
+  public applyNormalizedGesture(): void {
+    this._gestureController.applyNormalizedPose()
   }
 
   public updateGesture(delta: number) {
