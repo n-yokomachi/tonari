@@ -145,6 +145,10 @@ export class Model {
     // 表情・瞬きの更新（ジェスチャー以外）
     this.emoteController?.updateExpression(delta)
 
+    // VRMAジェスチャー対象ボーンをidentityにリセット（mixer前に実行し、
+    // mixerトラックがあるボーンはmixerが上書き、ないボーンはidentityに戻る）
+    this.emoteController?.resetNormalizedBones()
+
     // アイドルアニメーションの更新
     this.mixer?.update(delta)
 

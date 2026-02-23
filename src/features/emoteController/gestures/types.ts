@@ -26,6 +26,8 @@ export interface GestureDefinition {
   keyframes: GestureKeyframe[]
   holdDuration: number
   closeEyes?: boolean
-  /** Path to .vrma file for pose-tool-based gestures (applied to normalized bones) */
+  /** Path to .vrma file for single-pose gestures (applied to normalized bones) */
   vrmaUrl?: string
+  /** Paths to .vrma files for multi-pose gestures (one per keyframe, alternating between poses) */
+  vrmaUrls?: string[]
 }

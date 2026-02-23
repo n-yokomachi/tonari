@@ -7,6 +7,10 @@ export type VrmaPose = Map<VRMHumanBoneName, THREE.Quaternion>
 /**
  * Load a .vrma file and extract bone rotations as normalized bone quaternions.
  *
+ * Reads the LAST keyframe of each track. Some VRMA exporters create
+ * multi-keyframe tracks where frame 0 is the rest pose and the final
+ * frame holds the actual target pose.
+ *
  * The VRMAnimationLoaderPlugin transforms rotation values during parsing,
  * so the extracted quaternions are ready to be applied to VRM normalized bone nodes.
  */
@@ -20,10 +24,12 @@ export async function loadVrmaPose(url: string, vrm: VRM): Promise<VrmaPose> {
   for (const [boneName, track] of vrmAnimation.humanoidTracks.rotation) {
     const values = track.values
     if (values.length >= 4) {
-      let x = values[0],
-        y = values[1],
-        z = values[2],
-        w = values[3]
+      // Read the last keyframe (for multi-keyframe tracks the pose is at the end)
+      const offset = values.length - 4
+      let x = values[offset],
+        y = values[offset + 1],
+        z = values[offset + 2],
+        w = values[offset + 3]
       // VRM 0.x sign correction (same as VRMAnimation.createAnimationClip)
       if (metaVersion === '0') {
         x = -x
@@ -32,6 +38,11 @@ export async function loadVrmaPose(url: string, vrm: VRM): Promise<VrmaPose> {
       pose.set(boneName, new THREE.Quaternion(x, y, z, w))
     }
   }
+
+  console.log(
+    `[loadVrmaPose] ${url}: ${pose.size} bones loaded`,
+    Array.from(pose.keys())
+  )
 
   return pose
 }

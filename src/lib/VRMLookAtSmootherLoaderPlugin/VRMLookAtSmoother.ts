@@ -10,7 +10,7 @@ const SACCADE_MIN_INTERVAL = 0.5
 const SACCADE_PROC = 0.05
 
 /** サッケードの範囲半径。lookAtに渡される値で、実際の眼球の移動半径ではないので、若干大きめに。 in degrees */
-const SACCADE_RADIUS = 5.0
+const SACCADE_RADIUS = 2.5
 
 const _v3A = new THREE.Vector3()
 const _quatA = new THREE.Quaternion()
@@ -36,6 +36,9 @@ export class VRMLookAtSmoother extends VRMLookAt {
   /** `false` にするとサッケードを無効にできます */
   public enableSaccade: boolean
 
+  /** `false` にするとユーザ方向の頭の回転を無効にできます（ジェスチャー中など） */
+  public enableHeadTracking: boolean = true
+
   /** サッケードの移動方向を格納しておく */
   private _saccadeYaw = 0.0
 
@@ -53,6 +56,9 @@ export class VRMLookAtSmoother extends VRMLookAt {
 
   /** firstPersonBoneの回転を一時的にしまっておくやつ */
   private _tempFirstPersonBoneQuat = new THREE.Quaternion()
+
+  /** 次の update() でスムージング値をリセットするフラグ */
+  private _needsDampingReset = false
 
   public constructor(humanoid: VRMHumanoid, applier: VRMLookAtApplier) {
     super(humanoid, applier)
@@ -88,6 +94,13 @@ export class VRMLookAtSmoother extends VRMLookAt {
           this._pitch = pitchAnimation
         }
 
+        // ジェスチャー復帰後: 首がクリーンな状態で計算された正しい値にスナップ
+        if (this._needsDampingReset) {
+          this._yawDamped = this._yaw
+          this._pitchDamped = this._pitch
+          this._needsDampingReset = false
+        }
+
         // yawDamped / pitchDampedをスムージングする
         const k = 1.0 - Math.exp(-this.smoothFactor * delta)
         this._yawDamped += (this._yaw - this._yawDamped) * k
@@ -108,28 +121,30 @@ export class VRMLookAtSmoother extends VRMLookAt {
         // yawFrame / pitchFrame に結果を代入
         yawFrame = THREE.MathUtils.lerp(
           yawAnimation,
-          0.6 * this._yawDamped,
+          0.9 * this._yawDamped,
           userRatio
         )
         pitchFrame = THREE.MathUtils.lerp(
           pitchAnimation,
-          0.6 * this._pitchDamped,
+          0.9 * this._pitchDamped,
           userRatio
         )
 
-        // 頭も回す
-        _eulerA.set(
-          -this._pitchDamped * THREE.MathUtils.DEG2RAD,
-          this._yawDamped * THREE.MathUtils.DEG2RAD,
-          0.0,
-          VRMLookAt.EULER_ORDER
-        )
-        _quatA.setFromEuler(_eulerA)
+        // 頭も回す（ジェスチャー中はジェスチャーの方向を尊重するためスキップ）
+        if (this.enableHeadTracking) {
+          _eulerA.set(
+            -this._pitchDamped * THREE.MathUtils.DEG2RAD,
+            this._yawDamped * THREE.MathUtils.DEG2RAD,
+            0.0,
+            VRMLookAt.EULER_ORDER
+          )
+          _quatA.setFromEuler(_eulerA)
 
-        const head = this.humanoid.getRawBoneNode('head')!
-        this._tempFirstPersonBoneQuat.copy(head.quaternion)
-        head.quaternion.slerp(_quatA, 0.4)
-        head.updateMatrixWorld()
+          const head = this.humanoid.getRawBoneNode('head')!
+          this._tempFirstPersonBoneQuat.copy(head.quaternion)
+          head.quaternion.slerp(_quatA, 0.4)
+          head.updateMatrixWorld()
+        }
       }
 
       if (this.enableSaccade) {
@@ -162,6 +177,11 @@ export class VRMLookAtSmoother extends VRMLookAt {
       this._needsUpdate = false
       this.applier.applyYawPitch(this._yaw, this._pitch)
     }
+  }
+
+  /** ジェスチャー終了後、次フレームのupdate()でスムージング値をリセットする予約 */
+  public resetDamping(): void {
+    this._needsDampingReset = true
   }
 
   /** renderしたあとに叩いて頭の回転をもとに戻す */

@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { VRM, VRMExpressionPresetName } from '@pixiv/three-vrm'
+import { VRMLookAtSmoother } from '@/lib/VRMLookAtSmootherLoaderPlugin/VRMLookAtSmoother'
 import { ExpressionController } from './expressionController'
 import { GestureController, GestureType } from './gestureController'
 import {
@@ -27,16 +28,20 @@ export class EmoteController {
   /** Load all VRMA pose files referenced by gesture definitions */
   public async loadVrmaPoses(): Promise<void> {
     for (const [gestureType, definition] of gestureDefinitions) {
-      if (definition.vrmaUrl) {
-        try {
-          const pose = await loadVrmaPose(
-            buildUrl(definition.vrmaUrl),
-            this._vrm
-          )
-          this._gestureController.registerVrmaPose(gestureType as GType, pose)
-        } catch (e) {
-          console.warn(`Failed to load VRMA pose for ${gestureType}:`, e)
-        }
+      const urls = definition.vrmaUrls
+        ? definition.vrmaUrls
+        : definition.vrmaUrl
+          ? [definition.vrmaUrl]
+          : null
+      if (!urls) continue
+
+      try {
+        const poses = await Promise.all(
+          urls.map((url) => loadVrmaPose(buildUrl(url), this._vrm))
+        )
+        this._gestureController.registerVrmaPoses(gestureType as GType, poses)
+      } catch (e) {
+        console.warn(`Failed to load VRMA poses for ${gestureType}:`, e)
       }
     }
   }
@@ -72,6 +77,14 @@ export class EmoteController {
   }
 
   /**
+   * VRMAジェスチャーが変更したボーンをslerp前の状態に復元する。
+   * mixer.update() の前に呼ぶ。
+   */
+  public resetNormalizedBones(): void {
+    this._gestureController.resetVrmaBones()
+  }
+
+  /**
    * Apply VRMA gesture rotations to normalized bones.
    * Must be called BEFORE vrm.update().
    */
@@ -79,8 +92,21 @@ export class EmoteController {
     this._gestureController.applyNormalizedPose()
   }
 
+  /** VRMAジェスチャーが再生中かどうか */
+  public get isPlayingVrmaGesture(): boolean {
+    return this._gestureController.isPlayingVrmaGesture
+  }
+
   public updateGesture(delta: number) {
     const isEmotionActive = this._expressionController.isEmotionActive
     this._gestureController.update(delta, isEmotionActive)
+
+    // ジェスチャー終了時にlookAtのスムージング値をリセットし、首の角度ずれを防ぐ
+    if (this._gestureController.consumeGestureJustEnded()) {
+      const lookAt = this._vrm.lookAt
+      if (lookAt instanceof VRMLookAtSmoother) {
+        lookAt.resetDamping()
+      }
+    }
   }
 }

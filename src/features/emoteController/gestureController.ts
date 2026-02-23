@@ -25,6 +25,7 @@ export class GestureController {
   private _isReturning: boolean = false
   private _isHolding: boolean = false
   private _gestureBlendWeight: number = 0
+  private _gestureJustEnded: boolean = false
 
   private _currentGestureRotations: Map<
     VRMHumanBoneName,
@@ -36,17 +37,23 @@ export class GestureController {
 
   private _gestures: ReadonlyMap<GestureType, GestureDefinition>
 
-  /** Pre-loaded VRMA pose data (normalized bone rotations) */
-  private _vrmaPoses: Map<GestureType, VrmaPose> = new Map()
+  /** Pre-loaded VRMA pose data (normalized bone rotations, one per keyframe) */
+  private _vrmaPoses: Map<GestureType, VrmaPose[]> = new Map()
+
+  /** VRMAジェスチャーが変更するボーン名（復元対象） */
+  private _vrmaBonesToReset: VRMHumanBoneName[] = []
+
+  /** slerp前のクォータニオン保存（次フレームで復元するため） */
+  private _preSlerpQuats: Map<VRMHumanBoneName, THREE.Quaternion> = new Map()
 
   constructor(vrm: VRM) {
     this._vrm = vrm
     this._gestures = gestureDefinitions
   }
 
-  /** Register a pre-loaded VRMA pose for a gesture type */
-  public registerVrmaPose(gesture: GestureType, pose: VrmaPose) {
-    this._vrmaPoses.set(gesture, pose)
+  /** Register pre-loaded VRMA poses for a gesture type */
+  public registerVrmaPoses(gesture: GestureType, poses: VrmaPose[]) {
+    this._vrmaPoses.set(gesture, poses)
   }
 
   private _isVrmaGesture(): boolean {
@@ -61,6 +68,16 @@ export class GestureController {
 
     this._currentGesture = gesture
     this._isPlaying = true
+
+    // VRMAジェスチャーのリセット対象ボーンを記録（全ポーズのボーンを収集）
+    const poses = this._vrmaPoses.get(gesture)
+    if (poses && poses.length > 0) {
+      const boneSet = new Set<VRMHumanBoneName>()
+      for (const pose of poses) {
+        for (const boneName of pose.keys()) boneSet.add(boneName)
+      }
+      this._vrmaBonesToReset = Array.from(boneSet)
+    }
     this._currentKeyframeIndex = 0
     this._keyframeElapsedTime = 0
     this._isReturning = false
@@ -82,20 +99,81 @@ export class GestureController {
   }
 
   /**
+   * VRMAジェスチャーが変更した正規化ボーンをslerp前の状態に復元する。
+   * mixer.update() の前に呼ぶことで:
+   * - mixerトラックがあるボーン → 復元後にmixerが最新値で上書き
+   * - トラックがないボーン → slerp前の元の値（初回は元の静止状態）に戻る
+   * ジェスチャー終了後も1フレーム分復元を実行し、最終フレームの残存を除去する。
+   */
+  public resetVrmaBones(): void {
+    if (this._preSlerpQuats.size === 0) return
+
+    for (const [boneName, savedQuat] of this._preSlerpQuats) {
+      const node = this._vrm.humanoid.getNormalizedBoneNode(boneName)
+      if (node) {
+        node.quaternion.copy(savedQuat)
+      }
+    }
+
+    // ジェスチャー終了後、最後の復元を実行したらクリア
+    if (!this._isPlaying) {
+      this._vrmaBonesToReset = []
+      this._preSlerpQuats.clear()
+    }
+  }
+
+  /**
    * Apply VRMA pose rotations to normalized bone nodes.
-   * Must be called BEFORE vrm.update() so the VRM pipeline transforms
-   * normalized bones to raw bones correctly.
+   * Must be called AFTER mixer.update() and BEFORE vrm.update().
+   *
+   * 単一ポーズ: idle ↔ pose のslerp
+   * 複数ポーズ: keyframe 0 は idle→pose[0]、以降は pose[i-1]→pose[i] を直接補間
+   *            hold/return は idle ↔ 最終ポーズ のslerp
    */
   public applyNormalizedPose(): void {
     if (!this._isPlaying || !this._isVrmaGesture()) return
 
-    const pose = this._vrmaPoses.get(this._currentGesture)
-    if (!pose) return
+    const poses = this._vrmaPoses.get(this._currentGesture)
+    if (!poses || poses.length === 0) return
 
-    for (const [boneName, targetQuat] of pose) {
+    // 現在のターゲットポーズと前のポーズを決定
+    const poseIndex = Math.min(this._currentKeyframeIndex, poses.length - 1)
+    const targetPose = poses[poseIndex]
+    const isIntermediateKeyframe =
+      this._currentKeyframeIndex > 0 &&
+      !this._isHolding &&
+      !this._isReturning &&
+      this._currentKeyframeIndex < poses.length
+    const prevPose = isIntermediateKeyframe ? poses[poseIndex - 1] : null
+
+    // 全ポーズに含まれるボーン名を収集
+    const allBones = new Set<VRMHumanBoneName>()
+    for (const pose of poses) {
+      for (const boneName of pose.keys()) allBones.add(boneName)
+    }
+
+    for (const boneName of allBones) {
       const node = this._vrm.humanoid.getNormalizedBoneNode(boneName)
-      if (node) {
-        // Slerp from current idle rotation to the target pose
+      if (!node) continue
+
+      // slerp前のクォータニオンを保存（次フレームのresetで復元する）
+      this._preSlerpQuats.set(boneName, node.quaternion.clone())
+
+      const targetQuat = targetPose.get(boneName)
+      if (!targetQuat) continue
+
+      if (prevPose) {
+        // 中間キーフレーム: 前ポーズ→現ポーズを直接補間（mixerの値は無視）
+        const prevQuat = prevPose.get(boneName)
+        if (prevQuat) {
+          node.quaternion
+            .copy(prevQuat)
+            .slerp(targetQuat, this._gestureBlendWeight)
+        } else {
+          node.quaternion.slerp(targetQuat, this._gestureBlendWeight)
+        }
+      } else {
+        // 最初のキーフレーム / hold / return: idle↔ターゲットのslerp
         node.quaternion.slerp(targetQuat, this._gestureBlendWeight)
       }
     }
@@ -207,6 +285,7 @@ export class GestureController {
       ) {
         this._vrm.expressionManager.setValue('blink', 0)
       }
+      this._gestureJustEnded = true
       this._isPlaying = false
       this._currentGesture = 'none'
       this._isReturning = false
@@ -268,9 +347,23 @@ export class GestureController {
     return this._currentGesture
   }
 
+  /** ジェスチャーが終了した直後かどうか（1回読むとリセットされる） */
+  public consumeGestureJustEnded(): boolean {
+    if (this._gestureJustEnded) {
+      this._gestureJustEnded = false
+      return true
+    }
+    return false
+  }
+
   public get isClosingEyes(): boolean {
     if (!this._isPlaying) return false
     const definition = this._gestures.get(this._currentGesture)
     return definition?.closeEyes === true
+  }
+
+  /** VRMAジェスチャーが再生中かどうか */
+  public get isPlayingVrmaGesture(): boolean {
+    return this._isPlaying && this._isVrmaGesture()
   }
 }
