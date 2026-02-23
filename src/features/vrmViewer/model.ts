@@ -9,6 +9,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { VRMAnimation } from '../../lib/VRMAnimation/VRMAnimation'
 import { VRMLookAtSmootherLoaderPlugin } from '@/lib/VRMLookAtSmootherLoaderPlugin/VRMLookAtSmootherLoaderPlugin'
 import { EmoteController } from '../emoteController/emoteController'
+import { GestureType } from '../emoteController/gestures'
 import { Talk } from '../messages/messages'
 import { LipSync } from '../lipSync/lipSync'
 
@@ -125,8 +126,13 @@ export class Model {
   /**
    * ジェスチャーを再生する
    */
-  public playGesture(gesture: 'bow' | 'present' | 'none') {
+  public playGesture(gesture: GestureType) {
     this.emoteController?.playGesture(gesture)
+  }
+
+  /** Load VRMA pose files for gestures that use them */
+  public async loadGestureAnimations(): Promise<void> {
+    await this.emoteController?.loadVrmaPoses()
   }
 
   public update(delta: number): void {
@@ -139,13 +145,20 @@ export class Model {
     // 表情・瞬きの更新（ジェスチャー以外）
     this.emoteController?.updateExpression(delta)
 
+    // VRMAジェスチャー対象ボーンをidentityにリセット（mixer前に実行し、
+    // mixerトラックがあるボーンはmixerが上書き、ないボーンはidentityに戻る）
+    this.emoteController?.resetNormalizedBones()
+
     // アイドルアニメーションの更新
     this.mixer?.update(delta)
 
-    // VRMの内部更新（look-at、スプリングボーン等）
+    // VRMAジェスチャーの適用（正規化ボーンへのslerp、VRM更新の前に実行）
+    this.emoteController?.applyNormalizedGesture()
+
+    // VRMの内部更新（look-at、スプリングボーン等、正規化→rawボーン変換含む）
     this.vrm?.update(delta)
 
-    // ジェスチャーの更新（VRM更新の後に実行して最終的なボーン回転を適用）
+    // Eulerベースジェスチャーの更新（rawボーンへのmultiply、VRM更新の後に実行）
     this.emoteController?.updateGesture(delta)
   }
 }

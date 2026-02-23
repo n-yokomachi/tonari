@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { VRM } from '@pixiv/three-vrm'
+import { VRMLookAtSmoother } from '@/lib/VRMLookAtSmootherLoaderPlugin/VRMLookAtSmoother'
 /**
  * 目線を制御するクラス
  *
@@ -12,6 +13,13 @@ export class AutoLookAt {
     this._lookAtTarget = new THREE.Object3D()
     camera.add(this._lookAtTarget)
 
-    if (vrm.lookAt) vrm.lookAt.target = this._lookAtTarget
+    if (vrm.lookAt) {
+      vrm.lookAt.target = this._lookAtTarget
+
+      // VRMLookAtSmootherの場合、userTargetも設定して頭の回転でカメラを追従する
+      if (vrm.lookAt instanceof VRMLookAtSmoother) {
+        vrm.lookAt.userTarget = this._lookAtTarget
+      }
+    }
   }
 }

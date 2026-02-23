@@ -8,6 +8,7 @@ import i18next from 'i18next'
 import toastStore from '@/features/stores/toast'
 import { generateMessageId } from '@/utils/messageUtils'
 import { isCameraSupported } from '@/components/cameraPreview'
+import { GestureType, GESTURE_TAGS } from '@/features/emoteController/gestures'
 
 /**
  * ストリーミング完了後に表情をニュートラルに戻す
@@ -20,28 +21,26 @@ const resetExpressionAfterDelay = (delayMs: number = 3000) => {
   }, delayMs)
 }
 
-// ジェスチャータグの種類
-type GestureTag = 'bow' | 'present'
+/** Regex to strip gesture tags and camera tag from display text */
+const GESTURE_TAG_PATTERN = new RegExp(
+  `\\[(${GESTURE_TAGS.join('|')}|camera)\\]`,
+  'g'
+)
 
 /**
  * ジェスチャータグを検出してジェスチャーをトリガーする
- * @param text テキスト
- * @param triggeredGestures 既にトリガー済みのジェスチャー（重複防止用）
  */
 const detectAndTriggerGestures = (
   text: string,
-  triggeredGestures: Set<GestureTag>
+  triggeredGestures: Set<GestureType>
 ) => {
   const viewer = homeStore.getState().viewer
   if (!viewer?.model) return
 
-  const gestureTags: GestureTag[] = ['bow', 'present']
-
-  for (const gesture of gestureTags) {
+  for (const gesture of GESTURE_TAGS) {
     if (!triggeredGestures.has(gesture) && text.includes(`[${gesture}]`)) {
       viewer.model.playGesture(gesture)
       triggeredGestures.add(gesture)
-      // 1つのジェスチャーをトリガーしたら次のチャンクを待つ
       break
     }
   }
@@ -49,11 +48,9 @@ const detectAndTriggerGestures = (
 
 /**
  * ジェスチャータグとカメラタグをテキストから除去する
- * @param text 入力テキスト
- * @returns タグを除去したテキスト
  */
 const removeGestureTags = (text: string): string => {
-  return text.replace(/\[(bow|present|camera)\]/g, '')
+  return text.replace(GESTURE_TAG_PATTERN, '')
 }
 
 // セッションIDを生成する関数
@@ -457,7 +454,7 @@ export const processAIResponse = async (
   let persistentEmotion: EmotionType = 'neutral' // レスポンス全体で保持する感情
   let isCodeBlock = false
   let codeBlockContent = ''
-  const triggeredGestures = new Set<GestureTag>() // トリガー済みジェスチャーを追跡
+  const triggeredGestures = new Set<GestureType>() // トリガー済みジェスチャーを追跡
   let cameraTagDetected = false
 
   try {
