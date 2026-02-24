@@ -33,6 +33,9 @@ export class ExpressionController {
   }
 
   public playEmotion(preset: VRMExpressionPresetName) {
+    // Skip if the same emotion is already active (avoid flicker on re-set)
+    if (preset === this._currentEmotion) return
+
     if (this._currentEmotion != 'neutral') {
       this._expressionManager?.setValue(this._currentEmotion, 0)
     }
