@@ -71,7 +71,7 @@ export default function VrmViewer() {
       className={'relative w-full h-full overflow-hidden'}
     >
       <canvas ref={canvasRef} className={'h-full w-full'}></canvas>
-      {process.env.NODE_ENV === 'development' && <GestureTestPanel />}
+      {/* <GestureTestPanel /> */}
     </div>
   )
 }
