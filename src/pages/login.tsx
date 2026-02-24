@@ -321,26 +321,26 @@ export default function Login() {
           {showPasswordForm && (
             <form
               onSubmit={handlePasswordSubmit}
-              className={`w-64 flex items-center gap-2 ${hasError ? 'login-shake' : ''}`}
+              className={`w-64 relative ${hasError ? 'login-shake' : ''}`}
             >
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="flex-1 px-4 py-3 bg-white/60 backdrop-blur border border-gray-200 rounded-lg text-gray-800 focus:outline-none focus:border-secondary transition-colors text-center tracking-widest"
+                className="w-full px-4 py-3 pr-12 bg-white/60 backdrop-blur border border-gray-200 rounded-lg text-gray-800 focus:outline-none focus:border-secondary transition-colors text-center tracking-widest"
                 required
                 autoFocus
               />
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-12 h-12 flex-shrink-0 bg-secondary hover:bg-secondary-hover active:scale-95 rounded-lg text-white transition-all duration-150 disabled:opacity-50 flex items-center justify-center"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-secondary hover:bg-secondary-hover active:scale-95 rounded-md text-white transition-all duration-150 disabled:opacity-50 flex items-center justify-center"
               >
                 {isLoading ? (
-                  <span className="text-sm">...</span>
+                  <span className="text-xs">...</span>
                 ) : (
                   <svg
-                    className="w-5 h-5"
+                    className="w-4 h-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
