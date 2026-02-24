@@ -84,9 +84,12 @@ export class Viewer {
         const waitForStabilization = () => {
           frameCount++
           if (frameCount >= 5) {
-            // 5フレーム待って表示
             if (this.model?.vrm) {
               this.model.vrm.scene.visible = true
+              const canvas = this._renderer?.domElement
+              if (canvas) {
+                this.playEntranceAnimation(canvas)
+              }
             }
           } else {
             requestAnimationFrame(waitForStabilization)
@@ -102,6 +105,35 @@ export class Viewer {
       this._scene.remove(this.model.vrm.scene)
       this.model?.unLoadVrm()
     }
+    this.resetCanvasStyle()
+  }
+
+  private resetCanvasStyle() {
+    const canvas = this._renderer?.domElement
+    if (!canvas) return
+    canvas.style.transition = 'none'
+    canvas.style.opacity = '0'
+    canvas.style.filter = ''
+    canvas.style.transform = ''
+    canvas.style.clipPath = ''
+  }
+
+  /**
+   * 登場アニメーションを再生する
+   */
+  private playEntranceAnimation(canvas: HTMLCanvasElement) {
+    canvas.style.transition = 'none'
+    canvas.style.opacity = '0'
+    canvas.style.transform = 'translateY(20px)'
+    canvas.style.filter = 'blur(6px)'
+    void canvas.offsetHeight
+    canvas.style.transition =
+      'opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1), filter 0.8s ease-out'
+    requestAnimationFrame(() => {
+      canvas.style.opacity = '1'
+      canvas.style.transform = 'translateY(0)'
+      canvas.style.filter = 'blur(0px)'
+    })
   }
 
   /**
@@ -143,6 +175,12 @@ export class Viewer {
     window.addEventListener('resize', () => {
       this.resize()
     })
+    // Hide canvas until VRM model is loaded and ready
+    canvas.style.opacity = '0'
+    canvas.style.filter = ''
+    canvas.style.transform = ''
+    canvas.style.clipPath = ''
+
     this.isReady = true
     this.update()
 
