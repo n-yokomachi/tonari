@@ -14,19 +14,15 @@ import infraConfig from '@/../config/infra.json'
 export interface AppConfig {
   general: {
     language: string
-    changeEnglishToJapanese: boolean
     backgroundImagePath: string
-    showAssistantText: boolean
     showCharacterName: boolean
     showControlPanel: boolean
-    showQuickMenu: boolean
     useVideoAsBackground: boolean
     includeTimestampInUserMessage: boolean
     externalLinkageMode: boolean
     messageReceiverEnabled: boolean
     showPresetQuestions: boolean
     presetQuestions: string[]
-    chatLogWidth: number
   }
   character: {
     name: string
@@ -35,17 +31,7 @@ export interface AppConfig {
   }
   ai: {
     service: string
-    model: string
-    temperature: number
-    maxTokens: number
     maxPastMessages: number
-    useSearchGrounding: boolean
-    dynamicRetrievalThreshold: number
-    customModel: boolean
-  }
-  multiModal: {
-    enabled: boolean
-    mode: string
   }
 }
 
@@ -89,19 +75,9 @@ export const getAppConfig = (): AppConfig => ({
       process.env.NEXT_PUBLIC_SELECT_LANGUAGE,
       appConfig.general.language
     ),
-    changeEnglishToJapanese: getEnvOrConfig(
-      process.env.NEXT_PUBLIC_CHANGE_ENGLISH_TO_JAPANESE,
-      appConfig.general.changeEnglishToJapanese,
-      parseBool
-    ),
     backgroundImagePath: getEnvOrConfig(
       process.env.NEXT_PUBLIC_BACKGROUND_IMAGE_PATH,
       appConfig.general.backgroundImagePath
-    ),
-    showAssistantText: getEnvOrConfig(
-      process.env.NEXT_PUBLIC_SHOW_ASSISTANT_TEXT,
-      appConfig.general.showAssistantText,
-      parseBool
     ),
     showCharacterName: getEnvOrConfig(
       process.env.NEXT_PUBLIC_SHOW_CHARACTER_NAME,
@@ -112,11 +88,6 @@ export const getAppConfig = (): AppConfig => ({
       process.env.NEXT_PUBLIC_SHOW_CONTROL_PANEL,
       appConfig.general.showControlPanel,
       (val) => val !== 'false'
-    ),
-    showQuickMenu: getEnvOrConfig(
-      process.env.NEXT_PUBLIC_SHOW_QUICK_MENU,
-      appConfig.general.showQuickMenu,
-      parseBool
     ),
     useVideoAsBackground: getEnvOrConfig(
       process.env.NEXT_PUBLIC_USE_VIDEO_AS_BACKGROUND,
@@ -146,11 +117,6 @@ export const getAppConfig = (): AppConfig => ({
     presetQuestions: process.env.NEXT_PUBLIC_PRESET_QUESTIONS
       ? process.env.NEXT_PUBLIC_PRESET_QUESTIONS.split(',').map((s) => s.trim())
       : appConfig.general.presetQuestions,
-    chatLogWidth: getEnvOrConfig(
-      process.env.NEXT_PUBLIC_CHAT_LOG_WIDTH,
-      appConfig.general.chatLogWidth,
-      parseInt_
-    ),
   },
   character: {
     name: getEnvOrConfig(
@@ -172,50 +138,10 @@ export const getAppConfig = (): AppConfig => ({
       process.env.NEXT_PUBLIC_SELECT_AI_SERVICE,
       appConfig.ai.service
     ),
-    model: getEnvOrConfig(
-      process.env.NEXT_PUBLIC_SELECT_AI_MODEL,
-      appConfig.ai.model
-    ),
-    temperature: getEnvOrConfig(
-      process.env.NEXT_PUBLIC_TEMPERATURE,
-      appConfig.ai.temperature,
-      parseFloat_
-    ),
-    maxTokens: getEnvOrConfig(
-      process.env.NEXT_PUBLIC_MAX_TOKENS,
-      appConfig.ai.maxTokens,
-      parseInt_
-    ),
     maxPastMessages: getEnvOrConfig(
       process.env.NEXT_PUBLIC_MAX_PAST_MESSAGES,
       appConfig.ai.maxPastMessages,
       parseInt_
-    ),
-    useSearchGrounding: getEnvOrConfig(
-      process.env.NEXT_PUBLIC_USE_SEARCH_GROUNDING,
-      appConfig.ai.useSearchGrounding,
-      parseBool
-    ),
-    dynamicRetrievalThreshold: getEnvOrConfig(
-      process.env.NEXT_PUBLIC_DYNAMIC_RETRIEVAL_THRESHOLD,
-      appConfig.ai.dynamicRetrievalThreshold,
-      parseFloat_
-    ),
-    customModel: getEnvOrConfig(
-      process.env.NEXT_PUBLIC_CUSTOM_MODEL,
-      appConfig.ai.customModel,
-      parseBool
-    ),
-  },
-  multiModal: {
-    enabled: getEnvOrConfig(
-      process.env.NEXT_PUBLIC_ENABLE_MULTIMODAL,
-      appConfig.multiModal.enabled,
-      (val) => val !== 'false'
-    ),
-    mode: getEnvOrConfig(
-      process.env.NEXT_PUBLIC_MULTIMODAL_MODE,
-      appConfig.multiModal.mode
     ),
   },
 })
