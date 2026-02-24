@@ -6,11 +6,8 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || ''
 const COOKIE_NAME = 'auth_token'
 const COOKIE_MAX_AGE = 60 * 60 * 24 // 24 hours
 
-function generateToken(password: string): string {
-  return crypto
-    .createHmac('sha256', password)
-    .update(Date.now().toString())
-    .digest('hex')
+export function hashToken(password: string): string {
+  return crypto.createHash('sha256').update(password).digest('hex')
 }
 
 export function validateAdminToken(req: NextApiRequest): boolean {
@@ -20,11 +17,7 @@ export function validateAdminToken(req: NextApiRequest): boolean {
   }
   const cookies = parse(req.headers.cookie || '')
   const token = cookies[COOKIE_NAME]
-  console.log('Cookie validation:', {
-    hasToken: !!token,
-    matches: token === ADMIN_PASSWORD,
-  })
-  return token === ADMIN_PASSWORD
+  return token === hashToken(ADMIN_PASSWORD)
 }
 
 export default async function handler(
@@ -46,7 +39,7 @@ export default async function handler(
 
     res.setHeader(
       'Set-Cookie',
-      serialize(COOKIE_NAME, ADMIN_PASSWORD, {
+      serialize(COOKIE_NAME, hashToken(ADMIN_PASSWORD), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
