@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef } from 'react'
 
 import homeStore from '@/features/stores/home'
 import settingsStore from '@/features/stores/settings'
-import { GestureTestPanel } from './gestureTestPanel'
 
 export default function VrmViewer() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -71,7 +70,6 @@ export default function VrmViewer() {
       className={'relative w-full h-full overflow-hidden'}
     >
       <canvas ref={canvasRef} className={'h-full w-full'}></canvas>
-      {/* <GestureTestPanel /> */}
     </div>
   )
 }

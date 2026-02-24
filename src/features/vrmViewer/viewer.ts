@@ -186,24 +186,12 @@ export class Viewer {
     if (headNode) {
       const headWPos = headNode.getWorldPosition(new THREE.Vector3())
 
-      // モバイル判定（画面幅768px以下）
-      const isMobile = window.innerWidth <= 768
-
-      // モバイル時はカメラを引きで表示（上半身が見える程度）
-      const cameraZ = isMobile ? 1.5 : (this._camera?.position.z ?? 1.5)
-      const cameraYOffset = 0
-      const targetYOffset = 0
-
       this._camera?.position.set(
         this._camera.position.x,
-        headWPos.y + cameraYOffset,
-        cameraZ
+        headWPos.y,
+        this._camera?.position.z ?? 1.5
       )
-      this._cameraControls?.target.set(
-        headWPos.x,
-        headWPos.y + targetYOffset,
-        headWPos.z
-      )
+      this._cameraControls?.target.set(headWPos.x, headWPos.y, headWPos.z)
       this._cameraControls?.update()
     }
   }
