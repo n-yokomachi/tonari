@@ -52,28 +52,13 @@ export default function Login() {
     setHasError(true)
   }, [])
 
-  const checkTouchIdAvailability = async () => {
-    if (!browserSupportsWebAuthn()) {
-      setShowPasswordForm(true)
-      return
-    }
-
-    try {
-      const available =
-        await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
-      setIsTouchIdAvailable(available)
-
-      if (available) {
-        const stored = localStorage.getItem(CREDENTIAL_STORAGE_KEY)
-        if (stored) {
-          setHasRegisteredCredential(true)
-        } else {
-          setShowPasswordForm(true)
-        }
-      } else {
-        setShowPasswordForm(true)
-      }
-    } catch {
+  const checkTouchIdAvailability = () => {
+    const stored = localStorage.getItem(CREDENTIAL_STORAGE_KEY)
+    if (stored) {
+      // Credential exists = passkey was registered before, show Touch ID
+      setIsTouchIdAvailable(true)
+      setHasRegisteredCredential(true)
+    } else {
       setShowPasswordForm(true)
     }
   }
