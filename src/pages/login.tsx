@@ -91,21 +91,9 @@ export default function Login() {
       })
 
       if (res.ok) {
-        // Re-check WebAuthn availability at submission time
-        // (mount-time check may have failed due to timing or secure context)
-        let canRegister = false
-        try {
-          if (browserSupportsWebAuthn()) {
-            const available =
-              await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
-            canRegister =
-              available && !localStorage.getItem(CREDENTIAL_STORAGE_KEY)
-          }
-        } catch {
-          // WebAuthn not available
-        }
-
-        if (canRegister) {
+        // Show passkey registration prompt if not yet registered
+        // (even if WebAuthn is unavailable — user can SKIP if registration fails)
+        if (!localStorage.getItem(CREDENTIAL_STORAGE_KEY)) {
           setIsTouchIdAvailable(true)
           setShowRegisterPrompt(true)
           setShowPasswordForm(false)
