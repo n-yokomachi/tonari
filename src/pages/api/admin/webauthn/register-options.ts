@@ -13,7 +13,7 @@ export default async function handler(
   }
 
   // 認証済みチェック（Cookieでセッション確認）
-  const authCookie = req.cookies['admin_token']
+  const authCookie = req.cookies['auth_token']
   const adminPassword = process.env.ADMIN_PASSWORD
   if (!authCookie || authCookie !== adminPassword) {
     return res.status(401).json({ error: 'Unauthorized' })

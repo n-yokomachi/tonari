@@ -176,6 +176,21 @@ export const Menu = () => {
                         height={24}
                       />
                     </Link>
+                    <button
+                      onClick={async () => {
+                        await fetch('/api/admin/auth', { method: 'DELETE' })
+                        window.location.href = '/login'
+                      }}
+                      className="bg-primary hover:bg-primary-hover active:bg-primary-press rounded-2xl text-sm p-2 text-center inline-flex items-center transition-all duration-200 text-theme"
+                      aria-label="ログアウト"
+                    >
+                      <Image
+                        src="/images/icons/logout.svg"
+                        alt="ログアウト"
+                        width={24}
+                        height={24}
+                      />
+                    </button>
                   </>
                 )}
               </div>

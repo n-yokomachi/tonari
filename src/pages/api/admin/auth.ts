@@ -3,7 +3,7 @@ import { serialize, parse } from 'cookie'
 import crypto from 'crypto'
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || ''
-const COOKIE_NAME = 'admin_token'
+const COOKIE_NAME = 'auth_token'
 const COOKIE_MAX_AGE = 60 * 60 * 24 // 24 hours
 
 function generateToken(password: string): string {

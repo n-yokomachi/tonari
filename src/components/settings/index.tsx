@@ -5,8 +5,6 @@ import menuStore from '@/features/stores/menu'
 import { GitHubLink } from '../githubLink'
 import { IconButton } from '../iconButton'
 import Based from './based'
-import Character from './character'
-import AI from './ai'
 import Log from './log'
 import Other from './other'
 
@@ -18,7 +16,6 @@ const Settings = (props: Props) => {
     <div className="fixed inset-0 z-40 bg-white/80 backdrop-blur">
       <Header {...props} />
       <Main />
-      <Footer />
     </div>
   )
 }
@@ -40,13 +37,11 @@ const Header = ({ onClickClose }: Pick<Props, 'onClickClose'>) => {
 }
 
 // タブの定義
-type TabKey = 'based' | 'character' | 'ai' | 'log' | 'other'
+type TabKey = 'based' | 'log' | 'other'
 
 // アイコンのパスマッピング
 const tabIconMapping: Record<TabKey, string> = {
   based: '/images/setting-icons/basic-settings.svg',
-  character: '/images/setting-icons/character-settings.svg',
-  ai: '/images/setting-icons/ai-settings.svg',
   log: '/images/setting-icons/conversation-history.svg',
   other: '/images/setting-icons/other-settings.svg',
 }
@@ -59,10 +54,9 @@ const Main = () => {
 
   const setActiveTab = (tab: TabKey) => {
     menuStore.setState({ activeSettingsTab: tab })
-    setIsDropdownOpen(false) // モバイルドロップダウンを閉じる
+    setIsDropdownOpen(false)
   }
 
-  // ドロップダウンの外側をクリックした際に閉じる
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -88,14 +82,6 @@ const Main = () => {
       label: t('BasedSettings'),
     },
     {
-      key: 'character',
-      label: t('CharacterSettings'),
-    },
-    {
-      key: 'ai',
-      label: t('AISettings'),
-    },
-    {
       key: 'log',
       label: t('LogSettings'),
     },
@@ -109,10 +95,6 @@ const Main = () => {
     switch (activeTab) {
       case 'based':
         return <Based />
-      case 'character':
-        return <Character />
-      case 'ai':
-        return <AI />
       case 'log':
         return <Log />
       case 'other':
@@ -123,6 +105,8 @@ const Main = () => {
   }
 
   const currentTab = tabs.find((tab) => tab.key === activeTab)
+  const validActiveTab =
+    (activeTab as TabKey) in tabIconMapping ? (activeTab as TabKey) : 'based'
 
   return (
     <main className="max-h-full overflow-auto relative">
@@ -167,7 +151,7 @@ const Main = () => {
                 <div
                   className="w-5 h-5 mr-2 icon-mask-default"
                   style={{
-                    maskImage: `url(${tabIconMapping[activeTab as TabKey] || tabIconMapping.based})`,
+                    maskImage: `url(${tabIconMapping[validActiveTab]})`,
                     maskSize: 'contain',
                     maskRepeat: 'no-repeat',
                     maskPosition: 'center',
@@ -225,13 +209,5 @@ const Main = () => {
         </div>
       </div>
     </main>
-  )
-}
-
-const Footer = () => {
-  return (
-    <footer className="absolute py-1 bg-[#413D43] text-center text-theme font-Montserrat bottom-0 w-full">
-      powered by ChatVRM from Pixiv / ver. 2.38.0
-    </footer>
   )
 }

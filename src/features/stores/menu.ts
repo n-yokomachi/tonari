@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-type SettingsTabKey = 'based' | 'character' | 'ai' | 'log' | 'other'
+type SettingsTabKey = 'based' | 'log' | 'other'
 
 interface MenuState {
   fileInput: HTMLInputElement | null
