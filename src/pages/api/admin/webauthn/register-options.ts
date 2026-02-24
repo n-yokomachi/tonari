@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { generateRegistrationOptions } from '@simplewebauthn/server'
+import { hashToken } from '../auth'
 
 const rpName = 'TONaRi Admin'
 const rpID = process.env.WEBAUTHN_RP_ID || 'localhost'
@@ -15,7 +16,11 @@ export default async function handler(
   // 認証済みチェック（Cookieでセッション確認）
   const authCookie = req.cookies['auth_token']
   const adminPassword = process.env.ADMIN_PASSWORD
-  if (!authCookie || authCookie !== adminPassword) {
+  if (
+    !authCookie ||
+    !adminPassword ||
+    authCookie !== hashToken(adminPassword)
+  ) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
