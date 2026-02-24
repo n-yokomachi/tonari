@@ -7,7 +7,6 @@ from bedrock_agentcore.runtime import BedrockAgentCoreApp
 
 from src.agent.tonari_agent import (
     create_tonari_agent,
-    create_tonari_agent_light,
     create_tonari_agent_with_gateway,
 )
 
@@ -15,27 +14,53 @@ logger = logging.getLogger(__name__)
 
 app = BedrockAgentCoreApp()
 
-# ツール使用が必要なキーワード（香水検索、Web検索、SNS関連）
-TOOL_KEYWORDS = [
-    "香水",
-    "パフューム",
-    "perfume",
-    "フレグランス",
-    "fragrance",
-    "検索",
-    "調べ",
-    "探し",
-    "おすすめ",
-    "ツイート",
-    "tweet",
-    "投稿",
-]
+# 保持中のAgentとそのセッション情報
+_current_agent = None
+_current_mcp_client = None
+_current_session_id = None
+_current_actor_id = None
 
 
-def needs_tools(prompt: str) -> bool:
-    """プロンプトにツール使用が必要なキーワードが含まれるか判定"""
-    prompt_lower = prompt.lower()
-    return any(kw in prompt_lower for kw in TOOL_KEYWORDS)
+def _get_or_create_agent(session_id: str, actor_id: str):
+    """同じセッションならAgentを使い回し、変わったら作り直す"""
+    global _current_agent, _current_mcp_client, _current_session_id, _current_actor_id
+
+    if (
+        _current_agent is not None
+        and _current_session_id == session_id
+        and _current_actor_id == actor_id
+    ):
+        return _current_agent
+
+    # 既存のMCPClient接続があれば閉じる
+    if _current_mcp_client is not None:
+        try:
+            _current_mcp_client.stop()
+        except Exception:
+            pass
+        _current_mcp_client = None
+
+    # フル装備のAgentを作成（LTM + Gateway + ツール）
+    try:
+        agent, mcp_client = create_tonari_agent_with_gateway(
+            session_id=session_id, actor_id=actor_id
+        )
+        mcp_client.start()
+        tools = mcp_client.list_tools_sync()
+        agent = create_tonari_agent(
+            session_id=session_id,
+            actor_id=actor_id,
+            mcp_tools=tools,
+        )
+        _current_mcp_client = mcp_client
+    except Exception as e:
+        logger.warning("Gateway connection failed, running without tools: %s", e)
+        agent = create_tonari_agent(session_id=session_id, actor_id=actor_id)
+
+    _current_agent = agent
+    _current_session_id = session_id
+    _current_actor_id = actor_id
+    return agent
 
 
 def build_content_blocks(
@@ -92,34 +117,10 @@ async def invoke(payload: dict):
     )
 
     content = build_content_blocks(prompt, image_base64, image_format)
+    agent = _get_or_create_agent(session_id, actor_id)
 
-    if needs_tools(prompt):
-        # フルモード: Gateway + LTM + ツール
-        try:
-            agent, mcp_client = create_tonari_agent_with_gateway(
-                session_id=session_id, actor_id=actor_id
-            )
-            with mcp_client:
-                tools = mcp_client.list_tools_sync()
-                agent = create_tonari_agent(
-                    session_id=session_id,
-                    actor_id=actor_id,
-                    mcp_tools=tools,
-                )
-                async for text in _stream_response(agent, content):
-                    yield text
-        except Exception as e:
-            logger.warning("Gateway connection failed, running without tools: %s", e)
-            agent = create_tonari_agent(session_id=session_id, actor_id=actor_id)
-            async for text in _stream_response(agent, content):
-                yield text
-    else:
-        # 軽量モード: STMのみ、ツールなし、LTM検索なし
-        agent = create_tonari_agent_light(
-            session_id=session_id, actor_id=actor_id
-        )
-        async for text in _stream_response(agent, content):
-            yield text
+    async for text in _stream_response(agent, content):
+        yield text
 
 
 if __name__ == "__main__":

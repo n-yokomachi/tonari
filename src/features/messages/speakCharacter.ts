@@ -251,6 +251,11 @@ const speakWithAudio = (
   onStart?.()
 
   const { viewer } = homeStore.getState()
+
+  // Set emotion immediately (before waiting for audio fetch)
+  // This ensures gesture skipEyeClose works from the first frame
+  viewer.model?.emoteController?.playEmotion(talk.emotion)
+
   viewer.model?.initLipSync()
 
   const { voiceModel } = settingsStore.getState()
