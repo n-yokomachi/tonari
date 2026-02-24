@@ -91,7 +91,22 @@ export default function Login() {
       })
 
       if (res.ok) {
-        if (isTouchIdAvailable && !hasRegisteredCredential) {
+        // Re-check WebAuthn availability at submission time
+        // (mount-time check may have failed due to timing or secure context)
+        let canRegister = false
+        try {
+          if (browserSupportsWebAuthn()) {
+            const available =
+              await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+            canRegister =
+              available && !localStorage.getItem(CREDENTIAL_STORAGE_KEY)
+          }
+        } catch {
+          // WebAuthn not available
+        }
+
+        if (canRegister) {
+          setIsTouchIdAvailable(true)
           setShowRegisterPrompt(true)
           setShowPasswordForm(false)
         } else {
