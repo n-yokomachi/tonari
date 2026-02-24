@@ -83,10 +83,10 @@ const Home = () => {
       <Meta />
       {isMobile ? (
         <>
-          {/* モバイル: ヘッダー（最上部） */}
+          {/* モバイル: ヘッダー（VRMビューワー上に透過で重ねる） */}
           <MobileHeader />
           {/* モバイル: VRMビューワー */}
-          <div className="h-[35vh] min-h-[180px]">
+          <div className="relative h-[50vh] min-h-[250px]">
             <VrmViewer />
           </div>
           {/* モバイル: チャットUI（中央） */}

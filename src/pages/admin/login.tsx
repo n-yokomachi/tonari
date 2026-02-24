@@ -72,7 +72,7 @@ export default function AdminLogin() {
           setShowRegisterPrompt(true)
           setShowPasswordForm(false)
         } else {
-          window.location.href = '/admin/perfumes'
+          window.location.href = '/admin/perfumes/'
         }
       } else {
         setError('認証失敗')
@@ -113,7 +113,7 @@ export default function AdminLogin() {
           CREDENTIAL_STORAGE_KEY,
           JSON.stringify(verifyData.credential)
         )
-        window.location.href = '/admin/perfumes'
+        window.location.href = '/admin/perfumes/'
       }
     } catch {
       setError('登録失敗')
@@ -159,7 +159,7 @@ export default function AdminLogin() {
       if (verifyData.verified) {
         credential.counter = verifyData.newCounter
         localStorage.setItem(CREDENTIAL_STORAGE_KEY, JSON.stringify(credential))
-        window.location.href = '/admin/perfumes'
+        window.location.href = '/admin/perfumes/'
       }
     } catch {
       setError('認証失敗')

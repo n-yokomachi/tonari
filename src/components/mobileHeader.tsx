@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import Link from 'next/link'
 import Image from 'next/image'
 import { IconButton } from './iconButton'
 import Settings from './settings'
@@ -30,32 +31,45 @@ export const MobileHeader = () => {
   return (
     <>
       <header
-        className="flex-shrink-0 px-4 py-2 flex items-center justify-between"
+        className="absolute top-0 left-0 right-0 z-20 px-4 py-2 flex items-center justify-end"
         role="banner"
       >
-        <Image src="/logo.png" alt="TONaRi" width={120} height={40} priority />
-        {showControlPanel && (
-          <nav className="flex gap-2" aria-label="Main navigation">
-            <IconButton
-              iconName="24/Refresh"
-              isProcessing={false}
-              onClick={handleNewSession}
-              aria-label="新しいセッション"
-            />
-            <IconButton
-              iconName="24/Swap"
-              isProcessing={false}
-              onClick={handleSwitchVrmModel}
-              aria-label="モデル切り替え"
-            />
-            <IconButton
-              iconName="24/Settings"
-              isProcessing={false}
-              onClick={() => setShowSettings(true)}
-              aria-label={t('BasedSettings')}
-            />
-          </nav>
-        )}
+        <nav className="flex gap-2" aria-label="Main navigation">
+          {showControlPanel && (
+            <>
+              <IconButton
+                iconName="24/Refresh"
+                isProcessing={false}
+                onClick={handleNewSession}
+                aria-label="新しいセッション"
+              />
+              <IconButton
+                iconName="24/Swap"
+                isProcessing={false}
+                onClick={handleSwitchVrmModel}
+                aria-label="モデル切り替え"
+              />
+              <Link
+                href="/admin/perfumes"
+                className="bg-primary hover:bg-primary-hover active:bg-primary-press rounded-2xl text-sm p-2 text-center inline-flex items-center transition-all duration-200 text-theme"
+                aria-label={t('PerfumeDataManagement')}
+              >
+                <Image
+                  src="/images/icons/database.svg"
+                  alt={t('PerfumeDataManagement')}
+                  width={24}
+                  height={24}
+                />
+              </Link>
+            </>
+          )}
+          <IconButton
+            iconName="24/Settings"
+            isProcessing={false}
+            onClick={() => setShowSettings(true)}
+            aria-label={t('BasedSettings')}
+          />
+        </nav>
       </header>
       {showSettings && <Settings onClickClose={() => setShowSettings(false)} />}
     </>
