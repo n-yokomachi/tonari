@@ -3,6 +3,7 @@ import {
   verifyRegistrationResponse,
   type RegistrationResponseJSON,
 } from '@simplewebauthn/server'
+import { hashToken } from '../auth'
 
 const rpID = process.env.WEBAUTHN_RP_ID || 'localhost'
 const origin = process.env.WEBAUTHN_ORIGIN || 'http://localhost:3000'
@@ -16,9 +17,13 @@ export default async function handler(
   }
 
   // 認証済みチェック
-  const authCookie = req.cookies['admin_token']
+  const authCookie = req.cookies['auth_token']
   const adminPassword = process.env.ADMIN_PASSWORD
-  if (!authCookie || authCookie !== adminPassword) {
+  if (
+    !authCookie ||
+    !adminPassword ||
+    authCookie !== hashToken(adminPassword)
+  ) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
 

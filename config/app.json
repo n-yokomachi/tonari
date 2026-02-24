@@ -4,19 +4,15 @@
 
   "general": {
     "language": "ja",
-    "changeEnglishToJapanese": false,
     "backgroundImagePath": "gradient",
-    "showAssistantText": true,
     "showCharacterName": true,
     "showControlPanel": true,
-    "showQuickMenu": true,
     "useVideoAsBackground": false,
     "includeTimestampInUserMessage": false,
     "externalLinkageMode": false,
     "messageReceiverEnabled": false,
     "showPresetQuestions": true,
-    "presetQuestions": [],
-    "chatLogWidth": 400
+    "presetQuestions": []
   },
 
   "character": {
@@ -27,18 +23,6 @@
 
   "ai": {
     "service": "anthropic",
-    "model": "claude-haiku-4-5",
-    "temperature": 0.7,
-    "maxTokens": 4096,
-    "maxPastMessages": 10,
-    "useSearchGrounding": false,
-    "dynamicRetrievalThreshold": 0.3,
-    "customModel": false
-  },
-
-  "multiModal": {
-    "enabled": true,
-    "mode": "ai-decide",
-    "imageDisplayPosition": "input"
+    "maxPastMessages": 10
   }
 }

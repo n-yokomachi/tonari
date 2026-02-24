@@ -10,7 +10,6 @@ const Log = () => {
   const chatLog = messageSelectors.getTextAndImageMessages(
     homeStore((s) => s.chatLog)
   )
-  const selectAIService = settingsStore((s) => s.selectAIService)
   const maxPastMessages = settingsStore((s) => s.maxPastMessages)
 
   const { t } = useTranslation()

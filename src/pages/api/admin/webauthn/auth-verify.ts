@@ -3,6 +3,7 @@ import {
   verifyAuthenticationResponse,
   type AuthenticationResponseJSON,
 } from '@simplewebauthn/server'
+import { hashToken } from '../auth'
 
 const rpID = process.env.WEBAUTHN_RP_ID || 'localhost'
 const origin = process.env.WEBAUTHN_ORIGIN || 'http://localhost:3000'
@@ -52,7 +53,7 @@ export default async function handler(
       // チャレンジCookieを削除し、認証Cookieを設定
       res.setHeader('Set-Cookie', [
         'webauthn-challenge=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0',
-        `admin_token=${adminPassword}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24}${isProduction ? '; Secure' : ''}`,
+        `auth_token=${hashToken(adminPassword || '')}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24}${isProduction ? '; Secure' : ''}`,
       ])
 
       return res.status(200).json({

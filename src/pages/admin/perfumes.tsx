@@ -72,7 +72,7 @@ export default function AdminPerfumes() {
     try {
       const res = await fetch('/api/admin/perfumes')
       if (res.status === 401) {
-        router.push('/admin/login')
+        router.push('/login')
         return
       }
       if (!res.ok) throw new Error('Failed to fetch')
@@ -139,8 +139,7 @@ export default function AdminPerfumes() {
     return <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
   }
 
-  const handleLogout = async () => {
-    await fetch('/api/admin/auth', { method: 'DELETE' })
+  const handleBack = () => {
     router.push('/')
   }
 
@@ -316,9 +315,9 @@ export default function AdminPerfumes() {
               </span>
             </div>
             <button
-              onClick={handleLogout}
+              onClick={handleBack}
               className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
-              title="ログアウト"
+              title="戻る"
             >
               <svg
                 className="w-5 h-5 text-gray-500"
@@ -330,7 +329,7 @@ export default function AdminPerfumes() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
                 />
               </svg>
             </button>
