@@ -1,6 +1,6 @@
 import * as cdk from 'aws-cdk-lib'
 import * as cognito from 'aws-cdk-lib/aws-cognito'
-import * as ssm from 'aws-cdk-lib/aws-ssm'
+import * as iam from 'aws-cdk-lib/aws-iam'
 import * as cr from 'aws-cdk-lib/custom-resources'
 import { Construct } from 'constructs'
 
@@ -129,10 +129,47 @@ export class CognitoConstruct extends Construct {
       'UserPoolClient.ClientSecret'
     )
 
-    new ssm.StringParameter(this, 'ClientSecretParam', {
-      parameterName: this.ssmClientSecretPath,
-      stringValue: clientSecret,
-      description: 'Cognito M2M App Client Secret for Tonari',
+    // Store as SecureString via custom resource (CDK StringParameter doesn't support SecureString)
+    new cr.AwsCustomResource(this, 'ClientSecretSecure', {
+      onCreate: {
+        service: 'SSM',
+        action: 'putParameter',
+        parameters: {
+          Name: this.ssmClientSecretPath,
+          Value: clientSecret,
+          Type: 'SecureString',
+          Description: 'Cognito M2M App Client Secret for Tonari',
+          Overwrite: true,
+        },
+        physicalResourceId: cr.PhysicalResourceId.of('cognito-client-secret-ssm'),
+      },
+      onUpdate: {
+        service: 'SSM',
+        action: 'putParameter',
+        parameters: {
+          Name: this.ssmClientSecretPath,
+          Value: clientSecret,
+          Type: 'SecureString',
+          Description: 'Cognito M2M App Client Secret for Tonari',
+          Overwrite: true,
+        },
+        physicalResourceId: cr.PhysicalResourceId.of('cognito-client-secret-ssm'),
+      },
+      onDelete: {
+        service: 'SSM',
+        action: 'deleteParameter',
+        parameters: {
+          Name: this.ssmClientSecretPath,
+        },
+      },
+      policy: cr.AwsCustomResourcePolicy.fromStatements([
+        new iam.PolicyStatement({
+          actions: ['ssm:PutParameter', 'ssm:DeleteParameter'],
+          resources: [
+            `arn:aws:ssm:${cdk.Stack.of(this).region}:${cdk.Stack.of(this).account}:parameter${this.ssmClientSecretPath}`,
+          ],
+        }),
+      ]),
     })
   }
 }

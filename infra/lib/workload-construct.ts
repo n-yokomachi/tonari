@@ -41,6 +41,7 @@ export class WorkloadConstruct extends Construct {
     // Use stack scope for all resources to preserve CloudFormation logical IDs
     // from before the WorkloadConstruct refactoring
     const stack = cdk.Stack.of(this)
+    const region = stack.region
     const account = stack.account
 
     // DynamoDB Table (PK=brand, SK=name)
@@ -100,7 +101,7 @@ export class WorkloadConstruct extends Construct {
         timeout: cdk.Duration.seconds(10),
         memorySize: 128,
         environment: {
-          COGNITO_REGION: 'ap-northeast-1',
+          COGNITO_REGION: region,
           COGNITO_USER_POOL_ID: cognitoUserPoolId,
           COGNITO_CLIENT_ID: cognitoClientId,
         },
@@ -199,7 +200,7 @@ export class WorkloadConstruct extends Construct {
         new iam.PolicyStatement({
           actions: ['ssm:GetParameter'],
           resources: [
-            `arn:aws:ssm:ap-northeast-1:${account}:parameter/tonari/twitter/bearer_token`,
+            `arn:aws:ssm:${region}:${account}:parameter/tonari/twitter/bearer_token`,
           ],
         })
       )
@@ -222,8 +223,8 @@ export class WorkloadConstruct extends Construct {
         new iam.PolicyStatement({
           actions: ['ssm:GetParametersByPath'],
           resources: [
-            `arn:aws:ssm:ap-northeast-1:${account}:parameter/tonari/twitter`,
-            `arn:aws:ssm:ap-northeast-1:${account}:parameter/tonari/twitter/*`,
+            `arn:aws:ssm:${region}:${account}:parameter/tonari/twitter`,
+            `arn:aws:ssm:${region}:${account}:parameter/tonari/twitter/*`,
           ],
         })
       )
@@ -242,7 +243,7 @@ export class WorkloadConstruct extends Construct {
           memorySize: 128,
           environment: {
             OWNER_TWITTER_USER_ID: ts.ownerTwitterUserId,
-            AGENTCORE_REGION: 'ap-northeast-1',
+            AGENTCORE_REGION: region,
             COGNITO_TOKEN_ENDPOINT: ts.cognitoTokenEndpoint,
             COGNITO_CLIENT_ID: cognitoClientId,
             COGNITO_SCOPE: ts.cognitoScope,
@@ -255,7 +256,7 @@ export class WorkloadConstruct extends Construct {
         new iam.PolicyStatement({
           actions: ['ssm:GetParameter'],
           resources: [
-            `arn:aws:ssm:ap-northeast-1:${account}:parameter${ts.ssmCognitoClientSecret}`,
+            `arn:aws:ssm:${region}:${account}:parameter${ts.ssmCognitoClientSecret}`,
           ],
         })
       )

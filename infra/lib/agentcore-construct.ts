@@ -1,10 +1,8 @@
 import * as cdk from 'aws-cdk-lib'
 import * as bedrockagentcore from 'aws-cdk-lib/aws-bedrockagentcore'
 import * as ecr from 'aws-cdk-lib/aws-ecr'
-import * as codebuild from 'aws-cdk-lib/aws-codebuild'
 import * as iam from 'aws-cdk-lib/aws-iam'
 import * as logs from 'aws-cdk-lib/aws-logs'
-import * as cr from 'aws-cdk-lib/custom-resources'
 import { Construct } from 'constructs'
 
 export interface AgentCoreConstructProps {
@@ -74,79 +72,23 @@ export class AgentCoreConstruct extends Construct {
     })
     this.memoryId = memory.attrMemoryId
 
-    // ========== ECR + CodeBuild ==========
+    // ========== ECR ==========
+    // Container images are built locally and pushed via deploy skill
+    // (docker build → ecr push → cdk deploy)
     const ecrRepo = new ecr.Repository(this, 'AgentCoreEcr', {
       repositoryName: 'tonari-agentcore',
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       emptyOnDelete: true,
+      lifecycleRules: [
+        {
+          description: 'Keep only 5 untagged images',
+          rulePriority: 1,
+          tagStatus: ecr.TagStatus.UNTAGGED,
+          maxImageCount: 5,
+        },
+      ],
     })
     this.ecrRepositoryUri = ecrRepo.repositoryUri
-
-    const buildProject = new codebuild.Project(this, 'AgentCoreBuild', {
-      projectName: 'tonari-agentcore-build',
-      environment: {
-        buildImage: codebuild.LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_3_0,
-        computeType: codebuild.ComputeType.SMALL,
-        privileged: true,
-      },
-      source: codebuild.Source.gitHub({
-        owner: 'n-yokomachi',
-        repo: 'tonari',
-        branchOrRef: 'main',
-      }),
-      buildSpec: codebuild.BuildSpec.fromObject({
-        version: '0.2',
-        phases: {
-          pre_build: {
-            commands: [
-              'aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REPO_URI',
-            ],
-          },
-          build: {
-            commands: [
-              'cd agentcore',
-              'docker build -t $ECR_REPO_URI:latest -f Dockerfile .',
-            ],
-          },
-          post_build: {
-            commands: ['docker push $ECR_REPO_URI:latest'],
-          },
-        },
-      }),
-      environmentVariables: {
-        ECR_REPO_URI: { value: ecrRepo.repositoryUri },
-      },
-    })
-
-    ecrRepo.grantPush(buildProject)
-
-    // Trigger CodeBuild on every cdk deploy
-    const buildTrigger = new cr.AwsCustomResource(this, 'BuildTrigger', {
-      onCreate: {
-        service: 'CodeBuild',
-        action: 'startBuild',
-        parameters: {
-          projectName: buildProject.projectName,
-        },
-        physicalResourceId: cr.PhysicalResourceId.of(
-          'agentcore-build-trigger'
-        ),
-      },
-      onUpdate: {
-        service: 'CodeBuild',
-        action: 'startBuild',
-        parameters: {
-          projectName: buildProject.projectName,
-        },
-        physicalResourceId: cr.PhysicalResourceId.of(Date.now().toString()),
-      },
-      policy: cr.AwsCustomResourcePolicy.fromStatements([
-        new iam.PolicyStatement({
-          actions: ['codebuild:StartBuild'],
-          resources: [buildProject.projectArn],
-        }),
-      ]),
-    })
 
     // ========== Gateway ==========
     const lambdaArns = [props.searchLambdaArn]
@@ -469,14 +411,15 @@ export class AgentCoreConstruct extends Construct {
           AGENTCORE_GATEWAY_URL: gateway.attrGatewayUrl,
           AWS_REGION: region,
           BEDROCK_MODEL_ID: 'jp.anthropic.claude-haiku-4-5-20251001-v1:0',
-          DEPLOY_VERSION: new Date().toISOString(),
+          // Pass via: cdk deploy -c deployVersion=$(date +%s)
+          // If not set, Runtime won't be updated unnecessarily
+          ...(cdk.Stack.of(this).node.tryGetContext('deployVersion')
+            ? { DEPLOY_VERSION: cdk.Stack.of(this).node.tryGetContext('deployVersion') }
+            : {}),
         },
       }
     )
     this.runtimeArn = runtime.attrAgentRuntimeArn
-
-    // Build must complete before Runtime creation
-    runtime.node.addDependency(buildTrigger)
 
     // ========== Observability ==========
     const logGroup = new logs.LogGroup(this, 'RuntimeLogGroup', {

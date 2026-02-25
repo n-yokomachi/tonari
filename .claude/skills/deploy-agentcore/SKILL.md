@@ -25,10 +25,10 @@ allowed-tools: Bash
    aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin 765653276628.dkr.ecr.ap-northeast-1.amazonaws.com && docker push 765653276628.dkr.ecr.ap-northeast-1.amazonaws.com/tonari-agentcore:latest
    ```
 
-3. **CDKデプロイ（Runtimeの環境変数DEPLOY_VERSIONが更新され、新イメージが反映される）**
+3. **CDKデプロイ（`deployVersion`を渡してRuntimeを強制更新）**
 
    ```bash
-   npx cdk deploy --require-approval never
+   cd infra && npx cdk deploy -c deployVersion=$(date +%s) --require-approval never
    ```
 
 ### インフラ変更を含む場合（`infra/`配下）
@@ -36,10 +36,10 @@ allowed-tools: Bash
 1. **CDKデプロイのみ実行**
 
    ```bash
-   npx cdk deploy --require-approval never
+   cd infra && npx cdk deploy --require-approval never
    ```
 
-   CDKデプロイ時にCodeBuildが自動トリガーされ、ECRイメージも再ビルドされる。
+   Runtimeの環境変数を更新したい場合は `-c deployVersion=$(date +%s)` を追加する。
 
 ## 使用場面
 
@@ -52,6 +52,7 @@ allowed-tools: Bash
 ## 注意事項
 
 - エージェントコード変更時はDockerビルド＋ECRプッシュ＋CDKデプロイの3ステップが必要
-- CDKデプロイだけではECRイメージ内のコードは更新されない（CodeBuildはGitHubのmainブランチからビルドするため、ローカル変更を反映するにはDockerビルド＋ECRプッシュが必要）
+- CDKデプロイだけではECRイメージ内のコードは更新されない（ローカルビルド＋ECRプッシュが必要）
+- `-c deployVersion=...` を付けないとRuntimeは更新されない（インフラのみの変更時に不要な再起動を防ぐ）
 - フロントエンドの変更のみの場合はデプロイ不要（Vercelで自動デプロイ）
 - Gateway TargetのTavily統合はAWSコンソールから手動で設定する必要がある

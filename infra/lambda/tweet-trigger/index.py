@@ -82,7 +82,7 @@ def _get_cognito_token(
         },
     )
 
-    with urllib.request.urlopen(req) as response:
+    with urllib.request.urlopen(req, timeout=30) as response:
         body = json.loads(response.read())
         return body["access_token"]
 
@@ -118,7 +118,7 @@ def _call_agentcore(
         },
     )
 
-    with urllib.request.urlopen(req) as response:
+    with urllib.request.urlopen(req, timeout=120) as response:
         return response.read().decode()
 
 
