@@ -38,10 +38,10 @@ export class TonariStack extends cdk.Stack {
     const agentcore = new AgentCoreConstruct(this, 'AgentCore', {
       cognitoDiscoveryUrl: cognito.discoveryUrl,
       cognitoClientId: cognito.clientId,
-      searchLambdaArn: workload.searchLambda.functionArn,
-      twitterReadLambdaArn: workload.twitterReadLambda?.functionArn,
-      twitterWriteLambdaArn: workload.twitterWriteLambda?.functionArn,
-      skipRuntime: false,
+      searchLambda: workload.searchLambda,
+      twitterReadLambda: workload.twitterReadLambda,
+      twitterWriteLambda: workload.twitterWriteLambda,
+      diaryLambda: workload.diaryToolLambda,
     })
 
     // ========== Cross-Construct Wiring ==========
@@ -57,6 +57,11 @@ export class TonariStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'PerfumeTableName', {
       value: workload.perfumeTable.tableName,
       description: 'DynamoDB table name for perfume data',
+    })
+
+    new cdk.CfnOutput(this, 'DiaryTableName', {
+      value: workload.diaryTable.tableName,
+      description: 'DynamoDB table name for diary data',
     })
 
     new cdk.CfnOutput(this, 'PerfumeSearchLambdaArn', {
@@ -82,11 +87,6 @@ export class TonariStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'AgentCoreGatewayUrl', {
       value: agentcore.gatewayUrl,
       description: 'AgentCore Gateway URL',
-    })
-
-    new cdk.CfnOutput(this, 'EcrRepositoryUri', {
-      value: agentcore.ecrRepositoryUri,
-      description: 'ECR Repository URI for agent container',
     })
 
     new cdk.CfnOutput(this, 'CognitoUserPoolId', {

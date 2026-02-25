@@ -140,7 +140,7 @@ export default function AdminPerfumes() {
   }
 
   const handleBack = () => {
-    router.push('/')
+    router.push('/admin')
   }
 
   const handleSubmit = async (e: FormEvent) => {

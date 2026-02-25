@@ -33,6 +33,8 @@ export class WorkloadConstruct extends Construct {
   public readonly twitterReadLambda?: python.PythonFunction
   public readonly twitterWriteLambda?: python.PythonFunction
   public readonly tweetTriggerLambda?: python.PythonFunction
+  public readonly diaryTable: dynamodb.Table
+  public readonly diaryToolLambda: python.PythonFunction
 
   constructor(scope: Construct, id: string, props: WorkloadConstructProps) {
     super(scope, id)
@@ -177,6 +179,33 @@ export class WorkloadConstruct extends Construct {
       new apigateway.LambdaIntegration(ttsLambda),
       authorizedMethodOptions
     )
+
+    // ========== Diary ==========
+    this.diaryTable = new dynamodb.Table(stack, 'DiaryTable', {
+      tableName: 'tonari-diary',
+      partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'date', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    })
+
+    this.diaryToolLambda = new python.PythonFunction(
+      stack,
+      'DiaryToolLambda',
+      {
+        functionName: 'tonari-diary-tool',
+        entry: path.join(__dirname, '../lambda/diary-tool'),
+        runtime: lambda.Runtime.PYTHON_3_12,
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: this.diaryTable.tableName,
+        },
+      }
+    )
+
+    this.diaryTable.grantReadWriteData(this.diaryToolLambda)
 
     // ========== Twitter Gateway Tools ==========
     if (props.tweetScheduler) {

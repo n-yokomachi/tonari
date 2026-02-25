@@ -50,13 +50,13 @@ export const MobileHeader = () => {
                 aria-label="モデル切り替え"
               />
               <Link
-                href="/admin/perfumes"
+                href="/admin"
                 className="bg-primary hover:bg-primary-hover active:bg-primary-press rounded-2xl text-sm p-2 text-center inline-flex items-center transition-all duration-200 text-theme"
-                aria-label={t('PerfumeDataManagement')}
+                aria-label="管理画面"
               >
                 <Image
-                  src="/images/icons/database.svg"
-                  alt={t('PerfumeDataManagement')}
+                  src="/images/icons/admin.svg"
+                  alt="管理画面"
                   width={24}
                   height={24}
                 />
