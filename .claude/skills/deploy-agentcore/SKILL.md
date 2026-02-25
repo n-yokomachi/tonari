@@ -7,14 +7,39 @@ allowed-tools: Bash
 # AgentCoreデプロイスキル
 
 バックエンドのAgentCoreをAWS Bedrock AgentCore Runtimeにデプロイします。
+インフラはCDK（`infra/`）で管理されており、コンテナイメージはECR経由でデプロイします。
 
 ## 実行手順
 
-1. **デプロイ実行**
+### エージェントコードのみ変更した場合（`agentcore/`配下）
+
+1. **Dockerイメージのビルド**
 
    ```bash
-   cd agentcore && uv run agentcore deploy
+   cd agentcore && docker build --platform linux/arm64 -t 765653276628.dkr.ecr.ap-northeast-1.amazonaws.com/tonari-agentcore:latest -f Dockerfile .
    ```
+
+2. **ECRにプッシュ**
+
+   ```bash
+   aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin 765653276628.dkr.ecr.ap-northeast-1.amazonaws.com && docker push 765653276628.dkr.ecr.ap-northeast-1.amazonaws.com/tonari-agentcore:latest
+   ```
+
+3. **CDKデプロイ（`deployVersion`を渡してRuntimeを強制更新）**
+
+   ```bash
+   cd infra && npx cdk deploy -c deployVersion=$(date +%s) --require-approval never
+   ```
+
+### インフラ変更を含む場合（`infra/`配下）
+
+1. **CDKデプロイのみ実行**
+
+   ```bash
+   cd infra && npx cdk deploy --require-approval never
+   ```
+
+   Runtimeの環境変数を更新したい場合は `-c deployVersion=$(date +%s)` を追加する。
 
 ## 使用場面
 
@@ -22,9 +47,12 @@ allowed-tools: Bash
 - システムプロンプト（`prompts.py`）を変更した時
 - エージェントの設定（`tonari_agent.py`）を変更した時
 - ツールを追加・変更した時
+- Lambda関数やインフラ設定（`infra/`配下）を変更した時
 
 ## 注意事項
 
-- デプロイには数十秒かかる場合がある
-- デプロイ後、変更が反映されるまで少し時間がかかることがある
-- フロントエンドの変更のみの場合はデプロイ不要
+- エージェントコード変更時はDockerビルド＋ECRプッシュ＋CDKデプロイの3ステップが必要
+- CDKデプロイだけではECRイメージ内のコードは更新されない（ローカルビルド＋ECRプッシュが必要）
+- `-c deployVersion=...` を付けないとRuntimeは更新されない（インフラのみの変更時に不要な再起動を防ぐ）
+- フロントエンドの変更のみの場合はデプロイ不要（Vercelで自動デプロイ）
+- Gateway TargetのTavily統合はAWSコンソールから手動で設定する必要がある

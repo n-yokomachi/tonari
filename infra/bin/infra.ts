@@ -5,8 +5,6 @@ import { TonariStack } from '../lib/tonari-stack'
 
 const app = new cdk.App()
 
-const cognitoUserPoolId = app.node.tryGetContext('cognitoUserPoolId')
-const cognitoClientId = app.node.tryGetContext('cognitoClientId')
 const tweetSchedulerConfig = app.node.tryGetContext('tweetScheduler')
 
 new TonariStack(app, 'TonariStack', {
@@ -14,7 +12,10 @@ new TonariStack(app, 'TonariStack', {
     account: process.env.CDK_DEFAULT_ACCOUNT,
     region: process.env.CDK_DEFAULT_REGION || 'ap-northeast-1',
   },
-  cognitoUserPoolId,
-  cognitoClientId,
-  tweetScheduler: tweetSchedulerConfig,
+  tweetScheduler: tweetSchedulerConfig
+    ? {
+        ownerTwitterUserId: tweetSchedulerConfig.ownerTwitterUserId,
+        ssmCognitoClientSecret: tweetSchedulerConfig.ssmCognitoClientSecret,
+      }
+    : undefined,
 })

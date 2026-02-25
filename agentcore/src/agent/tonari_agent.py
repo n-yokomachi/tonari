@@ -18,10 +18,10 @@ from strands.tools.mcp import MCPClient
 from .prompts import TONARI_SYSTEM_PROMPT
 
 # デフォルトのMemory ID（AgentCore CLIで作成済み）
-DEFAULT_MEMORY_ID = "tonari_mem-SZ0n7JG0K4"
+DEFAULT_MEMORY_ID = "tonari_memory-aky0rJC6wh"
 
 # Gateway設定（IAM認証を使用）
-DEFAULT_GATEWAY_URL = "https://tonarigateway-0xt6t3ccxy.gateway.bedrock-agentcore.ap-northeast-1.amazonaws.com/mcp"
+DEFAULT_GATEWAY_URL = "https://tonari-gateway-umzqvn6zkm.gateway.bedrock-agentcore.ap-northeast-1.amazonaws.com/mcp"
 
 
 def create_mcp_client(gateway_url: str, region: str) -> MCPClient:

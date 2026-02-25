@@ -47,6 +47,8 @@ def _get_or_create_agent(session_id: str, actor_id: str):
         )
         mcp_client.start()
         tools = mcp_client.list_tools_sync()
+        tool_names = [t.tool_name for t in tools] if tools else []
+        logger.info("Gateway tools discovered: %s", tool_names)
         agent = create_tonari_agent(
             session_id=session_id,
             actor_id=actor_id,
@@ -54,7 +56,7 @@ def _get_or_create_agent(session_id: str, actor_id: str):
         )
         _current_mcp_client = mcp_client
     except Exception as e:
-        logger.warning("Gateway connection failed, running without tools: %s", e)
+        logger.warning("Gateway connection failed, running without tools: %s", e, exc_info=True)
         agent = create_tonari_agent(session_id=session_id, actor_id=actor_id)
 
     _current_agent = agent
