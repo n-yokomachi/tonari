@@ -1,12 +1,8 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
-import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { validateAdminToken } from '../auth'
+import { getCognitoToken } from '@/lib/cognito'
 
-const TABLE_NAME = process.env.DIARY_TABLE_NAME || 'tonari-diary'
-const DEFAULT_USER_ID = 'default_user'
-
-const client = DynamoDBDocumentClient.from(new DynamoDBClient({}))
+const API_BASE_URL = process.env.PERFUME_API_URL || ''
 
 export default async function handler(
   req: NextApiRequest,
@@ -20,25 +16,31 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  if (!API_BASE_URL) {
+    console.error('PERFUME_API_URL is not configured')
+    return res.status(500).json({ error: 'API設定エラー' })
+  }
+
   try {
-    const result = await client.send(
-      new QueryCommand({
-        TableName: TABLE_NAME,
-        KeyConditionExpression: 'userId = :uid',
-        ExpressionAttributeValues: {
-          ':uid': DEFAULT_USER_ID,
-        },
-        ScanIndexForward: false,
-      })
-    )
+    const token = await getCognitoToken()
 
-    const diaries = (result.Items || []).map((item) => ({
-      date: item.date,
-      body: item.body,
-      createdAt: item.createdAt,
-    }))
+    const response = await fetch(`${API_BASE_URL}/diaries`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
 
-    return res.status(200).json({ diaries })
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('API Gateway error:', response.status, errorText)
+      return res
+        .status(response.status)
+        .json({ error: '日記の取得に失敗しました' })
+    }
+
+    const data = await response.json()
+    return res.status(200).json(data)
   } catch (err) {
     console.error('Failed to fetch diaries:', err)
     return res.status(500).json({ error: '日記の取得に失敗しました' })

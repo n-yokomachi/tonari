@@ -207,6 +207,35 @@ export class WorkloadConstruct extends Construct {
 
     this.diaryTable.grantReadWriteData(this.diaryToolLambda)
 
+    // Lambda for diary CRUD operations (API Gateway)
+    const diaryCrudLambda = new python.PythonFunction(
+      stack,
+      'DiaryCrudLambda',
+      {
+        functionName: 'tonari-diary-crud',
+        entry: path.join(__dirname, '../lambda/diary-crud'),
+        runtime: lambda.Runtime.PYTHON_3_12,
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: this.diaryTable.tableName,
+        },
+      }
+    )
+
+    this.diaryTable.grantReadData(diaryCrudLambda)
+
+    // API Routes: diary (M2M auth)
+    const diaryCrudIntegration = new apigateway.LambdaIntegration(
+      diaryCrudLambda
+    )
+    const diaries = this.crudApi.root.addResource('diaries')
+    diaries.addMethod('GET', diaryCrudIntegration, authorizedMethodOptions)
+
+    const diaryByDate = diaries.addResource('{date}')
+    diaryByDate.addMethod('GET', diaryCrudIntegration, authorizedMethodOptions)
+
     // ========== Twitter Gateway Tools ==========
     if (props.tweetScheduler) {
       const ts = props.tweetScheduler

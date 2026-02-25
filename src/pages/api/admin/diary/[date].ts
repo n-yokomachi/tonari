@@ -1,12 +1,8 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
-import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb'
 import { validateAdminToken } from '../auth'
+import { getCognitoToken } from '@/lib/cognito'
 
-const TABLE_NAME = process.env.DIARY_TABLE_NAME || 'tonari-diary'
-const DEFAULT_USER_ID = 'default_user'
-
-const client = DynamoDBDocumentClient.from(new DynamoDBClient({}))
+const API_BASE_URL = process.env.PERFUME_API_URL || ''
 
 export default async function handler(
   req: NextApiRequest,
@@ -25,28 +21,34 @@ export default async function handler(
     return res.status(400).json({ error: '日付パラメータが必要です' })
   }
 
+  if (!API_BASE_URL) {
+    console.error('PERFUME_API_URL is not configured')
+    return res.status(500).json({ error: 'API設定エラー' })
+  }
+
   try {
-    const result = await client.send(
-      new GetCommand({
-        TableName: TABLE_NAME,
-        Key: {
-          userId: DEFAULT_USER_ID,
-          date: date,
-        },
-      })
-    )
+    const token = await getCognitoToken()
 
-    if (!result.Item) {
-      return res.status(404).json({ error: '日記が見つかりません' })
-    }
-
-    return res.status(200).json({
-      diary: {
-        date: result.Item.date,
-        body: result.Item.body,
-        createdAt: result.Item.createdAt,
+    const response = await fetch(`${API_BASE_URL}/diaries/${date}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
       },
     })
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return res.status(404).json({ error: '日記が見つかりません' })
+      }
+      const errorText = await response.text()
+      console.error('API Gateway error:', response.status, errorText)
+      return res
+        .status(response.status)
+        .json({ error: '日記の詳細取得に失敗しました' })
+    }
+
+    const data = await response.json()
+    return res.status(200).json(data)
   } catch (err) {
     console.error('Failed to fetch diary:', err)
     return res.status(500).json({ error: '日記の取得に失敗しました' })
