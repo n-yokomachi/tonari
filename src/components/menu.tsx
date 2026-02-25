@@ -136,13 +136,14 @@ export const Menu = () => {
         {!isMobile && (
           <div className="flex-shrink-0 z-15 px-4 py-2">
             <div className="flex items-center gap-3">
-              <Image
-                src="/logo.png"
-                alt="TONaRi"
-                width={120}
-                height={40}
-                priority
-              />
+              <div className="flex flex-col items-center">
+                <span className="text-2xl font-light tracking-[0.2em] text-secondary font-Montserrat leading-tight">
+                  TONaRi
+                </span>
+                <span className="text-[7px] text-gray-400 tracking-[0.08em] font-light font-Montserrat">
+                  An AI Agent Standing With You
+                </span>
+              </div>
               <div className="flex gap-[8px]">
                 {showControlPanel && (
                   <>
