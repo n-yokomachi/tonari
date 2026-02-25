@@ -7,7 +7,7 @@ Tools:
 """
 import os
 import boto3
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ['TABLE_NAME'])
@@ -34,7 +34,8 @@ def save_diary(event):
             'message': 'user_id, date, body は必須です。'
         }
 
-    created_at = datetime.now(timezone.utc).isoformat()
+    JST = timezone(timedelta(hours=9))
+    created_at = datetime.now(JST).isoformat()
 
     try:
         table.put_item(Item={
@@ -82,6 +83,7 @@ def get_diaries(event):
             'diaries': [
                 {
                     'date': item.get('date'),
+                    'body': item.get('body', ''),
                     'createdAt': item.get('createdAt'),
                 }
                 for item in items
