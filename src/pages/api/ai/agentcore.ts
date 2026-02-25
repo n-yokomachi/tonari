@@ -84,6 +84,19 @@ export default async function handler(
     const encodedArn = encodeURIComponent(runtimeArn)
     const endpoint = `https://bedrock-agentcore.${region}.amazonaws.com/runtimes/${encodedArn}/invocations`
 
+    // メッセージに送信日時を付与（JST）
+    const now = new Date()
+    const jstTime = now.toLocaleString('ja-JP', {
+      timeZone: 'Asia/Tokyo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      weekday: 'short',
+    })
+    const promptWithTimestamp = message ? `[${jstTime}] ${message}` : ''
+
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -93,7 +106,7 @@ export default async function handler(
         Accept: 'text/event-stream',
       },
       body: JSON.stringify({
-        prompt: message || '',
+        prompt: promptWithTimestamp,
         session_id: sessionId, // AgentCore Memory STM用（セッション単位）
         actor_id: actorId, // AgentCore Memory LTM用（ユーザー単位）
         ...(imageBase64 && {

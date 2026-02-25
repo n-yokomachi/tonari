@@ -1,23 +1,26 @@
+import * as agentcore from '@aws-cdk/aws-bedrock-agentcore-alpha'
 import * as cdk from 'aws-cdk-lib'
 import * as bedrockagentcore from 'aws-cdk-lib/aws-bedrockagentcore'
-import * as ecr from 'aws-cdk-lib/aws-ecr'
+import { Platform } from 'aws-cdk-lib/aws-ecr-assets'
 import * as iam from 'aws-cdk-lib/aws-iam'
+import * as lambda from 'aws-cdk-lib/aws-lambda'
 import * as logs from 'aws-cdk-lib/aws-logs'
 import { Construct } from 'constructs'
+import * as path from 'path'
 
 export interface AgentCoreConstructProps {
   /** Cognito OIDC Discovery URL for JWT authorizer */
   cognitoDiscoveryUrl: string
   /** Cognito App Client ID for JWT authorizer */
   cognitoClientId: string
-  /** perfume-search Lambda ARN (Gateway target) */
-  searchLambdaArn: string
-  /** twitter-read Lambda ARN (Gateway target, optional) */
-  twitterReadLambdaArn?: string
-  /** twitter-write Lambda ARN (Gateway target, optional) */
-  twitterWriteLambdaArn?: string
-  /** Skip Runtime creation (for initial deploy before ECR image exists) */
-  skipRuntime?: boolean
+  /** perfume-search Lambda function (Gateway target) */
+  searchLambda: lambda.IFunction
+  /** twitter-read Lambda function (Gateway target, optional) */
+  twitterReadLambda?: lambda.IFunction
+  /** twitter-write Lambda function (Gateway target, optional) */
+  twitterWriteLambda?: lambda.IFunction
+  /** diary-tool Lambda function (Gateway target, optional) */
+  diaryLambda?: lambda.IFunction
 }
 
 export class AgentCoreConstruct extends Construct {
@@ -27,8 +30,6 @@ export class AgentCoreConstruct extends Construct {
   public readonly gatewayUrl: string
   /** AgentCore Runtime ARN */
   public readonly runtimeArn: string
-  /** ECR Repository URI */
-  public readonly ecrRepositoryUri: string
 
   constructor(scope: Construct, id: string, props: AgentCoreConstructProps) {
     super(scope, id)
@@ -36,7 +37,7 @@ export class AgentCoreConstruct extends Construct {
     const region = cdk.Stack.of(this).region
     const account = cdk.Stack.of(this).account
 
-    // ========== Memory ==========
+    // ========== Memory (L1 — L2 strategies don't map to 4-strategy config) ==========
     const memory = new bedrockagentcore.CfnMemory(this, 'AgentCoreMemory', {
       name: 'tonari_memory',
       eventExpiryDuration: 30,
@@ -72,29 +73,11 @@ export class AgentCoreConstruct extends Construct {
     })
     this.memoryId = memory.attrMemoryId
 
-    // ========== ECR ==========
-    // Container images are built locally and pushed via deploy skill
-    // (docker build → ecr push → cdk deploy)
-    const ecrRepo = new ecr.Repository(this, 'AgentCoreEcr', {
-      repositoryName: 'tonari-agentcore',
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      emptyOnDelete: true,
-      lifecycleRules: [
-        {
-          description: 'Keep only 5 untagged images',
-          rulePriority: 1,
-          tagStatus: ecr.TagStatus.UNTAGGED,
-          maxImageCount: 5,
-        },
-      ],
-    })
-    this.ecrRepositoryUri = ecrRepo.repositoryUri
-
-    // ========== Gateway ==========
-    const lambdaArns = [props.searchLambdaArn]
-    if (props.twitterReadLambdaArn) lambdaArns.push(props.twitterReadLambdaArn)
-    if (props.twitterWriteLambdaArn)
-      lambdaArns.push(props.twitterWriteLambdaArn)
+    // ========== Gateway (L2) ==========
+    const lambdaFunctions = [props.searchLambda]
+    if (props.twitterReadLambda) lambdaFunctions.push(props.twitterReadLambda)
+    if (props.twitterWriteLambda) lambdaFunctions.push(props.twitterWriteLambda)
+    if (props.diaryLambda) lambdaFunctions.push(props.diaryLambda)
 
     const gatewayRole = new iam.Role(this, 'GatewayRole', {
       assumedBy: new iam.ServicePrincipal('bedrock-agentcore.amazonaws.com'),
@@ -103,7 +86,7 @@ export class AgentCoreConstruct extends Construct {
           statements: [
             new iam.PolicyStatement({
               actions: ['lambda:InvokeFunction'],
-              resources: lambdaArns,
+              resources: lambdaFunctions.map((fn) => fn.functionArn),
             }),
           ],
         }),
@@ -142,146 +125,169 @@ export class AgentCoreConstruct extends Construct {
       },
     })
 
-    const gateway = new bedrockagentcore.CfnGateway(
-      this,
-      'ToolsGateway',
-      {
-        name: 'tonari-gateway',
-        protocolType: 'MCP',
-        authorizerType: 'AWS_IAM',
-        roleArn: gatewayRole.roleArn,
-      }
-    )
-    this.gatewayUrl = gateway.attrGatewayUrl
+    const gateway = new agentcore.Gateway(this, 'ToolsGateway', {
+      gatewayName: 'tonari-gateway',
+      protocolConfiguration: new agentcore.McpProtocolConfiguration({
+        supportedVersions: [agentcore.MCPProtocolVersion.MCP_2025_03_26],
+      }),
+      authorizerConfiguration: agentcore.GatewayAuthorizer.usingAwsIam(),
+      role: gatewayRole,
+    })
+    // Preserve CloudFormation logical IDs from L1 migration to avoid resource recreation
+    const cfnGateway =
+      gateway.node.defaultChild as bedrockagentcore.CfnGateway
+    cfnGateway.overrideLogicalId('AgentCoreToolsGateway84E3F2E3')
+    this.gatewayUrl = gateway.gatewayUrl!
 
-    // Credential provider configuration for Lambda targets (IAM-based)
-    const lambdaCredentialProvider = [
-      {
-        credentialProviderType: 'GATEWAY_IAM_ROLE',
-      },
-    ]
+    const iamCredential = [agentcore.GatewayCredentialProvider.fromIamRole()]
 
     // Gateway Target: perfume-search
-    new bedrockagentcore.CfnGatewayTarget(this, 'PerfumeSearchTool', {
-      gatewayIdentifier: gateway.attrGatewayIdentifier,
-      name: 'perfume-search',
-      credentialProviderConfigurations: lambdaCredentialProvider,
-      targetConfiguration: {
-        mcp: {
-          lambda: {
-            lambdaArn: props.searchLambdaArn,
-            toolSchema: {
-              inlinePayload: [
-                {
-                  name: 'search_perfumes',
-                  description:
-                    'Search perfume database by keyword. Returns matching perfumes with details like notes, scenes, seasons, and ratings.',
-                  inputSchema: {
-                    type: 'object',
-                    properties: {
-                      query: {
-                        type: 'string',
-                        description:
-                          'Search keyword for perfume name, brand, notes, scenes, or seasons',
-                      },
-                      limit: {
-                        type: 'number',
-                        description:
-                          'Maximum number of results to return (default: 5)',
-                      },
-                    },
-                    required: ['query'],
-                  },
-                },
-              ],
+    gateway.addLambdaTarget('PerfumeSearch', {
+      gatewayTargetName: 'perfume-search',
+      lambdaFunction: props.searchLambda,
+      credentialProviderConfigurations: iamCredential,
+      toolSchema: agentcore.ToolSchema.fromInline([
+        {
+          name: 'search_perfumes',
+          description:
+            'Search perfume database by keyword. Returns matching perfumes with details like notes, scenes, seasons, and ratings.',
+          inputSchema: {
+            type: agentcore.SchemaDefinitionType.OBJECT,
+            properties: {
+              query: {
+                type: agentcore.SchemaDefinitionType.STRING,
+                description:
+                  'Search keyword for perfume name, brand, notes, scenes, or seasons',
+              },
+              limit: {
+                type: agentcore.SchemaDefinitionType.NUMBER,
+                description:
+                  'Maximum number of results to return (default: 5)',
+              },
             },
+            required: ['query'],
           },
         },
-      },
+      ]),
     })
 
     // Gateway Target: twitter-read (conditional)
-    if (props.twitterReadLambdaArn) {
-      new bedrockagentcore.CfnGatewayTarget(this, 'TwitterReadTool', {
-        gatewayIdentifier: gateway.attrGatewayIdentifier,
-        name: 'twitter-read',
-        credentialProviderConfigurations: lambdaCredentialProvider,
-        targetConfiguration: {
-          mcp: {
-            lambda: {
-              lambdaArn: props.twitterReadLambdaArn,
-              toolSchema: {
-                inlinePayload: [
-                  {
-                    name: 'get_todays_tweets',
-                    description:
-                      "Fetch the owner's tweets posted today. Returns tweet text and timestamps.",
-                    inputSchema: {
-                      type: 'object',
-                      properties: {
-                        owner_user_id: {
-                          type: 'string',
-                          description:
-                            'Twitter user ID of the account owner',
-                        },
-                        max_count: {
-                          type: 'number',
-                          description:
-                            'Maximum number of tweets to fetch (default: 3)',
-                        },
-                      },
-                      required: ['owner_user_id'],
-                    },
-                  },
-                ],
+    if (props.twitterReadLambda) {
+      gateway.addLambdaTarget('TwitterRead', {
+        gatewayTargetName: 'twitter-read',
+        lambdaFunction: props.twitterReadLambda,
+        credentialProviderConfigurations: iamCredential,
+        toolSchema: agentcore.ToolSchema.fromInline([
+          {
+            name: 'get_todays_tweets',
+            description:
+              "Fetch the owner's tweets posted today. Returns tweet text and timestamps.",
+            inputSchema: {
+              type: agentcore.SchemaDefinitionType.OBJECT,
+              properties: {
+                owner_user_id: {
+                  type: agentcore.SchemaDefinitionType.STRING,
+                  description: 'Twitter user ID of the account owner',
+                },
+                max_count: {
+                  type: agentcore.SchemaDefinitionType.NUMBER,
+                  description:
+                    'Maximum number of tweets to fetch (default: 3)',
+                },
               },
+              required: ['owner_user_id'],
             },
           },
-        },
+        ]),
       })
     }
 
     // Gateway Target: twitter-write (conditional)
-    if (props.twitterWriteLambdaArn) {
-      new bedrockagentcore.CfnGatewayTarget(this, 'TwitterWriteTool', {
-        gatewayIdentifier: gateway.attrGatewayIdentifier,
-        name: 'twitter-write',
-        credentialProviderConfigurations: lambdaCredentialProvider,
-        targetConfiguration: {
-          mcp: {
-            lambda: {
-              lambdaArn: props.twitterWriteLambdaArn,
-              toolSchema: {
-                inlinePayload: [
-                  {
-                    name: 'post_tweet',
-                    description:
-                      'Post a tweet on behalf of the Tonari account.',
-                    inputSchema: {
-                      type: 'object',
-                      properties: {
-                        text: {
-                          type: 'string',
-                          description:
-                            'The tweet text to post (max 280 characters)',
-                        },
-                      },
-                      required: ['text'],
-                    },
-                  },
-                ],
+    if (props.twitterWriteLambda) {
+      gateway.addLambdaTarget('TwitterWrite', {
+        gatewayTargetName: 'twitter-write',
+        lambdaFunction: props.twitterWriteLambda,
+        credentialProviderConfigurations: iamCredential,
+        toolSchema: agentcore.ToolSchema.fromInline([
+          {
+            name: 'post_tweet',
+            description: 'Post a tweet on behalf of the Tonari account.',
+            inputSchema: {
+              type: agentcore.SchemaDefinitionType.OBJECT,
+              properties: {
+                text: {
+                  type: agentcore.SchemaDefinitionType.STRING,
+                  description:
+                    'The tweet text to post (max 280 characters)',
+                },
               },
+              required: ['text'],
             },
           },
-        },
+        ]),
       })
     }
 
-    // ========== Runtime ==========
-    if (props.skipRuntime) {
-      this.runtimeArn = 'PENDING_RUNTIME_DEPLOY'
-      return
+    // Gateway Target: diary-tool (conditional)
+    if (props.diaryLambda) {
+      gateway.addLambdaTarget('DiaryTool', {
+        gatewayTargetName: 'diary-tool',
+        lambdaFunction: props.diaryLambda,
+        credentialProviderConfigurations: iamCredential,
+        toolSchema: agentcore.ToolSchema.fromInline([
+          {
+            name: 'save_diary',
+            description:
+              'Save a diary entry for the user. Use after hearing session is complete and user approves the generated diary.',
+            inputSchema: {
+              type: agentcore.SchemaDefinitionType.OBJECT,
+              properties: {
+                user_id: {
+                  type: agentcore.SchemaDefinitionType.STRING,
+                  description: 'User ID of the diary owner',
+                },
+                date: {
+                  type: agentcore.SchemaDefinitionType.STRING,
+                  description:
+                    'Date of the diary entry in YYYY-MM-DD format',
+                },
+                body: {
+                  type: agentcore.SchemaDefinitionType.STRING,
+                  description: 'Body text of the diary entry',
+                },
+              },
+              required: ['user_id', 'date', 'body'],
+            },
+          },
+          {
+            name: 'get_diaries',
+            description:
+              "Retrieve the user's diary entries sorted by date descending.",
+            inputSchema: {
+              type: agentcore.SchemaDefinitionType.OBJECT,
+              properties: {
+                user_id: {
+                  type: agentcore.SchemaDefinitionType.STRING,
+                  description: 'User ID of the diary owner',
+                },
+                limit: {
+                  type: agentcore.SchemaDefinitionType.NUMBER,
+                  description:
+                    'Maximum number of diary entries to return (default: 10)',
+                },
+              },
+              required: ['user_id'],
+            },
+          },
+        ]),
+      })
     }
+
+    // ========== Runtime (L2) ==========
+    const artifact = agentcore.AgentRuntimeArtifact.fromAsset(
+      path.join(__dirname, '../../agentcore'),
+      { platform: Platform.LINUX_ARM64 }
+    )
 
     const runtimeRole = new iam.Role(this, 'RuntimeRole', {
       assumedBy: new iam.ServicePrincipal('bedrock-agentcore.amazonaws.com'),
@@ -315,7 +321,7 @@ export class AgentCoreConstruct extends Construct {
           statements: [
             new iam.PolicyStatement({
               actions: ['bedrock-agentcore:InvokeGateway'],
-              resources: [gateway.attrGatewayArn],
+              resources: [gateway.gatewayArn],
             }),
           ],
         }),
@@ -351,22 +357,6 @@ export class AgentCoreConstruct extends Construct {
             }),
           ],
         }),
-        EcrPull: new iam.PolicyDocument({
-          statements: [
-            new iam.PolicyStatement({
-              actions: ['ecr:GetAuthorizationToken'],
-              resources: ['*'],
-            }),
-            new iam.PolicyStatement({
-              actions: [
-                'ecr:BatchGetImage',
-                'ecr:GetDownloadUrlForLayer',
-                'ecr:BatchCheckLayerAvailability',
-              ],
-              resources: [ecrRepo.repositoryArn],
-            }),
-          ],
-        }),
         WorkloadIdentity: new iam.PolicyDocument({
           statements: [
             new iam.PolicyStatement({
@@ -385,45 +375,34 @@ export class AgentCoreConstruct extends Construct {
       },
     })
 
-    const runtime = new bedrockagentcore.CfnRuntime(
-      this,
-      'AgentCoreRuntime',
-      {
-        agentRuntimeName: 'tonari',
-        agentRuntimeArtifact: {
-          containerConfiguration: {
-            containerUri: `${ecrRepo.repositoryUri}:latest`,
-          },
-        },
-        networkConfiguration: {
-          networkMode: 'PUBLIC',
-        },
-        protocolConfiguration: 'HTTP',
-        roleArn: runtimeRole.roleArn,
-        authorizerConfiguration: {
-          customJwtAuthorizer: {
-            discoveryUrl: props.cognitoDiscoveryUrl,
-            allowedClients: [props.cognitoClientId],
-          },
-        },
-        environmentVariables: {
-          AGENTCORE_MEMORY_ID: memory.attrMemoryId,
-          AGENTCORE_GATEWAY_URL: gateway.attrGatewayUrl,
-          AWS_REGION: region,
-          BEDROCK_MODEL_ID: 'jp.anthropic.claude-haiku-4-5-20251001-v1:0',
-          // Pass via: cdk deploy -c deployVersion=$(date +%s)
-          // If not set, Runtime won't be updated unnecessarily
-          ...(cdk.Stack.of(this).node.tryGetContext('deployVersion')
-            ? { DEPLOY_VERSION: cdk.Stack.of(this).node.tryGetContext('deployVersion') }
-            : {}),
-        },
-      }
-    )
-    this.runtimeArn = runtime.attrAgentRuntimeArn
+    const runtime = new agentcore.Runtime(this, 'AgentCoreRuntime', {
+      runtimeName: 'tonari',
+      agentRuntimeArtifact: artifact,
+      executionRole: runtimeRole,
+      networkConfiguration:
+        agentcore.RuntimeNetworkConfiguration.usingPublicNetwork(),
+      authorizerConfiguration:
+        agentcore.RuntimeAuthorizerConfiguration.usingJWT(
+          props.cognitoDiscoveryUrl,
+          [props.cognitoClientId]
+        ),
+      environmentVariables: {
+        AGENTCORE_MEMORY_ID: memory.attrMemoryId,
+        AGENTCORE_GATEWAY_URL: gateway.gatewayUrl!,
+        AWS_REGION: region,
+        BEDROCK_MODEL_ID: 'jp.anthropic.claude-haiku-4-5-20251001-v1:0',
+      },
+    })
+    this.runtimeArn = runtime.agentRuntimeArn
 
-    // ========== Observability ==========
+    // Preserve CloudFormation logical ID from L1 migration to avoid resource recreation
+    const cfnRuntime = runtime.node.defaultChild as bedrockagentcore.CfnRuntime
+    cfnRuntime.overrideLogicalId('AgentCoreAgentCoreRuntimeDD354A6E')
+
+    // ========== Observability (L1 — no L2 equivalent) ==========
+
     const logGroup = new logs.LogGroup(this, 'RuntimeLogGroup', {
-      logGroupName: `/aws/vendedlogs/bedrock-agentcore/${runtime.attrAgentRuntimeId}`,
+      logGroupName: `/aws/vendedlogs/bedrock-agentcore/${runtime.agentRuntimeId}`,
       retention: logs.RetentionDays.TWO_WEEKS,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     })
@@ -433,18 +412,18 @@ export class AgentCoreConstruct extends Construct {
       this,
       'LogsDeliverySource',
       {
-        name: `${runtime.attrAgentRuntimeId}-logs-source`,
+        name: `${runtime.agentRuntimeId}-logs-source`,
         logType: 'APPLICATION_LOGS',
-        resourceArn: runtime.attrAgentRuntimeArn,
+        resourceArn: runtime.agentRuntimeArn,
       }
     )
-    logsSource.addDependency(runtime)
+    logsSource.addDependency(cfnRuntime)
 
     const logsDestination = new logs.CfnDeliveryDestination(
       this,
       'LogsDeliveryDestination',
       {
-        name: `${runtime.attrAgentRuntimeId}-logs-destination`,
+        name: `${runtime.agentRuntimeId}-logs-destination`,
         deliveryDestinationType: 'CWL',
         destinationResourceArn: logGroup.logGroupArn,
       }
@@ -462,18 +441,18 @@ export class AgentCoreConstruct extends Construct {
       this,
       'TracesDeliverySource',
       {
-        name: `${runtime.attrAgentRuntimeId}-traces-source`,
+        name: `${runtime.agentRuntimeId}-traces-source`,
         logType: 'TRACES',
-        resourceArn: runtime.attrAgentRuntimeArn,
+        resourceArn: runtime.agentRuntimeArn,
       }
     )
-    tracesSource.addDependency(runtime)
+    tracesSource.addDependency(cfnRuntime)
 
     const tracesDestination = new logs.CfnDeliveryDestination(
       this,
       'TracesDeliveryDestination',
       {
-        name: `${runtime.attrAgentRuntimeId}-traces-destination`,
+        name: `${runtime.agentRuntimeId}-traces-destination`,
         deliveryDestinationType: 'XRAY',
       }
     )

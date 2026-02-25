@@ -18,6 +18,7 @@
   "dependencies": {
     "@aws-sdk/client-bedrock-agentcore": "^3.975.0",
     "@aws-sdk/client-dynamodb": "^3.978.0",
+    "@aws-sdk/lib-dynamodb": "^3.997.0",
     "@aws-sdk/util-dynamodb": "^3.978.0",
     "@headlessui/react": "^2.1.2",
     "@hello-pangea/dnd": "^18.0.1",
