@@ -17,6 +17,7 @@ import { useIsMobile, useIsPortrait } from '@/hooks/useMediaQuery'
 import { useIdleMotion } from '@/hooks/useIdleMotion'
 import { useSleepMode } from '@/hooks/useSleepMode'
 import { MobileHeader } from '@/components/mobileHeader'
+import { GestureTestPanel } from '@/components/gestureTestPanel'
 
 const CHAT_WIDTH_KEY = 'tonari-chat-width'
 const DEFAULT_CHAT_WIDTH = 500
@@ -111,8 +112,8 @@ const Home = () => {
           <div className="absolute inset-0 z-0">
             <VrmViewer />
           </div>
-          {/* モバイル/縦モニター: ヘッダー */}
-          {isMobile ? <MobileHeader /> : null}
+          {/* モバイル/縦モニター: ヘッダー（上部固定） */}
+          <MobileHeader showLogo={!isMobile} />
           {/* スペーサー（ポインターイベントはキャンバスに透過） */}
           <div className="flex-1" />
           {/* モバイル/縦モニター: チャットログ（下部） */}
@@ -163,6 +164,7 @@ const Home = () => {
           </div>
         </>
       )}
+      {/* <GestureTestPanel /> */}
       {messageReceiverEnabled && <MessageReceiver />}
       <Toasts />
       <WebSocketManager />

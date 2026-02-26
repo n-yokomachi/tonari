@@ -10,6 +10,8 @@ export type GestureType =
   | 'wave'
   | 'cheer'
   | 'head_tilt'
+  | 'blow_a_kiss'
+  | 'thinking'
   | 'none'
 
 export interface BoneRotation {

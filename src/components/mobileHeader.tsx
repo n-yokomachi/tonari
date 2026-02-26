@@ -9,7 +9,7 @@ import settingsStore from '@/features/stores/settings'
 import { resetSessionId } from '@/features/chat/agentCoreChat'
 import { VRM_MODELS } from '@/features/constants/settings'
 
-export const MobileHeader = () => {
+export const MobileHeader = ({ showLogo }: { showLogo?: boolean }) => {
   const [showSettings, setShowSettings] = useState(false)
   const showControlPanel = settingsStore((s) => s.showControlPanel)
   const { t } = useTranslation()
@@ -31,9 +31,19 @@ export const MobileHeader = () => {
   return (
     <>
       <header
-        className="absolute top-0 left-0 right-0 z-20 px-4 py-2 flex items-center justify-end"
+        className="absolute top-0 left-0 right-0 z-20 px-4 py-2 flex items-center justify-start"
         role="banner"
       >
+        {showLogo && (
+          <div className="flex flex-col items-center mr-3">
+            <span className="text-2xl font-light tracking-[0.2em] text-secondary font-Montserrat leading-tight">
+              TONaRi
+            </span>
+            <span className="text-[7px] text-gray-400 tracking-[0.08em] font-light font-Montserrat">
+              An AI Agent Standing With You
+            </span>
+          </div>
+        )}
         <nav className="flex gap-2" aria-label="Main navigation">
           {showControlPanel && (
             <>

@@ -7,6 +7,8 @@ import { thinkGesture } from './think'
 import { waveGesture } from './wave'
 import { cheerGesture } from './cheer'
 import { headTiltGesture } from './headTilt'
+import { blowAKissGesture } from './blowAKiss'
+import { thinkingGesture } from './thinking'
 
 export type {
   GestureType,
@@ -28,6 +30,8 @@ export const gestureDefinitions: ReadonlyMap<GestureType, GestureDefinition> =
     ['wave', waveGesture],
     ['cheer', cheerGesture],
     ['head_tilt', headTiltGesture],
+    ['blow_a_kiss', blowAKissGesture],
+    ['thinking', thinkingGesture],
   ])
 
 /** All gesture type names (excluding 'none') for tag detection */
@@ -40,4 +44,6 @@ export const GESTURE_TAGS: GestureType[] = [
   'wave',
   'cheer',
   'head_tilt',
+  'blow_a_kiss',
+  'thinking',
 ]

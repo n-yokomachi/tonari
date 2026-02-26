@@ -132,8 +132,8 @@ export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
       )}
 
       <div className="flex flex-col h-full">
-        {/* ヘッダー部分（デスクトップのみ表示、モバイルはMobileHeaderを使用） */}
-        {!isMobile && (
+        {/* ヘッダー部分（デスクトップ横画面のみ表示、モバイル/縦画面は別コンポーネント） */}
+        {!isMobile && !isPortrait && (
           <div className="flex-shrink-0 z-15 px-4 py-2">
             <div className="flex items-center gap-3">
               <div className="flex flex-col items-center">

@@ -30,7 +30,10 @@ export class EmoteController {
     this._expressionController = new ExpressionController(vrm, camera)
     this._gestureController = new GestureController(vrm)
     if (vrm.expressionManager) {
-      this._sleepController = new SleepController(vrm.expressionManager)
+      this._sleepController = new SleepController(
+        vrm.expressionManager,
+        vrm.humanoid
+      )
     }
   }
 
@@ -145,5 +148,8 @@ export class EmoteController {
         lookAt.resetDamping()
       }
     }
+
+    // 睡眠時の首の前傾（rawボーンへのmultiply、vrm.update後に適用）
+    this._sleepController?.applyNeckTilt()
   }
 }

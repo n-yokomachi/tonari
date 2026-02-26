@@ -11,8 +11,18 @@ const GESTURE_LABELS: Record<GestureType, string> = {
   wave: '手振り',
   cheer: 'ガッツ',
   head_tilt: '首かしげ',
+  blow_a_kiss: '投げキス',
+  thinking: '考え中',
   none: '',
 }
+
+/** フルアニメーション再生用 */
+const ANIMATION_ITEMS: { label: string; url: string }[] = [
+  { label: '投げキス(Anim)', url: '/gestures/blow_a_kiss.vrma' },
+  { label: '考え中(Anim)', url: '/gestures/thinking_anim.vrma' },
+  { label: '待機(Anim)', url: '/gestures/holding_idle.vrma' },
+  { label: '見下ろし(Anim)', url: '/gestures/looking_down.vrma' },
+]
 
 export const GestureTestPanel = () => {
   const [open, setOpen] = useState(false)
@@ -20,6 +30,11 @@ export const GestureTestPanel = () => {
   const handleGesture = (gesture: GestureType) => {
     const viewer = homeStore.getState().viewer
     viewer?.model?.playGesture(gesture)
+  }
+
+  const handleAnimation = (url: string) => {
+    const viewer = homeStore.getState().viewer
+    viewer?.model?.playVrmaAnimation(url)
   }
 
   if (!open) {
@@ -44,6 +59,7 @@ export const GestureTestPanel = () => {
           x
         </button>
       </div>
+      <div className="text-[10px] text-gray-400 mb-1">Pose Gestures</div>
       <div className="grid grid-cols-2 gap-1.5">
         {GESTURE_TAGS.map((gesture) => (
           <button
@@ -52,6 +68,18 @@ export const GestureTestPanel = () => {
             className="bg-white/20 hover:bg-white/40 text-xs px-2 py-1.5 rounded transition-colors"
           >
             {GESTURE_LABELS[gesture]}
+          </button>
+        ))}
+      </div>
+      <div className="text-[10px] text-gray-400 mt-2 mb-1">Full Animations</div>
+      <div className="grid grid-cols-1 gap-1.5">
+        {ANIMATION_ITEMS.map((item) => (
+          <button
+            key={item.url}
+            onClick={() => handleAnimation(item.url)}
+            className="bg-blue-500/30 hover:bg-blue-500/50 text-xs px-2 py-1.5 rounded transition-colors"
+          >
+            {item.label}
           </button>
         ))}
       </div>
