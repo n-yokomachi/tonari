@@ -39,10 +39,5 @@ export async function loadVrmaPose(url: string, vrm: VRM): Promise<VrmaPose> {
     }
   }
 
-  console.log(
-    `[loadVrmaPose] ${url}: ${pose.size} bones loaded`,
-    Array.from(pose.keys())
-  )
-
   return pose
 }

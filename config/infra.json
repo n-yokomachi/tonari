@@ -18,8 +18,8 @@
   },
 
   "newsScheduler": {
-    "notificationEmail": "owner@example.com",
-    "vapidSubject": "mailto:owner@example.com",
+    "notificationEmail": "asterism.mihono@gmail.com",
+    "vapidSubject": "mailto:asterism.mihono@gmail.com",
     "ssmVapidPrivateKey": "/tonari/vapid/private-key"
   }
 }
