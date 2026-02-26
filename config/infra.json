@@ -15,5 +15,11 @@
     "_comment": "開発環境用。本番環境では環境変数で上書き",
     "rpId": "localhost",
     "origin": "http://localhost:3000"
+  },
+
+  "newsScheduler": {
+    "notificationEmail": "owner@example.com",
+    "vapidSubject": "mailto:owner@example.com",
+    "ssmVapidPrivateKey": "/tonari/vapid/private-key"
   }
 }

@@ -6,6 +6,8 @@ import * as apigateway from 'aws-cdk-lib/aws-apigateway'
 import * as iam from 'aws-cdk-lib/aws-iam'
 import * as scheduler from 'aws-cdk-lib/aws-scheduler'
 import * as targets from 'aws-cdk-lib/aws-scheduler-targets'
+import * as sns from 'aws-cdk-lib/aws-sns'
+import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions'
 import { Construct } from 'constructs'
 import * as path from 'path'
 
@@ -24,6 +26,15 @@ export interface WorkloadConstructProps {
     /** SSM parameter path for Cognito client secret */
     ssmCognitoClientSecret: string
   }
+  /** News scheduler config (optional) */
+  newsScheduler?: {
+    notificationEmail: string
+    vapidSubject: string
+    ssmVapidPrivateKey: string
+    cognitoTokenEndpoint: string
+    cognitoScope: string
+    ssmCognitoClientSecret: string
+  }
 }
 
 export class WorkloadConstruct extends Construct {
@@ -35,6 +46,9 @@ export class WorkloadConstruct extends Construct {
   public readonly tweetTriggerLambda?: python.PythonFunction
   public readonly diaryTable: dynamodb.Table
   public readonly diaryToolLambda: python.PythonFunction
+  public readonly pushSubscriptionsTable?: dynamodb.Table
+  public readonly newsNotificationTopic?: sns.Topic
+  public readonly newsTriggerLambda?: python.PythonFunction
 
   constructor(scope: Construct, id: string, props: WorkloadConstructProps) {
     super(scope, id)
@@ -360,6 +374,108 @@ export class WorkloadConstruct extends Construct {
           timeZone: cdk.TimeZone.ASIA_TOKYO,
         }),
         target: tweetTarget,
+      })
+    }
+
+    // ========== News Notification ==========
+    if (props.newsScheduler) {
+      const ns = props.newsScheduler
+
+      // DynamoDB Table for Push Subscriptions
+      this.pushSubscriptionsTable = new dynamodb.Table(
+        stack,
+        'PushSubscriptionsTable',
+        {
+          tableName: 'tonari-push-subscriptions',
+          partitionKey: {
+            name: 'userId',
+            type: dynamodb.AttributeType.STRING,
+          },
+          sortKey: {
+            name: 'endpoint',
+            type: dynamodb.AttributeType.STRING,
+          },
+          billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+          removalPolicy: cdk.RemovalPolicy.DESTROY,
+        }
+      )
+
+      // SNS Topic for email notifications
+      this.newsNotificationTopic = new sns.Topic(
+        stack,
+        'NewsNotificationTopic',
+        {
+          topicName: 'tonari-news-notification',
+          displayName: 'TONaRi News Notification',
+        }
+      )
+
+      this.newsNotificationTopic.addSubscription(
+        new subscriptions.EmailSubscription(ns.notificationEmail)
+      )
+
+      // News Trigger Lambda
+      // AGENTCORE_RUNTIME_ARN is set by the stack after AgentCoreConstruct creation
+      this.newsTriggerLambda = new python.PythonFunction(
+        stack,
+        'NewsTriggerLambda',
+        {
+          functionName: 'tonari-news-trigger',
+          entry: path.join(__dirname, '../lambda/news-trigger'),
+          runtime: lambda.Runtime.PYTHON_3_12,
+          handler: 'handler',
+          timeout: cdk.Duration.minutes(5),
+          memorySize: 256,
+          environment: {
+            AGENTCORE_REGION: region,
+            COGNITO_TOKEN_ENDPOINT: ns.cognitoTokenEndpoint,
+            COGNITO_CLIENT_ID: cognitoClientId,
+            COGNITO_SCOPE: ns.cognitoScope,
+            SSM_COGNITO_CLIENT_SECRET: ns.ssmCognitoClientSecret,
+            SNS_TOPIC_ARN: this.newsNotificationTopic.topicArn,
+            PUSH_SUBSCRIPTIONS_TABLE:
+              this.pushSubscriptionsTable.tableName,
+            SSM_VAPID_PRIVATE_KEY: ns.ssmVapidPrivateKey,
+            VAPID_SUBJECT: ns.vapidSubject,
+          },
+        }
+      )
+
+      // IAM permissions
+      this.newsTriggerLambda.addToRolePolicy(
+        new iam.PolicyStatement({
+          actions: ['ssm:GetParameter'],
+          resources: [
+            `arn:aws:ssm:${region}:${account}:parameter${ns.ssmCognitoClientSecret}`,
+            `arn:aws:ssm:${region}:${account}:parameter${ns.ssmVapidPrivateKey}`,
+          ],
+        })
+      )
+
+      this.newsNotificationTopic.grantPublish(this.newsTriggerLambda)
+      this.pushSubscriptionsTable.grantReadWriteData(this.newsTriggerLambda)
+
+      const newsTarget = new targets.LambdaInvoke(this.newsTriggerLambda)
+
+      // EventBridge Schedules (9:00 and 21:00 JST)
+      new scheduler.Schedule(stack, 'NewsScheduleMorning', {
+        scheduleName: 'tonari-news-morning',
+        schedule: scheduler.ScheduleExpression.cron({
+          minute: '0',
+          hour: '9',
+          timeZone: cdk.TimeZone.ASIA_TOKYO,
+        }),
+        target: newsTarget,
+      })
+
+      new scheduler.Schedule(stack, 'NewsScheduleEvening', {
+        scheduleName: 'tonari-news-evening',
+        schedule: scheduler.ScheduleExpression.cron({
+          minute: '0',
+          hour: '21',
+          timeZone: cdk.TimeZone.ASIA_TOKYO,
+        }),
+        target: newsTarget,
       })
     }
   }
