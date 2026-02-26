@@ -12,19 +12,32 @@ export const config = {
 // セッションIDを生成（33文字以上必要）
 const generateSessionId = () => `tonari-${randomUUID()}-${Date.now()}`
 
-// SSEのdata値からテキストを抽出（JSON文字列またはプレーンテキスト）
-function parseJsonString(value: string): string {
-  // JSON文字列の場合（"text"形式）
-  if (value.startsWith('"') && value.endsWith('"')) {
-    try {
-      return JSON.parse(value)
-    } catch {
-      // パース失敗時はクォートを除去
-      return value.slice(1, -1)
+// SSEのdata値をパース（テキスト文字列またはツールイベントオブジェクト）
+function parseSSEData(value: string): string | Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(value)
+    if (typeof parsed === 'string') {
+      // JSON-encoded string ("hello") → 文字列を抽出
+      // 二重エンコードされたJSONオブジェクトもチェック
+      try {
+        const inner = JSON.parse(parsed)
+        if (typeof inner === 'object' && inner !== null) {
+          return inner as Record<string, unknown>
+        }
+      } catch {
+        // 二重エンコードではない
+      }
+      return parsed
     }
+    if (typeof parsed === 'object' && parsed !== null) {
+      // JSONオブジェクト ({"type": "tool_start"})
+      return parsed as Record<string, unknown>
+    }
+    return null
+  } catch {
+    // 有効なJSONでない場合はそのまま返す
+    return value || null
   }
-  // プレーンテキストの場合
-  return value
 }
 
 // Cognito からアクセストークンを取得（M2M client credentials flow）
@@ -158,11 +171,10 @@ export default async function handler(
               // "data:" または "data: " を除去
               let dataValue = trimmedLine.slice(5).trim()
               if (dataValue) {
-                // JSON文字列をパースして中身のテキストを取得
-                const text = parseJsonString(dataValue)
-                if (text) {
-                  // SSE形式で送信（data: ...\n\n）
-                  res.write(`data: ${JSON.stringify(text)}\n\n`)
+                // テキストまたはツールイベントをパースして転送
+                const parsed = parseSSEData(dataValue)
+                if (parsed) {
+                  res.write(`data: ${JSON.stringify(parsed)}\n\n`)
                 }
               }
             }
@@ -174,9 +186,9 @@ export default async function handler(
         if (trimmedBuffer.startsWith('data:')) {
           let dataValue = trimmedBuffer.slice(5).trim()
           if (dataValue) {
-            const text = parseJsonString(dataValue)
-            if (text) {
-              res.write(`data: ${JSON.stringify(text)}\n\n`)
+            const parsed = parseSSEData(dataValue)
+            if (parsed) {
+              res.write(`data: ${JSON.stringify(parsed)}\n\n`)
             }
           }
         }

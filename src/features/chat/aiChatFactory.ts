@@ -1,8 +1,13 @@
-import { getAgentCoreChatResponseStream } from './agentCoreChat'
+import {
+  getAgentCoreChatResponseStream,
+  type StreamChunk,
+} from './agentCoreChat'
+
+export type { StreamChunk }
 
 export async function getAIChatResponseStream(
   userMessage: string,
   imageBase64?: string
-): Promise<ReadableStream<string> | null> {
+): Promise<ReadableStream<StreamChunk> | null> {
   return getAgentCoreChatResponseStream(userMessage, imageBase64)
 }

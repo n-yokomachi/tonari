@@ -98,13 +98,35 @@ def build_content_blocks(
 
 
 async def _stream_response(agent, content):
-    """エージェントのストリーミングレスポンスを生成"""
+    """エージェントのストリーミングレスポンスを生成
+
+    Yields:
+        str: テキストチャンク
+        dict: ツールイベント ({"type": "tool_start", "tool": name} or {"type": "tool_end"})
+    """
     stream = agent.stream_async(content)
+    active_tool = None
+
     async for event in stream:
-        if isinstance(event, dict) and "data" in event:
-            text = event["data"]
-            if isinstance(text, str):
-                yield text
+        if isinstance(event, dict):
+            if "data" in event:
+                text = event["data"]
+                if isinstance(text, str):
+                    if active_tool is not None:
+                        yield {"type": "tool_end"}
+                        active_tool = None
+                    yield text
+            elif "current_tool_use" in event:
+                tool_info = event["current_tool_use"]
+                tool_name = tool_info.get("name", "unknown")
+                if tool_name != active_tool:
+                    if active_tool is not None:
+                        yield {"type": "tool_end"}
+                    active_tool = tool_name
+                    yield {"type": "tool_start", "tool": tool_name}
+
+    if active_tool is not None:
+        yield {"type": "tool_end"}
 
 
 @app.entrypoint
@@ -121,8 +143,8 @@ async def invoke(payload: dict):
     content = build_content_blocks(prompt, image_base64, image_format)
     agent = _get_or_create_agent(session_id, actor_id)
 
-    async for text in _stream_response(agent, content):
-        yield text
+    async for chunk in _stream_response(agent, content):
+        yield chunk
 
 
 if __name__ == "__main__":
