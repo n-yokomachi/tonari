@@ -119,7 +119,9 @@ const homeStore = create<HomeState>()(
     {
       name: 'aitube-kit-home',
       partialize: ({ chatLog }) => ({
-        chatLog: messageSelectors.cutImageMessage(chatLog),
+        chatLog: messageSelectors.cutImageMessage(
+          chatLog.filter((msg) => msg.role !== 'tool-status')
+        ),
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
@@ -143,12 +145,13 @@ homeStore.subscribe((state, prevState) => {
     }
 
     saveDebounceTimer = setTimeout(() => {
-      // 新規追加 or 更新があったメッセージだけを抽出
+      // 新規追加 or 更新があったメッセージだけを抽出（tool-statusは除外）
       const newMessagesToSave = state.chatLog.filter(
         (msg, idx) =>
-          idx >= lastSavedLogLength || // 追加分
-          prevState.chatLog.find((p) => p.id === msg.id)?.content !==
-            msg.content // 更新分
+          msg.role !== 'tool-status' &&
+          (idx >= lastSavedLogLength || // 追加分
+            prevState.chatLog.find((p) => p.id === msg.id)?.content !==
+              msg.content) // 更新分
       )
 
       if (newMessagesToSave.length > 0) {

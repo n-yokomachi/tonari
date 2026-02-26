@@ -13,6 +13,9 @@ export const ChatLog = () => {
   const messages = messageSelectors.getTextAndImageMessages(
     homeStore((s) => s.chatLog)
   )
+  const toolStatusMessage = homeStore((s) =>
+    s.chatLog.find((msg) => msg.role === 'tool-status')
+  )
 
   useEffect(() => {
     chatScrollRef.current?.scrollIntoView({
@@ -26,7 +29,7 @@ export const ChatLog = () => {
       behavior: 'smooth',
       block: 'center',
     })
-  }, [messages, chatProcessing])
+  }, [messages, chatProcessing, toolStatusMessage])
 
   return (
     <div className="h-full w-full overflow-y-auto px-4 py-4">
@@ -65,13 +68,26 @@ export const ChatLog = () => {
           </div>
         )
       })}
-      {chatProcessing &&
+      {chatProcessing && toolStatusMessage ? (
+        <div ref={chatScrollRef}>
+          <ToolStatusIndicator
+            characterName={characterName}
+            toolName={
+              typeof toolStatusMessage.content === 'string'
+                ? toolStatusMessage.content
+                : ''
+            }
+          />
+        </div>
+      ) : (
+        chatProcessing &&
         (messages.length === 0 ||
           messages[messages.length - 1].role === 'user') && (
           <div ref={chatScrollRef}>
             <LoadingIndicator characterName={characterName} />
           </div>
-        )}
+        )
+      )}
     </div>
   )
 }
@@ -96,6 +112,28 @@ const LoadingIndicator = ({ characterName }: { characterName: string }) => {
             className="w-2 h-2 bg-secondary rounded-full animate-bounce"
             style={{ animationDelay: '300ms' }}
           />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const ToolStatusIndicator = ({
+  characterName,
+  toolName,
+}: {
+  characterName: string
+  toolName: string
+}) => {
+  return (
+    <div className="mx-auto ml-0 md:ml-10 lg:ml-20 my-4 pr-10">
+      <div className="px-6 py-2 rounded-t-lg font-bold tracking-wider bg-secondary text-theme">
+        {characterName || 'CHARACTER'}
+      </div>
+      <div className="px-6 py-4 bg-white rounded-b-lg">
+        <div className="flex items-center gap-2 animate-pulse">
+          <span className="text-base">&#128295;</span>
+          <span className="text-secondary font-bold">{toolName}...</span>
         </div>
       </div>
     </div>

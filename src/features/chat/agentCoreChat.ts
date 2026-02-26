@@ -1,3 +1,6 @@
+export type ToolEvent = { type: 'tool_start' | 'tool_end'; tool?: string }
+export type StreamChunk = string | ToolEvent
+
 /**
  * セッションIDを取得（localStorage: ブラウザ単位で永続化）
  * リロードしても同一セッションとして扱われる
@@ -36,7 +39,7 @@ export function resetSessionId(): void {
 export async function getAgentCoreChatResponseStream(
   userMessage: string,
   imageBase64?: string
-): Promise<ReadableStream<string> | null> {
+): Promise<ReadableStream<StreamChunk> | null> {
   if (!userMessage && !imageBase64) {
     return null
   }
@@ -71,7 +74,7 @@ export async function getAgentCoreChatResponseStream(
   const decoder = new TextDecoder()
   let sseBuffer = ''
 
-  return new ReadableStream({
+  return new ReadableStream<StreamChunk>({
     async pull(controller) {
       try {
         const { done, value } = await reader.read()
@@ -93,9 +96,15 @@ export async function getAgentCoreChatResponseStream(
             const jsonStr = trimmedLine.slice(5).trim()
             if (jsonStr) {
               try {
-                const text = JSON.parse(jsonStr)
-                if (typeof text === 'string') {
-                  controller.enqueue(text)
+                const parsed = JSON.parse(jsonStr)
+                if (typeof parsed === 'string') {
+                  controller.enqueue(parsed)
+                } else if (
+                  parsed &&
+                  typeof parsed === 'object' &&
+                  parsed.type
+                ) {
+                  controller.enqueue(parsed as ToolEvent)
                 }
               } catch {
                 // パース失敗時はそのまま

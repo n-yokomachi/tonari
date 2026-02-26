@@ -2,10 +2,11 @@ import { Message } from './messages'
 import settingsStore from '@/features/stores/settings'
 
 export const messageSelectors = {
-  // テキストまたは画像を含むメッセージのみを取得
+  // テキストまたは画像を含むメッセージのみを取得（tool-statusは除外）
   getTextAndImageMessages: (messages: Message[]): Message[] => {
     return messages.filter((message): boolean => {
       if (!message.content) return false
+      if (message.role === 'tool-status') return false
       return (
         typeof message.content === 'string' || Array.isArray(message.content)
       )

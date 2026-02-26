@@ -1,4 +1,5 @@
 import { getAIChatResponseStream } from '@/features/chat/aiChatFactory'
+import { type ToolEvent } from '@/features/chat/agentCoreChat'
 import { EmotionType } from '@/features/messages/messages'
 import { speakCharacter } from '@/features/messages/speakCharacter'
 import homeStore from '@/features/stores/home'
@@ -58,6 +59,24 @@ const generateSessionId = () => generateMessageId()
 
 // コードブロックのデリミネーター
 const CODE_DELIMITER = '```'
+
+// ツール名 → 日本語表示名のマッピング
+const TOOL_DISPLAY_NAMES: Record<string, string> = {
+  'perfume-search___search_perfumes': '香水を検索中',
+  'twitter-read___get_todays_tweets': 'ツイートを確認中',
+  'twitter-write___post_tweet': 'ツイートを投稿中',
+  'diary-tool___save_diary': '日記を保存中',
+  'diary-tool___get_diaries': '日記を取得中',
+  TavilySearch___TavilySearchPost: 'Webを検索中',
+}
+
+const TOOL_STATUS_ID = 'tool-status'
+
+const removeToolStatus = () => {
+  homeStore.setState((state) => ({
+    chatLog: state.chatLog.filter((msg) => msg.id !== TOOL_STATUS_ID),
+  }))
+}
 
 /**
  * テキストから感情タグ `[...]` を抽出する（有効な感情タグのみ）
@@ -462,56 +481,74 @@ export const processAIResponse = async (
       const { done, value } = await reader.read()
 
       if (value) {
-        let textToAdd = value
-
-        if (!isCodeBlock) {
-          const delimiterIndexInValue = value.indexOf(CODE_DELIMITER)
-          if (delimiterIndexInValue !== -1) {
-            textToAdd = value.substring(0, delimiterIndexInValue)
-          }
-        }
-
-        if (currentMessageId === null) {
-          currentMessageId = generateMessageId()
-          currentMessageContent = textToAdd
-          if (currentMessageContent) {
+        // ツールイベントの処理
+        if (typeof value === 'object' && 'type' in value) {
+          const toolEvent = value as ToolEvent
+          if (toolEvent.type === 'tool_start') {
+            const toolName = toolEvent.tool || 'unknown'
+            const displayName = TOOL_DISPLAY_NAMES[toolName] || toolName
             homeStore.getState().upsertMessage({
-              id: currentMessageId,
-              role: 'assistant',
-              content: removeGestureTags(currentMessageContent),
+              id: TOOL_STATUS_ID,
+              role: 'tool-status',
+              content: displayName,
             })
+          } else if (toolEvent.type === 'tool_end') {
+            removeToolStatus()
           }
-        } else if (!isCodeBlock) {
-          currentMessageContent += textToAdd
+        } else {
+          // テキストチャンクの処理（既存ロジック）
+          const textValue = value as string
+          let textToAdd = textValue
 
-          if (textToAdd) {
-            homeStore.getState().upsertMessage({
-              id: currentMessageId,
-              role: 'assistant',
-              content: removeGestureTags(currentMessageContent),
-            })
+          if (!isCodeBlock) {
+            const delimiterIndexInValue = textValue.indexOf(CODE_DELIMITER)
+            if (delimiterIndexInValue !== -1) {
+              textToAdd = textValue.substring(0, delimiterIndexInValue)
+            }
           }
-        }
 
-        receivedChunksForSpeech += value
+          if (currentMessageId === null) {
+            currentMessageId = generateMessageId()
+            currentMessageContent = textToAdd
+            if (currentMessageContent) {
+              homeStore.getState().upsertMessage({
+                id: currentMessageId,
+                role: 'assistant',
+                content: removeGestureTags(currentMessageContent),
+              })
+            }
+          } else if (!isCodeBlock) {
+            currentMessageContent += textToAdd
 
-        // [camera]タグを検出して除去（発話テキストから除外）
-        if (receivedChunksForSpeech.includes('[camera]')) {
-          cameraTagDetected = true
-          receivedChunksForSpeech = receivedChunksForSpeech.replace(
-            /\[camera\]/g,
-            ''
-          )
-        }
+            if (textToAdd) {
+              homeStore.getState().upsertMessage({
+                id: currentMessageId,
+                role: 'assistant',
+                content: removeGestureTags(currentMessageContent),
+              })
+            }
+          }
 
-        // ジェスチャータグを検出してトリガー
-        detectAndTriggerGestures(receivedChunksForSpeech, triggeredGestures)
+          receivedChunksForSpeech += textValue
 
-        // ジェスチャータグとリンクタグを発話テキストから除去
-        // （TTSが「bow」「present」等をテキストとして読み上げるのを防止）
-        receivedChunksForSpeech = receivedChunksForSpeech
-          .replace(/\[(bow|present)\]/g, '')
-          .replace(/\[link:[^\]]*\](.*?)\[\/link\]/g, '$1')
+          // [camera]タグを検出して除去（発話テキストから除外）
+          if (receivedChunksForSpeech.includes('[camera]')) {
+            cameraTagDetected = true
+            receivedChunksForSpeech = receivedChunksForSpeech.replace(
+              /\[camera\]/g,
+              ''
+            )
+          }
+
+          // ジェスチャータグを検出してトリガー
+          detectAndTriggerGestures(receivedChunksForSpeech, triggeredGestures)
+
+          // ジェスチャータグとリンクタグを発話テキストから除去
+          // （TTSが「bow」「present」等をテキストとして読み上げるのを防止）
+          receivedChunksForSpeech = receivedChunksForSpeech
+            .replace(/\[(bow|present)\]/g, '')
+            .replace(/\[link:[^\]]*\](.*?)\[\/link\]/g, '$1')
+        } // else (text chunk)
       }
 
       let processableTextForSpeech = receivedChunksForSpeech
@@ -737,6 +774,7 @@ export const processAIResponse = async (
     })
   } finally {
     reader.releaseLock()
+    removeToolStatus()
   }
 
   homeStore.setState({
