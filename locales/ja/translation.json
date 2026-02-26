@@ -239,5 +239,7 @@
   "AutoCaptureDisabled": "自動撮影OFF",
   "VoiceOutput": "音声出力",
   "VoiceOutputDescription": "AIの応答を音声で読み上げます",
-  "VoiceModel": "音声モデル"
+  "VoiceModel": "音声モデル",
+  "PushNotification": "ニュース通知",
+  "PushNotificationDescription": "TONaRiからのニュース通知をブラウザで受信します"
 }

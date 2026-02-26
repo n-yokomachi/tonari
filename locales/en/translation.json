@@ -239,5 +239,7 @@
   "AutoCaptureDisabled": "Auto capture OFF",
   "VoiceOutput": "Voice Output",
   "VoiceOutputDescription": "Read AI responses aloud",
-  "VoiceModel": "Voice Model"
+  "VoiceModel": "Voice Model",
+  "PushNotification": "News Notification",
+  "PushNotificationDescription": "Receive news notifications from TONaRi in your browser"
 }

@@ -20,6 +20,11 @@
     "tweetScheduler": {
       "ownerTwitterUserId": "1330596368",
       "ssmCognitoClientSecret": "/tonari/cognito/client_secret"
+    },
+    "newsScheduler": {
+      "notificationEmail": "asterism.mihono@gmail.com",
+      "vapidSubject": "mailto:asterism.mihono@gmail.com",
+      "ssmVapidPrivateKey": "/tonari/vapid/private-key"
     }
   }
 }

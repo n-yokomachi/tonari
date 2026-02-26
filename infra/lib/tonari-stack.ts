@@ -10,6 +10,14 @@ export interface TonariStackProps extends cdk.StackProps {
     ownerTwitterUserId: string
     ssmCognitoClientSecret: string
   }
+  /** News scheduler config (optional) */
+  newsScheduler?: {
+    notificationEmail: string
+    vapidSubject: string
+    ssmVapidPrivateKey: string
+    /** Cognito client secret SSM path (shared with tweetScheduler) */
+    ssmCognitoClientSecret: string
+  }
 }
 
 export class TonariStack extends cdk.Stack {
@@ -32,6 +40,17 @@ export class TonariStack extends cdk.Stack {
               props.tweetScheduler.ssmCognitoClientSecret,
           }
         : undefined,
+      newsScheduler: props.newsScheduler
+        ? {
+            notificationEmail: props.newsScheduler.notificationEmail,
+            vapidSubject: props.newsScheduler.vapidSubject,
+            ssmVapidPrivateKey: props.newsScheduler.ssmVapidPrivateKey,
+            cognitoTokenEndpoint: cognito.tokenEndpoint,
+            cognitoScope: cognito.scope,
+            ssmCognitoClientSecret:
+              props.newsScheduler.ssmCognitoClientSecret,
+          }
+        : undefined,
     })
 
     // ========== AgentCore (Runtime, Memory, Gateway, Build, Observability) ==========
@@ -48,6 +67,14 @@ export class TonariStack extends cdk.Stack {
     // Set Runtime ARN on tweet-trigger Lambda (breaks circular dependency)
     if (workload.tweetTriggerLambda) {
       workload.tweetTriggerLambda.addEnvironment(
+        'AGENTCORE_RUNTIME_ARN',
+        agentcore.runtimeArn
+      )
+    }
+
+    // Set Runtime ARN on news-trigger Lambda
+    if (workload.newsTriggerLambda) {
+      workload.newsTriggerLambda.addEnvironment(
         'AGENTCORE_RUNTIME_ARN',
         agentcore.runtimeArn
       )
@@ -108,5 +135,19 @@ export class TonariStack extends cdk.Stack {
       value: cognito.scope,
       description: 'Cognito OAuth2 Scope',
     })
+
+    if (workload.pushSubscriptionsTable) {
+      new cdk.CfnOutput(this, 'PushSubscriptionsTableName', {
+        value: workload.pushSubscriptionsTable.tableName,
+        description: 'DynamoDB table name for push subscriptions',
+      })
+    }
+
+    if (workload.newsNotificationTopic) {
+      new cdk.CfnOutput(this, 'NewsNotificationTopicArn', {
+        value: workload.newsNotificationTopic.topicArn,
+        description: 'SNS Topic ARN for news notifications',
+      })
+    }
   }
 }
