@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { Form } from '@/components/form'
 import MessageReceiver from '@/components/messageReceiver'
 import { Menu } from '@/components/menu'
@@ -13,7 +13,9 @@ import homeStore from '@/features/stores/home'
 import settingsStore from '@/features/stores/settings'
 import '@/lib/i18n'
 import { buildUrl } from '@/utils/buildUrl'
-import { useIsMobile } from '@/hooks/useMediaQuery'
+import { useIsMobile, useIsPortrait } from '@/hooks/useMediaQuery'
+import { useIdleMotion } from '@/hooks/useIdleMotion'
+import { useSleepMode } from '@/hooks/useSleepMode'
 import { MobileHeader } from '@/components/mobileHeader'
 
 const CHAT_WIDTH_KEY = 'tonari-chat-width'
@@ -23,7 +25,26 @@ const MAX_CHAT_WIDTH = 900
 
 const Home = () => {
   const isMobile = useIsMobile()
+  const isPortrait = useIsPortrait()
   const [chatWidth, setChatWidth] = useState(DEFAULT_CHAT_WIDTH)
+
+  // 縦モニター: チャットログの自動非表示
+  const [chatVisible, setChatVisible] = useState(true)
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const chatLog = homeStore((s) => s.chatLog)
+
+  const showChatTemporarily = useCallback(() => {
+    setChatVisible(true)
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current)
+    hideTimerRef.current = setTimeout(() => setChatVisible(false), 10000)
+  }, [])
+
+  // 新しいメッセージが来たら表示してタイマーリセット（モバイル・縦モニター共通）
+  useEffect(() => {
+    if ((isPortrait || isMobile) && chatLog.length > 0) {
+      showChatTemporarily()
+    }
+  }, [chatLog.length, isPortrait, isMobile, showChatTemporarily])
 
   // ローカルストレージから幅を復元
   useEffect(() => {
@@ -40,6 +61,9 @@ const Home = () => {
     setChatWidth(width)
     localStorage.setItem(CHAT_WIDTH_KEY, String(width))
   }, [])
+
+  useIdleMotion()
+  useSleepMode()
 
   const webcamStatus = homeStore((s) => s.webcamStatus)
   const backgroundImageUrl = homeStore((s) => s.backgroundImageUrl)
@@ -67,7 +91,7 @@ const Home = () => {
             : { backgroundColor: '#E8E8E8' }
 
   // SSR時はローディング表示
-  if (isMobile === null) {
+  if (isMobile === null || isPortrait === null) {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-[#E8E8E8]">
         <Meta />
@@ -81,20 +105,31 @@ const Home = () => {
       style={backgroundStyle}
     >
       <Meta />
-      {isMobile ? (
+      {isMobile || isPortrait ? (
         <>
-          {/* モバイル: ヘッダー（VRMビューワー上に透過で重ねる） */}
-          <MobileHeader />
-          {/* モバイル: VRMビューワー */}
-          <div className="relative h-[50vh] min-h-[250px]">
+          {/* モバイル/縦モニター: VRM全画面背景 */}
+          <div className="absolute inset-0 z-0">
             <VrmViewer />
           </div>
-          {/* モバイル: チャットUI（中央） */}
-          <div className="flex-1 overflow-hidden">
-            <Menu />
+          {/* モバイル/縦モニター: ヘッダー + チャットログ（上部、透過） */}
+          <div
+            className={`relative z-10 max-h-[18vh] overflow-hidden transition-opacity duration-500 ${
+              chatVisible ? 'opacity-100' : 'opacity-0'
+            }`}
+            onClick={showChatTemporarily}
+          >
+            {isMobile ? <MobileHeader /> : null}
+            <Menu isPortrait />
           </div>
-          {/* モバイル: 入力欄（下部） */}
-          <div className="flex-shrink-0">
+          {/* モバイル/縦モニター: スペーサー（タップでチャット再表示） */}
+          <div className="flex-1 relative z-10" onClick={showChatTemporarily} />
+          {/* モバイル/縦モニター: 入力欄（下部） */}
+          <div
+            className={`flex-shrink-0 relative z-10 transition-opacity duration-500 ${
+              chatVisible ? 'opacity-100' : 'opacity-0'
+            }`}
+            onFocus={showChatTemporarily}
+          >
             <Form />
           </div>
         </>

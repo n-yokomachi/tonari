@@ -5,8 +5,10 @@ import homeStore from '@/features/stores/home'
 import settingsStore from '@/features/stores/settings'
 import { messageSelectors } from '@/features/messages/messageSelectors'
 
-export const ChatLog = () => {
+export const ChatLog = ({ isPortrait }: { isPortrait?: boolean }) => {
   const chatScrollRef = useRef<HTMLDivElement>(null)
+  const leftScrollRef = useRef<HTMLDivElement>(null)
+  const rightScrollRef = useRef<HTMLDivElement>(null)
 
   const characterName = settingsStore((s) => s.characterName)
   const chatProcessing = homeStore((s) => s.chatProcessing)
@@ -18,18 +20,129 @@ export const ChatLog = () => {
   )
 
   useEffect(() => {
-    chatScrollRef.current?.scrollIntoView({
-      behavior: 'auto',
-      block: 'center',
-    })
-  }, [])
+    if (isPortrait) {
+      leftScrollRef.current?.scrollTo({
+        top: leftScrollRef.current.scrollHeight,
+      })
+      rightScrollRef.current?.scrollTo({
+        top: rightScrollRef.current.scrollHeight,
+      })
+    } else {
+      chatScrollRef.current?.scrollIntoView({
+        behavior: 'auto',
+        block: 'center',
+      })
+    }
+  }, [isPortrait])
 
   useEffect(() => {
-    chatScrollRef.current?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'center',
-    })
-  }, [messages, chatProcessing, toolStatusMessage])
+    if (isPortrait) {
+      leftScrollRef.current?.scrollTo({
+        top: leftScrollRef.current.scrollHeight,
+        behavior: 'smooth',
+      })
+      rightScrollRef.current?.scrollTo({
+        top: rightScrollRef.current.scrollHeight,
+        behavior: 'smooth',
+      })
+    } else {
+      chatScrollRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      })
+    }
+  }, [messages, chatProcessing, toolStatusMessage, isPortrait])
+
+  if (isPortrait) {
+    const assistantMessages = messages.filter((msg) => msg.role !== 'user')
+    const userMessages = messages.filter((msg) => msg.role === 'user')
+
+    return (
+      <div className="h-full w-full grid grid-cols-2 gap-2 px-4 py-2">
+        {/* 左列: Tonariのチャット */}
+        <div ref={leftScrollRef} className="overflow-y-auto">
+          {assistantMessages.map((msg, i) => (
+            <div key={i}>
+              {typeof msg.content === 'string' ? (
+                <Chat
+                  role={msg.role}
+                  message={msg.content}
+                  characterName={characterName}
+                  isPortrait
+                />
+              ) : (
+                <>
+                  {msg.content?.[0]?.text ? (
+                    <Chat
+                      role={msg.role}
+                      message={msg.content[0].text}
+                      characterName={characterName}
+                      isPortrait
+                    />
+                  ) : null}
+                  <ChatImage
+                    role={msg.role}
+                    imageUrl={msg.content ? msg.content[1].image : ''}
+                    characterName={characterName}
+                    isPortrait
+                  />
+                </>
+              )}
+            </div>
+          ))}
+          {chatProcessing && toolStatusMessage ? (
+            <ToolStatusIndicator
+              characterName={characterName}
+              toolName={
+                typeof toolStatusMessage.content === 'string'
+                  ? toolStatusMessage.content
+                  : ''
+              }
+              isPortrait
+            />
+          ) : (
+            chatProcessing &&
+            (messages.length === 0 ||
+              messages[messages.length - 1].role === 'user') && (
+              <LoadingIndicator characterName={characterName} isPortrait />
+            )
+          )}
+        </div>
+        {/* 右列: オーナーのチャット */}
+        <div ref={rightScrollRef} className="overflow-y-auto">
+          {userMessages.map((msg, i) => (
+            <div key={i}>
+              {typeof msg.content === 'string' ? (
+                <Chat
+                  role={msg.role}
+                  message={msg.content}
+                  characterName={characterName}
+                  isPortrait
+                />
+              ) : (
+                <>
+                  {msg.content?.[0]?.text ? (
+                    <Chat
+                      role={msg.role}
+                      message={msg.content[0].text}
+                      characterName={characterName}
+                      isPortrait
+                    />
+                  ) : null}
+                  <ChatImage
+                    role={msg.role}
+                    imageUrl={msg.content ? msg.content[1].image : ''}
+                    characterName={characterName}
+                    isPortrait
+                  />
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="h-full w-full overflow-y-auto px-4 py-4">
@@ -92,9 +205,19 @@ export const ChatLog = () => {
   )
 }
 
-const LoadingIndicator = ({ characterName }: { characterName: string }) => {
+const LoadingIndicator = ({
+  characterName,
+  isPortrait,
+}: {
+  characterName: string
+  isPortrait?: boolean
+}) => {
   return (
-    <div className="mx-auto ml-0 md:ml-10 lg:ml-20 my-4 pr-10">
+    <div
+      className={
+        isPortrait ? 'my-2' : 'mx-auto ml-0 md:ml-10 lg:ml-20 my-4 pr-10'
+      }
+    >
       <div className="px-6 py-2 rounded-t-lg font-bold tracking-wider bg-secondary text-theme">
         {characterName || 'CHARACTER'}
       </div>
@@ -121,12 +244,18 @@ const LoadingIndicator = ({ characterName }: { characterName: string }) => {
 const ToolStatusIndicator = ({
   characterName,
   toolName,
+  isPortrait,
 }: {
   characterName: string
   toolName: string
+  isPortrait?: boolean
 }) => {
   return (
-    <div className="mx-auto ml-0 md:ml-10 lg:ml-20 my-4 pr-10">
+    <div
+      className={
+        isPortrait ? 'my-2' : 'mx-auto ml-0 md:ml-10 lg:ml-20 my-4 pr-10'
+      }
+    >
       <div className="px-6 py-2 rounded-t-lg font-bold tracking-wider bg-secondary text-theme">
         {characterName || 'CHARACTER'}
       </div>
@@ -181,10 +310,12 @@ const Chat = ({
   role,
   message,
   characterName,
+  isPortrait,
 }: {
   role: string
   message: string
   characterName: string
+  isPortrait?: boolean
 }) => {
   const emotionPattern = new RegExp(`\\[(${EMOTIONS.join('|')})\\]\\s*`, 'gi')
   const processedMessage = message.replace(emotionPattern, '')
@@ -198,7 +329,11 @@ const Chat = ({
   const messageContent = parseLinks(processedMessage)
 
   return (
-    <div className={`mx-auto ml-0 md:ml-10 lg:ml-20 my-4 ${offsetX}`}>
+    <div
+      className={
+        isPortrait ? 'my-2' : `mx-auto ml-0 md:ml-10 lg:ml-20 my-4 ${offsetX}`
+      }
+    >
       {role === 'code' ? (
         <pre className="whitespace-pre-wrap break-words bg-[#1F2937] text-theme p-4 rounded-lg">
           <code className="font-mono text-sm">{message}</code>
@@ -222,15 +357,21 @@ const Chat = ({
 const ChatImage = ({
   role,
   imageUrl,
+  isPortrait,
 }: {
   role: string
   imageUrl: string
   characterName: string
+  isPortrait?: boolean
 }) => {
   const offsetX = role === 'user' ? 'pl-10' : 'pr-10'
 
   return (
-    <div className={`mx-auto ml-0 md:ml-10 lg:ml-20 my-1 ${offsetX}`}>
+    <div
+      className={
+        isPortrait ? 'my-1' : `mx-auto ml-0 md:ml-10 lg:ml-20 my-1 ${offsetX}`
+      }
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={imageUrl}
