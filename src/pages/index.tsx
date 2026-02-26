@@ -111,19 +111,20 @@ const Home = () => {
           <div className="absolute inset-0 z-0">
             <VrmViewer />
           </div>
-          {/* モバイル/縦モニター: ヘッダー + チャットログ（上部、透過） */}
+          {/* モバイル/縦モニター: ヘッダー */}
+          {isMobile ? <MobileHeader /> : null}
+          {/* スペーサー（ポインターイベントはキャンバスに透過） */}
+          <div className="flex-1" />
+          {/* モバイル/縦モニター: チャットログ（下部） */}
           <div
-            className={`relative z-10 max-h-[18vh] overflow-hidden transition-opacity duration-500 ${
+            className={`relative z-10 max-h-[35vh] overflow-hidden transition-opacity duration-500 ${
               chatVisible ? 'opacity-100' : 'opacity-0'
             }`}
             onClick={showChatTemporarily}
           >
-            {isMobile ? <MobileHeader /> : null}
             <Menu isPortrait />
           </div>
-          {/* モバイル/縦モニター: スペーサー（タップでチャット再表示） */}
-          <div className="flex-1 relative z-10" onClick={showChatTemporarily} />
-          {/* モバイル/縦モニター: 入力欄（下部） */}
+          {/* モバイル/縦モニター: 入力欄（最下部） */}
           <div
             className={`flex-shrink-0 relative z-10 transition-opacity duration-500 ${
               chatVisible ? 'opacity-100' : 'opacity-0'

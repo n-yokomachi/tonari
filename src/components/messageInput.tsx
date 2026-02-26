@@ -40,20 +40,13 @@ export const MessageInput = ({
 
   const { t } = useTranslation()
 
-  // チャット処理完了後にテキストエリアをフォーカス
+  // チャット処理完了後にテキストエリアをフォーカス（PC のみ）
   useEffect(() => {
     if (!chatProcessing && textareaRef.current) {
-      textareaRef.current.value = ''
-      const isTouchDevice = () => {
-        if (typeof window === 'undefined') return false
-        return (
-          'ontouchstart' in window ||
-          navigator.maxTouchPoints > 0 ||
-          // @ts-expect-error: msMaxTouchPoints is IE-specific
-          navigator.msMaxTouchPoints > 0
-        )
-      }
-      if (!isTouchDevice()) {
+      const isMobile =
+        /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+        window.innerWidth <= 768
+      if (!isMobile) {
         textareaRef.current.focus()
       }
     }
