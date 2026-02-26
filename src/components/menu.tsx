@@ -35,7 +35,7 @@ const useIsMobile = () => {
   return isMobile
 }
 
-export const Menu = () => {
+export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
   const showControlPanel = settingsStore((s) => s.showControlPanel)
 
   const [showSettings, setShowSettings] = useState(false)
@@ -200,7 +200,7 @@ export const Menu = () => {
         )}
         {/* チャットログ */}
         <div className="flex-1 overflow-hidden">
-          <ChatLog />
+          <ChatLog isPortrait={isPortrait} />
         </div>
       </div>
       {showSettings && <Settings onClickClose={() => setShowSettings(false)} />}
