@@ -2,13 +2,18 @@ import * as THREE from 'three'
 import { VRM, VRMExpressionPresetName } from '@pixiv/three-vrm'
 import { VRMLookAtSmoother } from '@/lib/VRMLookAtSmootherLoaderPlugin/VRMLookAtSmoother'
 import { ExpressionController } from './expressionController'
-import { GestureController, GestureType } from './gestureController'
+import {
+  GestureController,
+  GestureType,
+  GesturePlayOptions,
+} from './gestureController'
 import {
   GestureType as GType,
   VrmaPose,
   gestureDefinitions,
   loadVrmaPose,
 } from './gestures'
+import { SleepController } from './sleepController'
 import { buildUrl } from '@/utils/buildUrl'
 
 /**
@@ -17,12 +22,16 @@ import { buildUrl } from '@/utils/buildUrl'
 export class EmoteController {
   private _expressionController: ExpressionController
   private _gestureController: GestureController
+  private _sleepController?: SleepController
   private _vrm: VRM
 
   constructor(vrm: VRM, camera: THREE.Object3D) {
     this._vrm = vrm
     this._expressionController = new ExpressionController(vrm, camera)
     this._gestureController = new GestureController(vrm)
+    if (vrm.expressionManager) {
+      this._sleepController = new SleepController(vrm.expressionManager)
+    }
   }
 
   /** Load all VRMA pose files referenced by gesture definitions */
@@ -50,8 +59,25 @@ export class EmoteController {
     this._expressionController.playEmotion(preset)
   }
 
-  public playGesture(gesture: GestureType) {
-    this._gestureController.playGesture(gesture)
+  public playGesture(gesture: GestureType, options?: GesturePlayOptions) {
+    this._gestureController.playGesture(gesture, options)
+  }
+
+  public cancelGesture(): void {
+    this._gestureController.cancelGesture()
+  }
+
+  public enterDrowsy(): void {
+    this._expressionController.setAutoBlinkEnable(false)
+    this._sleepController?.enterDrowsy()
+  }
+
+  public wakeUp(): void {
+    this._sleepController?.wakeUp()
+  }
+
+  public get isSleeping(): boolean {
+    return this._sleepController?.isSleeping ?? false
   }
 
   public lipSync(preset: VRMExpressionPresetName, value: number) {
@@ -70,10 +96,21 @@ export class EmoteController {
   }
 
   public updateExpression(delta: number) {
-    const isEmotionActive = this._expressionController.isEmotionActive
-    const skipAutoBlink =
-      this._gestureController.isClosingEyes && !isEmotionActive
-    this._expressionController.update(delta, skipAutoBlink)
+    const sleeping = this._sleepController?.phase !== 'awake'
+
+    if (sleeping) {
+      // 睡眠中はautoBlink・感情表現をスキップし、sleepControllerが目を制御
+      this._sleepController!.update(delta)
+      // waking完了後にautoBlink復帰
+      if (this._sleepController!.phase === 'awake') {
+        this._expressionController.setAutoBlinkEnable(true)
+      }
+    } else {
+      const isEmotionActive = this._expressionController.isEmotionActive
+      const skipAutoBlink =
+        this._gestureController.isClosingEyes && !isEmotionActive
+      this._expressionController.update(delta, skipAutoBlink)
+    }
   }
 
   /**

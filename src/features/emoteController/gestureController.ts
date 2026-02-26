@@ -9,6 +9,14 @@ import {
 
 export type { GestureType }
 
+/** playGesture() に渡せるオプション（ジェスチャー定義のデフォルト値をオーバーライド） */
+export interface GesturePlayOptions {
+  /** ポーズ保持時間（秒）。省略時はジェスチャー定義の holdDuration を使用 */
+  holdDuration?: number
+  /** 再生速度の倍率。1.0 が等速、0.5 で半速、2.0 で倍速。省略時は 1.0 */
+  speed?: number
+}
+
 /**
  * VRM bone rotation controller for playing gesture animations.
  *
@@ -46,6 +54,9 @@ export class GestureController {
   /** slerp前のクォータニオン保存（次フレームで復元するため） */
   private _preSlerpQuats: Map<VRMHumanBoneName, THREE.Quaternion> = new Map()
 
+  /** 現在再生中のジェスチャーに適用するオーバーライドオプション */
+  private _playOptions: GesturePlayOptions = {}
+
   constructor(vrm: VRM) {
     this._vrm = vrm
     this._gestures = gestureDefinitions
@@ -60,7 +71,7 @@ export class GestureController {
     return this._vrmaPoses.has(this._currentGesture)
   }
 
-  public playGesture(gesture: GestureType) {
+  public playGesture(gesture: GestureType, options?: GesturePlayOptions) {
     if (gesture === 'none' || this._isPlaying) return
 
     const definition = this._gestures.get(gesture)
@@ -68,6 +79,7 @@ export class GestureController {
 
     this._currentGesture = gesture
     this._isPlaying = true
+    this._playOptions = options ?? {}
 
     // VRMAジェスチャーのリセット対象ボーンを記録（全ポーズのボーンを収集）
     const poses = this._vrmaPoses.get(gesture)
@@ -185,12 +197,15 @@ export class GestureController {
     const definition = this._gestures.get(this._currentGesture)
     if (!definition) return
 
+    const speed = this._playOptions.speed ?? 1
+    const scaledDelta = delta * speed
+
     if (this._isReturning) {
-      this._updateReturnAnimation(delta, skipEyeClose)
+      this._updateReturnAnimation(scaledDelta, skipEyeClose)
     } else if (this._isHolding) {
       this._applyGestureRotations()
     } else {
-      this._updateGestureAnimation(delta, definition)
+      this._updateGestureAnimation(scaledDelta, definition)
     }
 
     if (!skipEyeClose) {
@@ -254,12 +269,15 @@ export class GestureController {
     this._isHolding = true
     this._gestureBlendWeight = 1
 
+    const holdDuration =
+      this._playOptions.holdDuration ?? definition.holdDuration
+
     setTimeout(() => {
       if (this._isPlaying && this._isHolding) {
         this._isHolding = false
         this._startReturnAnimation()
       }
-    }, definition.holdDuration * 1000)
+    }, holdDuration * 1000)
   }
 
   private _startReturnAnimation() {
@@ -337,6 +355,13 @@ export class GestureController {
 
   private _easeInOutQuad(t: number): number {
     return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2
+  }
+
+  /** 再生中のジェスチャーを中断してリターンアニメーションに移行する */
+  public cancelGesture(): void {
+    if (!this._isPlaying) return
+    this._isHolding = false
+    this._startReturnAnimation()
   }
 
   public get isPlaying(): boolean {

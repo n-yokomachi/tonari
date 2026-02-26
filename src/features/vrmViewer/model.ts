@@ -10,6 +10,7 @@ import { VRMAnimation } from '../../lib/VRMAnimation/VRMAnimation'
 import { VRMLookAtSmootherLoaderPlugin } from '@/lib/VRMLookAtSmootherLoaderPlugin/VRMLookAtSmootherLoaderPlugin'
 import { EmoteController } from '../emoteController/emoteController'
 import { GestureType } from '../emoteController/gestures'
+import { GesturePlayOptions } from '../emoteController/gestureController'
 import { Talk } from '../messages/messages'
 import { LipSync } from '../lipSync/lipSync'
 
@@ -126,8 +127,24 @@ export class Model {
   /**
    * ジェスチャーを再生する
    */
-  public playGesture(gesture: GestureType) {
-    this.emoteController?.playGesture(gesture)
+  public playGesture(gesture: GestureType, options?: GesturePlayOptions) {
+    this.emoteController?.playGesture(gesture, options)
+  }
+
+  public cancelGesture(): void {
+    this.emoteController?.cancelGesture()
+  }
+
+  public enterDrowsy(): void {
+    this.emoteController?.enterDrowsy()
+  }
+
+  public wakeUp(): void {
+    this.emoteController?.wakeUp()
+  }
+
+  public get isSleeping(): boolean {
+    return this.emoteController?.isSleeping ?? false
   }
 
   /** Load VRMA pose files for gestures that use them */

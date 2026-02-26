@@ -25,6 +25,7 @@ export interface TransientState {
   webcamStatus: boolean
   cameraOpen: boolean
   isSpeaking: boolean
+  isSleeping: boolean
 }
 
 export type HomeState = PersistedState & TransientState
@@ -115,6 +116,7 @@ const homeStore = create<HomeState>()(
       webcamStatus: false,
       cameraOpen: false,
       isSpeaking: false,
+      isSleeping: false,
     }),
     {
       name: 'aitube-kit-home',

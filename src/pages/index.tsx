@@ -14,6 +14,8 @@ import settingsStore from '@/features/stores/settings'
 import '@/lib/i18n'
 import { buildUrl } from '@/utils/buildUrl'
 import { useIsMobile, useIsPortrait } from '@/hooks/useMediaQuery'
+import { useIdleMotion } from '@/hooks/useIdleMotion'
+import { useSleepMode } from '@/hooks/useSleepMode'
 import { MobileHeader } from '@/components/mobileHeader'
 
 const CHAT_WIDTH_KEY = 'tonari-chat-width'
@@ -59,6 +61,9 @@ const Home = () => {
     setChatWidth(width)
     localStorage.setItem(CHAT_WIDTH_KEY, String(width))
   }, [])
+
+  useIdleMotion()
+  useSleepMode()
 
   const webcamStatus = homeStore((s) => s.webcamStatus)
   const backgroundImageUrl = homeStore((s) => s.backgroundImageUrl)

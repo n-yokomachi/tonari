@@ -84,6 +84,10 @@ export class ExpressionController {
     }
   }
 
+  public setAutoBlinkEnable(enable: boolean): void {
+    this._autoBlink?.setEnable(enable)
+  }
+
   /**
    * 現在の感情がneutral以外かどうか
    */
