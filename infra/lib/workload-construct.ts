@@ -414,6 +414,39 @@ export class WorkloadConstruct extends Construct {
         new subscriptions.EmailSubscription(ns.notificationEmail)
       )
 
+      // Push Subscription CRUD Lambda (API Gateway)
+      const pushSubLambda = new python.PythonFunction(
+        stack,
+        'PushSubscriptionLambda',
+        {
+          functionName: 'tonari-push-subscription',
+          entry: path.join(__dirname, '../lambda/push-subscription'),
+          runtime: lambda.Runtime.PYTHON_3_12,
+          handler: 'handler',
+          timeout: cdk.Duration.seconds(30),
+          memorySize: 128,
+          environment: {
+            TABLE_NAME: this.pushSubscriptionsTable.tableName,
+          },
+        }
+      )
+
+      this.pushSubscriptionsTable.grantReadWriteData(pushSubLambda)
+
+      // API Routes: push-subscription (M2M auth)
+      const pushSubscription =
+        this.crudApi.root.addResource('push-subscription')
+      pushSubscription.addMethod(
+        'POST',
+        new apigateway.LambdaIntegration(pushSubLambda),
+        authorizedMethodOptions
+      )
+      pushSubscription.addMethod(
+        'DELETE',
+        new apigateway.LambdaIntegration(pushSubLambda),
+        authorizedMethodOptions
+      )
+
       // News Trigger Lambda
       // AGENTCORE_RUNTIME_ARN is set by the stack after AgentCoreConstruct creation
       this.newsTriggerLambda = new python.PythonFunction(
