@@ -7,7 +7,7 @@ import {
 } from '@aws-sdk/lib-dynamodb'
 import { validateAdminToken } from './auth'
 
-const TABLE_NAME = process.env.PUSH_SUBSCRIPTIONS_TABLE || ''
+const TABLE_NAME = 'tonari-push-subscriptions'
 const REGION = process.env.AWS_REGION || 'ap-northeast-1'
 
 const ddbClient = new DynamoDBClient({ region: REGION })
@@ -19,12 +19,6 @@ export default async function handler(
 ) {
   if (!validateAdminToken(req)) {
     return res.status(401).json({ error: '認証が必要です' })
-  }
-
-  if (!TABLE_NAME) {
-    return res
-      .status(500)
-      .json({ error: 'PUSH_SUBSCRIPTIONS_TABLE is not configured' })
   }
 
   if (req.method === 'POST') {
