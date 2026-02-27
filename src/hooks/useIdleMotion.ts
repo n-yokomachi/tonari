@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import homeStore from '@/features/stores/home'
+import pomodoroStore from '@/features/stores/pomodoro'
 import { GestureType } from '@/features/emoteController/gestures/types'
 import { GesturePlayOptions } from '@/features/emoteController/gestureController'
 
@@ -36,7 +37,13 @@ export const useIdleMotion = () => {
     const scheduleNext = () => {
       timerRef.current = setTimeout(() => {
         const { viewer, chatProcessing, isSleeping } = homeStore.getState()
-        if (!chatProcessing && !isSleeping && viewer?.model) {
+        const pomodoroPhase = pomodoroStore.getState().phase
+        if (
+          !chatProcessing &&
+          !isSleeping &&
+          pomodoroPhase !== 'work' &&
+          viewer?.model
+        ) {
           const motion = getRandomMotion()
           viewer.model.playGesture(motion.gesture, motion.options)
         }

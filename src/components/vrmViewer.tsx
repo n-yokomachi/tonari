@@ -67,9 +67,12 @@ export default function VrmViewer() {
   return (
     <div
       ref={containerRef}
-      className={'relative w-full h-full overflow-hidden'}
+      className={'relative w-full h-full overflow-hidden bg-transparent'}
     >
-      <canvas ref={canvasRef} className={'h-full w-full'}></canvas>
+      <canvas
+        ref={canvasRef}
+        className={'h-full w-full bg-transparent'}
+      ></canvas>
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import homeStore from '@/features/stores/home'
+import pomodoroStore from '@/features/stores/pomodoro'
 
 const CHECK_INTERVAL = 5 * 60 * 1000 // 5分ごとに睡眠チェック
 const SLEEP_PROBABILITY = 0.5 // 50%の確率で睡眠に入る
@@ -33,8 +34,9 @@ export const useSleepMode = () => {
       checkTimerRef.current = setTimeout(() => {
         const { viewer, chatProcessing, isSleeping } = homeStore.getState()
 
-        // 既に睡眠中 or チャット処理中なら次のチェックへ
-        if (isSleeping || chatProcessing) {
+        // 既に睡眠中 or チャット処理中 or ポモドーロ作業中なら次のチェックへ
+        const pomodoroPhase = pomodoroStore.getState().phase
+        if (isSleeping || chatProcessing || pomodoroPhase === 'work') {
           scheduleCheck()
           return
         }

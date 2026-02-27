@@ -16,8 +16,11 @@ import { buildUrl } from '@/utils/buildUrl'
 import { useIsMobile, useIsPortrait } from '@/hooks/useMediaQuery'
 import { useIdleMotion } from '@/hooks/useIdleMotion'
 import { useSleepMode } from '@/hooks/useSleepMode'
+import { usePomodoroTimer } from '@/hooks/usePomodoroTimer'
+import { usePomodoroMotion } from '@/hooks/usePomodoroMotion'
 import { MobileHeader } from '@/components/mobileHeader'
 import { GestureTestPanel } from '@/components/gestureTestPanel'
+import { PomodoroTimer } from '@/components/pomodoroTimer'
 
 const CHAT_WIDTH_KEY = 'tonari-chat-width'
 const DEFAULT_CHAT_WIDTH = 500
@@ -66,6 +69,8 @@ const Home = () => {
 
   useIdleMotion()
   useSleepMode()
+  usePomodoroTimer()
+  usePomodoroMotion()
 
   const webcamStatus = homeStore((s) => s.webcamStatus)
   const backgroundImageUrl = homeStore((s) => s.backgroundImageUrl)
@@ -175,6 +180,7 @@ const Home = () => {
         </>
       )}
       {/* <GestureTestPanel /> */}
+      <PomodoroTimer />
       {messageReceiverEnabled && <MessageReceiver />}
       <Toasts />
       <WebSocketManager />
