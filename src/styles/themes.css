@@ -53,10 +53,10 @@ div {
 
 /* Tonari テーマ - デフォルト */
 :root {
-  --color-primary: #9d7e4a;
-  --color-primary-hover: #c9a96e;
-  --color-primary-press: #b8955c;
-  --color-primary-disabled: #9d7e4a4d;
+  --color-primary: #c4ad82;
+  --color-primary-hover: #d4bf96;
+  --color-primary-press: #b89e72;
+  --color-primary-disabled: #c4ad824d;
   --color-secondary: #5c4b7d;
   --color-secondary-hover: #6f5d94;
   --color-secondary-press: #4a3b66;

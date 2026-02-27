@@ -6,11 +6,11 @@ import os
 import urllib.error
 import urllib.parse
 import urllib.request
+import uuid
 from base64 import b64encode
 from datetime import datetime, timedelta, timezone
 
 import boto3
-from pywebpush import WebPushException, webpush
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -29,41 +29,65 @@ def _build_news_prompt(now_str: str) -> str:
     """
     return (
         f"現在{now_str}（JST）です。定時のニュース配信を行います。\n\n"
-        "## 重要ルール（厳守）\n"
+        "## 最重要ルール\n"
+        "1. このタスクでは TavilySearch___TavilySearchPost ツールの使用が必須です。\n"
+        "   あなたは最新のニュースを知りません。必ずツールで検索してから出力してください。\n"
+        "   ツールを使わずにニュースを出力することは絶対に禁止です。\n"
+        "2. URLは検索結果の url フィールドの値を一字一句そのままコピーすること。\n"
+        "   自分でURLを生成・推測・補完・短縮することは絶対に禁止。\n"
+        "   URLが不明な記事は出典を省略するか、その記事自体を選ばないこと。\n\n"
+        "## 出力ルール（厳守）\n"
         "あなたの出力はそのままメールとプッシュ通知としてオーナーに届きます。\n"
-        "以下を絶対に守ってください：\n"
-        "- タスクの実行過程や思考過程（「検索します」「完了しました」等）を一切出力しない\n"
+        "- タスクの実行過程や思考過程を一切出力しない（「検索します」「ツールを使います」等）\n"
+        "- ツール名（TavilySearch等）を出力に含めない\n"
         "- 感情タグ（[happy]等）やジェスチャータグ（[bow]等）を使用しない\n"
-        "- 出力フォーマットの内容だけを出力する。それ以外は何も出力しない\n\n"
+        "- 最終的な出力フォーマットの内容だけを出力する\n"
+        "- 出力はすべて日本語で書くこと（英語の検索結果は日本語に翻訳する）\n\n"
         "## 手順\n\n"
-        "1. TavilySearchツールで「今日のニュース」を複数ジャンルから検索する\n"
-        "   - テクノロジー・IT、経済・ビジネス、社会・政治、エンタメ・カルチャー、科学・環境\n"
-        "   - 必ず今日の日付のニュースを優先して取得すること。古い情報は除外する\n\n"
-        "2. オーナーの長期記憶を参照し、興味・関心に合うニュースがあれば1〜2件ピックアップする\n"
-        "   - 該当するものがなければ「TONaRiのおすすめ」セクション自体を省略してよい\n"
-        "   - おすすめするニュースも必ず最新のものであること\n\n"
-        "3. 以下の出力フォーマットに従って結果を出力する\n\n"
-        "## 出力フォーマット（この通りに出力すること）\n\n"
-        "冒頭の挨拶（時候の挨拶を含む短い一言。季節感や時間帯に合わせた自然な挨拶）\n\n"
+        "### ステップ1: ニュース検索（必須）\n"
+        "TavilySearch___TavilySearchPost ツールを使って最新ニュースを検索する。\n"
+        "必ず topic パラメータに \"news\" を指定すること。\n\n"
+        "以下の検索を順番に実行する（最低2回は検索すること）：\n"
+        "1. query: \"Japan technology AI latest news today\", topic: \"news\"\n"
+        "2. query: \"Japan economy business news today\", topic: \"news\"\n"
+        "3. query: \"Japan politics society news today\", topic: \"news\"\n\n"
+        "### ステップ2: 検索結果からニュースを選定\n"
+        "検索結果の中から重要なニュースを3〜5件選ぶ。\n"
+        "各ニュースについて、検索結果のレスポンスから以下を正確に取得する：\n"
+        "- title: results[].title の値をそのまま使用\n"
+        "- url: results[].url の値を一字一句そのまま使用（編集・推測・補完禁止）\n"
+        "- content: results[].content の値を元に要約作成\n\n"
+        "**url フィールドが存在しない記事は選ばないこと。**\n\n"
+        "### ステップ3: TONaRiのおすすめ\n"
+        "オーナーの長期記憶を参照し、興味・関心に合うニュースを"
+        "検索結果から1〜2件ピックアップする。\n"
+        "- **ステップ2で選んだ記事と同じURLの記事は絶対に選ばない（重複禁止）**\n"
+        "- 総合ニュースで使った記事を別の切り口で紹介するのもNG\n"
+        "- 該当するものがなければ「TONaRiのおすすめ」セクション自体を省略してよい\n\n"
+        "### ステップ4: 出力\n"
+        "以下のフォーマットで出力する。\n\n"
+        "## 出力フォーマット\n\n"
+        "（冒頭の挨拶：時間帯に合った親しみのある一言。例：「オーナー、おはようございます！今朝のニュースをお届けします。」「オーナー、お疲れ様です。夜のニュースまとめです。」など。タスクの説明や「検索します」等の作業報告は絶対に書かない）\n\n"
         "---\n\n"
         "【総合ニュース】\n\n"
-        "■ ニュースタイトル1\n"
-        "要約（2〜3文）\n"
-        "出典: URL\n\n"
-        "■ ニュースタイトル2\n"
-        "要約（2〜3文）\n"
-        "出典: URL\n\n"
-        "（3〜5件程度）\n\n"
+        "■ 記事タイトル（検索結果のtitleを日本語に翻訳）\n"
+        "要約（2〜3文。検索結果のcontentを元に日本語で作成）\n"
+        "出典: 検索結果のurlをそのまま記載\n\n"
+        "（3〜5件）\n\n"
         "【TONaRiのおすすめ】（該当なければ省略可）\n\n"
-        "■ ニュースタイトル\n"
-        "要約（2〜3文）+ おすすめ理由を一言添える\n"
-        "出典: URL\n\n"
+        "■ 記事タイトル（検索結果のtitleを日本語に翻訳。総合ニュースと被らない記事）\n"
+        "要約（2〜3文）\n"
+        "おすすめ理由: 一言添える\n"
+        "出典: 検索結果のurlをそのまま記載\n\n"
         "---\n\n"
-        "締めの一言（オーナーへの短いメッセージ）\n\n"
+        "（締めの一言：オーナーを気遣う短いメッセージ。例：「今日も良い一日をお過ごしください。」「夜更かしせず、ゆっくり休んでくださいね。」など。「以上です」のような事務的な表現は使わない）\n\n"
         "## 注意事項\n"
         "- プレーンテキストで読みやすく整形する（Markdown不可）\n"
-        "- 信頼性の高いソースを優先する\n"
-        "- 出典にはソースURLを記載する\n\n"
+        "- すべて日本語で出力する（タイトル・要約・挨拶すべて日本語）\n"
+        "- 検索結果にないニュースを創作しない\n"
+        "- 出典URLは検索結果の results[].url の値を一字一句コピーすること\n"
+        "- URLを自分で生成・推測・補完することは絶対に禁止\n"
+        "- 検索結果に url がない記事は出典を書かない\n\n"
         "## LTMへの保存\n"
         f"出力完了後、「{now_str}のニュースまとめ」として要約を長期記憶に保存してください。"
     )
@@ -187,94 +211,26 @@ def _publish_to_sns(topic_arn: str, summary: str, now_str: str) -> None:
     logger.info("SNS notification published successfully")
 
 
-def _send_push_notifications(
-    summary: str,
-    table_name: str,
-    vapid_private_key: str,
-    vapid_subject: str,
+def _save_news_to_dynamodb(
+    table_name: str, summary: str, now_jst: datetime
 ) -> None:
-    """Send Web Push notifications to all registered subscriptions.
+    """Save news summary to DynamoDB (overwrite existing record).
 
     Args:
+        table_name: DynamoDB table name for news.
         summary: News summary text.
-        table_name: DynamoDB table name for push subscriptions.
-        vapid_private_key: VAPID private key (base64 DER).
-        vapid_subject: VAPID subject (mailto: URI).
+        now_jst: Current datetime in JST.
     """
     dynamodb = boto3.resource("dynamodb")
-    table = dynamodb.Table(table_name)
-
-    # Get all subscriptions
-    response = table.query(
-        KeyConditionExpression=boto3.dynamodb.conditions.Key("userId").eq(
-            "tonari-owner"
-        )
-    )
-    items = response.get("Items", [])
-
-    if not items:
-        logger.info("No push subscriptions found, skipping Web Push")
-        return
-
-    # Prepare push payload
-    preview = summary[:100] + "..." if len(summary) > 100 else summary
-    payload = json.dumps(
-        {
-            "title": "TONaRi ニュースまとめ",
-            "body": preview,
-            "url": "/",
+    news_table = dynamodb.Table(table_name)
+    news_table.put_item(
+        Item={
+            "userId": "tonari-owner",
+            "summary": summary,
+            "updatedAt": now_jst.isoformat(),
         }
     )
-
-    stale_endpoints = []
-
-    for item in items:
-        subscription_info = {
-            "endpoint": item["endpoint"],
-            "keys": {
-                "p256dh": item["p256dh"],
-                "auth": item["auth"],
-            },
-        }
-
-        try:
-            webpush(
-                subscription_info=subscription_info,
-                data=payload,
-                vapid_private_key=vapid_private_key,
-                vapid_claims={"sub": vapid_subject},
-            )
-            logger.info("Push sent to endpoint: %s...", item["endpoint"][:50])
-        except WebPushException as e:
-            if hasattr(e, "response") and e.response is not None:
-                status_code = e.response.status_code
-                if status_code in (404, 410):
-                    logger.info(
-                        "Stale subscription (HTTP %d): %s...",
-                        status_code,
-                        item["endpoint"][:50],
-                    )
-                    stale_endpoints.append(item["endpoint"])
-                    continue
-            logger.error("Push failed for %s...: %s", item["endpoint"][:50], e)
-        except Exception as e:
-            logger.error("Push failed for %s...: %s", item["endpoint"][:50], e)
-
-    # Delete stale subscriptions
-    for endpoint in stale_endpoints:
-        try:
-            table.delete_item(
-                Key={"userId": "tonari-owner", "endpoint": endpoint}
-            )
-            logger.info("Deleted stale subscription: %s...", endpoint[:50])
-        except Exception as e:
-            logger.error("Failed to delete stale subscription: %s", e)
-
-    logger.info(
-        "Push notifications: %d sent, %d stale deleted",
-        len(items) - len(stale_endpoints),
-        len(stale_endpoints),
-    )
+    logger.info("News saved to DynamoDB table: %s", table_name)
 
 
 def handler(event, context):
@@ -294,9 +250,7 @@ def handler(event, context):
     cognito_scope = os.environ["COGNITO_SCOPE"]
     region = os.environ.get("AGENTCORE_REGION", "ap-northeast-1")
     sns_topic_arn = os.environ["SNS_TOPIC_ARN"]
-    push_table = os.environ["PUSH_SUBSCRIPTIONS_TABLE"]
-    ssm_vapid_key = os.environ["SSM_VAPID_PRIVATE_KEY"]
-    vapid_subject = os.environ["VAPID_SUBJECT"]
+    news_table = os.environ["NEWS_TABLE"]
 
     # Get secrets from SSM
     try:
@@ -314,7 +268,7 @@ def handler(event, context):
     prompt = _build_news_prompt(now_str)
     session_id = (
         f"tonari-news-pipeline-{now_jst.strftime('%Y-%m-%d')}"
-        f"-{now_jst.strftime('%H')}"
+        f"-{now_jst.strftime('%H%M')}-{uuid.uuid4().hex[:8]}"
     )
 
     # Get Cognito token and invoke AgentCore
@@ -329,6 +283,13 @@ def handler(event, context):
         response_body = _call_agentcore(
             prompt, access_token, runtime_arn, session_id, region
         )
+
+        # Debug: log raw SSE response (truncated)
+        logger.info(
+            "Raw AgentCore response (first 3000 chars): %s",
+            response_body[:3000],
+        )
+
         news_summary = _parse_agentcore_response(response_body)
 
         if not news_summary.strip():
@@ -355,19 +316,12 @@ def handler(event, context):
         _publish_to_sns(sns_topic_arn, news_summary, now_str)
     except Exception:
         logger.exception("Failed to publish to SNS")
-        # Continue to Web Push even if SNS fails
 
-    # Send Web Push notifications
+    # Save news to DynamoDB for in-app viewing
     try:
-        vapid_private_key = ssm.get_parameter(
-            Name=ssm_vapid_key, WithDecryption=True
-        )["Parameter"]["Value"]
-
-        _send_push_notifications(
-            news_summary, push_table, vapid_private_key, vapid_subject
-        )
+        _save_news_to_dynamodb(news_table, news_summary, now_jst)
     except Exception:
-        logger.exception("Failed to send push notifications")
+        logger.exception("Failed to save news to DynamoDB")
 
     logger.info("News pipeline completed successfully")
     return {"statusCode": 200, "body": "News pipeline completed"}

@@ -13,6 +13,7 @@ from bedrock_agentcore.memory.integrations.strands.session_manager import (
 from mcp_proxy_for_aws.client import aws_iam_streamablehttp_client
 from strands import Agent
 from strands.models import BedrockModel
+from strands.models.bedrock import CacheConfig
 from strands.tools.mcp import MCPClient
 
 from .prompts import TONARI_SYSTEM_PROMPT
@@ -45,6 +46,7 @@ def _create_bedrock_model() -> BedrockModel:
         ),
         region_name=os.getenv("AWS_REGION", "ap-northeast-1"),
         streaming=True,
+        cache_config=CacheConfig(strategy="auto"),
     )
 
 

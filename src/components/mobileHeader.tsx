@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { IconButton } from './iconButton'
+import { NewsNotification } from './newsNotification'
 import Settings from './settings'
 import homeStore from '@/features/stores/home'
 import settingsStore from '@/features/stores/settings'
@@ -94,6 +95,7 @@ export const MobileHeader = ({ showLogo }: { showLogo?: boolean }) => {
             onClick={() => setShowSettings(true)}
             aria-label={t('BasedSettings')}
           />
+          <NewsNotification />
         </nav>
       </header>
       {showSettings && <Settings onClickClose={() => setShowSettings(false)} />}

@@ -13,8 +13,6 @@ export interface TonariStackProps extends cdk.StackProps {
   /** News scheduler config (optional) */
   newsScheduler?: {
     notificationEmail: string
-    vapidSubject: string
-    ssmVapidPrivateKey: string
     /** Cognito client secret SSM path (shared with tweetScheduler) */
     ssmCognitoClientSecret: string
   }
@@ -43,8 +41,6 @@ export class TonariStack extends cdk.Stack {
       newsScheduler: props.newsScheduler
         ? {
             notificationEmail: props.newsScheduler.notificationEmail,
-            vapidSubject: props.newsScheduler.vapidSubject,
-            ssmVapidPrivateKey: props.newsScheduler.ssmVapidPrivateKey,
             cognitoTokenEndpoint: cognito.tokenEndpoint,
             cognitoScope: cognito.scope,
             ssmCognitoClientSecret:
@@ -136,10 +132,10 @@ export class TonariStack extends cdk.Stack {
       description: 'Cognito OAuth2 Scope',
     })
 
-    if (workload.pushSubscriptionsTable) {
-      new cdk.CfnOutput(this, 'PushSubscriptionsTableName', {
-        value: workload.pushSubscriptionsTable.tableName,
-        description: 'DynamoDB table name for push subscriptions',
+    if (workload.newsTable) {
+      new cdk.CfnOutput(this, 'NewsTableName', {
+        value: workload.newsTable.tableName,
+        description: 'DynamoDB table name for news data',
       })
     }
 

@@ -42,17 +42,6 @@ export default function App({ Component, pageProps }: AppProps) {
     homeStore.setState({ userOnboarded: true })
   }, [])
 
-  // Register Service Worker for Web Push notifications
-  useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/sw.js')
-        .catch((err) =>
-          console.error('Service Worker registration failed:', err)
-        )
-    }
-  }, [])
-
   return (
     <>
       <Component {...pageProps} />
