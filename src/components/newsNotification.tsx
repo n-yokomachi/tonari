@@ -172,17 +172,26 @@ export const NewsNotification = () => {
 
       {showDialog && news && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm flex items-center justify-center"
+          className="fixed inset-0 z-40 flex items-center justify-center"
           style={{
-            animation: `${dialogClosing ? 'dialog-overlay-out 0.25s ease-in both' : 'dialog-overlay-in 0.3s ease-out both'}`,
+            backgroundColor: dialogClosing
+              ? 'transparent'
+              : 'rgba(0, 0, 0, 0.1)',
+            transition: 'background-color 0.3s ease',
           }}
           onClick={handleClose}
         >
           <div
-            className="bg-white/85 backdrop-blur-sm rounded-lg max-w-2xl w-[90%] max-h-[80vh] flex flex-col mx-4 shadow-2xl"
+            className="rounded-2xl max-w-2xl w-[90%] max-h-[80vh] flex flex-col mx-4"
             style={{
               animation: `${dialogClosing ? 'dialog-slide-down 0.25s ease-in both' : 'dialog-slide-up 0.4s ease-out both'}`,
               fontFamily: '"Noto Serif JP", "Georgia", serif',
+              backgroundColor: 'rgba(255, 255, 255, 0.55)',
+              backdropFilter: 'blur(20px) saturate(1.4)',
+              WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
+              border: '1px solid rgba(255, 255, 255, 0.5)',
+              boxShadow:
+                '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.4)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -191,12 +200,12 @@ export const NewsNotification = () => {
               <div className="flex items-center justify-between">
                 <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4">
                   <h2
-                    className={`text-2xl font-bold text-gray-900 italic whitespace-nowrap ${cormorant.className}`}
+                    className={`text-2xl font-bold text-[#5c4b7d] italic whitespace-nowrap ${cormorant.className}`}
                   >
                     TONaRi Times
                   </h2>
                   <p
-                    className="text-xs text-gray-500 tracking-wider"
+                    className="text-xs text-[#5c4b7d]/60 tracking-wider"
                     style={{ fontFamily: 'sans-serif' }}
                   >
                     {new Date(news.updatedAt).toLocaleDateString('ja-JP', {
@@ -210,7 +219,7 @@ export const NewsNotification = () => {
                 </div>
                 <button
                   onClick={handleClose}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-[#5c4b7d]/40 hover:text-[#5c4b7d] hover:bg-[#5c4b7d]/10 w-8 h-8 flex items-center justify-center rounded-full transition-colors"
                   aria-label="閉じる"
                 >
                   <svg
@@ -228,13 +237,16 @@ export const NewsNotification = () => {
                 </button>
               </div>
               <hr
-                className="border-gray-800 mt-3"
-                style={{ borderTopWidth: '2px' }}
+                className="mt-3"
+                style={{
+                  borderTopWidth: '1px',
+                  borderColor: 'rgba(92, 75, 125, 0.2)',
+                }}
               />
             </div>
             {/* 本文 */}
             <div className="overflow-auto px-8 py-4 pb-8">
-              <div className="whitespace-pre-wrap leading-[1.9] text-sm text-gray-800">
+              <div className="whitespace-pre-wrap leading-[1.9] text-sm text-[#3a3050]">
                 {linkifyText(news.summary)}
               </div>
             </div>
