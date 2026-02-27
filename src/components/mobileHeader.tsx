@@ -7,6 +7,7 @@ import { NewsNotification } from './newsNotification'
 import Settings from './settings'
 import homeStore from '@/features/stores/home'
 import settingsStore from '@/features/stores/settings'
+import pomodoroStore from '@/features/stores/pomodoro'
 import { resetSessionId } from '@/features/chat/agentCoreChat'
 import { VRM_MODELS } from '@/features/constants/settings'
 
@@ -46,7 +47,7 @@ export const MobileHeader = ({ showLogo }: { showLogo?: boolean }) => {
           </div>
         )}
         <nav className="flex gap-2" aria-label="Main navigation">
-          {showControlPanel && (
+          {showControlPanel ? (
             <>
               <IconButton
                 iconName="24/Refresh"
@@ -60,6 +61,12 @@ export const MobileHeader = ({ showLogo }: { showLogo?: boolean }) => {
                 onClick={handleSwitchVrmModel}
                 aria-label="モデル切り替え"
               />
+              <IconButton
+                iconName="24/Settings"
+                isProcessing={false}
+                onClick={() => setShowSettings(true)}
+                aria-label={t('BasedSettings')}
+              />
               <Link
                 href="/admin"
                 className="bg-primary hover:bg-primary-hover active:bg-primary-press rounded-2xl text-sm p-2 text-center inline-flex items-center transition-all duration-200 text-theme"
@@ -72,6 +79,12 @@ export const MobileHeader = ({ showLogo }: { showLogo?: boolean }) => {
                   height={24}
                 />
               </Link>
+              <IconButton
+                iconName="24/Timer"
+                isProcessing={false}
+                onClick={() => pomodoroStore.getState().toggle()}
+                aria-label="ポモドーロタイマー"
+              />
               <button
                 onClick={async () => {
                   await fetch('/api/admin/auth', { method: 'DELETE' })
@@ -87,15 +100,19 @@ export const MobileHeader = ({ showLogo }: { showLogo?: boolean }) => {
                   height={24}
                 />
               </button>
+              <NewsNotification />
+            </>
+          ) : (
+            <>
+              <IconButton
+                iconName="24/Timer"
+                isProcessing={false}
+                onClick={() => pomodoroStore.getState().toggle()}
+                aria-label="ポモドーロタイマー"
+              />
+              <NewsNotification />
             </>
           )}
-          <IconButton
-            iconName="24/Settings"
-            isProcessing={false}
-            onClick={() => setShowSettings(true)}
-            aria-label={t('BasedSettings')}
-          />
-          <NewsNotification />
         </nav>
       </header>
       {showSettings && <Settings onClickClose={() => setShowSettings(false)} />}

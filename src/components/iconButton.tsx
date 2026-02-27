@@ -30,6 +30,7 @@ const iconNameToPath: Record<string, string> = {
   '24/Database': '/images/icons/database.svg',
   '24/Swap': '/images/icons/swap.svg',
   '24/Refresh': '/images/icons/refresh.svg',
+  '24/Timer': '/images/icons/timer.svg',
 }
 
 type IconName = keyof typeof iconNameToPath | string

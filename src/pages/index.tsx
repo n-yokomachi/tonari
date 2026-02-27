@@ -16,8 +16,11 @@ import { buildUrl } from '@/utils/buildUrl'
 import { useIsMobile, useIsPortrait } from '@/hooks/useMediaQuery'
 import { useIdleMotion } from '@/hooks/useIdleMotion'
 import { useSleepMode } from '@/hooks/useSleepMode'
+import { usePomodoroTimer } from '@/hooks/usePomodoroTimer'
+import { usePomodoroMotion } from '@/hooks/usePomodoroMotion'
 import { MobileHeader } from '@/components/mobileHeader'
 import { GestureTestPanel } from '@/components/gestureTestPanel'
+import { PomodoroTimer } from '@/components/pomodoroTimer'
 
 const CHAT_WIDTH_KEY = 'tonari-chat-width'
 const DEFAULT_CHAT_WIDTH = 500
@@ -28,6 +31,7 @@ const Home = () => {
   const isMobile = useIsMobile()
   const isPortrait = useIsPortrait()
   const [chatWidth, setChatWidth] = useState(DEFAULT_CHAT_WIDTH)
+  const [pageReady, setPageReady] = useState(false)
 
   // 縦モニター: チャットログの自動非表示
   const [chatVisible, setChatVisible] = useState(true)
@@ -65,6 +69,8 @@ const Home = () => {
 
   useIdleMotion()
   useSleepMode()
+  usePomodoroTimer()
+  usePomodoroMotion()
 
   const webcamStatus = homeStore((s) => s.webcamStatus)
   const backgroundImageUrl = homeStore((s) => s.backgroundImageUrl)
@@ -91,22 +97,31 @@ const Home = () => {
             ? { backgroundImage: bgUrl }
             : { backgroundColor: '#E8E8E8' }
 
-  // SSR時はローディング表示
-  if (isMobile === null || isPortrait === null) {
-    return (
-      <div className="w-screen h-screen flex items-center justify-center bg-[#E8E8E8]">
-        <Meta />
-      </div>
-    )
-  }
+  const layoutReady = isMobile !== null && isPortrait !== null
+
+  useEffect(() => {
+    if (layoutReady && !pageReady) {
+      const raf = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setPageReady(true))
+      })
+      return () => cancelAnimationFrame(raf)
+    }
+  }, [layoutReady, pageReady])
 
   return (
     <div
       className="w-screen h-screen overflow-hidden flex flex-col"
-      style={backgroundStyle}
+      style={{
+        ...backgroundStyle,
+        opacity: pageReady ? 1 : 0,
+        transform: pageReady ? 'translateY(0)' : 'translateY(-12px)',
+        transition: pageReady
+          ? 'opacity 0.8s ease-out, transform 0.8s ease-out'
+          : 'none',
+      }}
     >
       <Meta />
-      {isMobile || isPortrait ? (
+      {!layoutReady ? null : isMobile || isPortrait ? (
         <>
           {/* モバイル/縦モニター: VRM全画面背景 */}
           <div className="absolute inset-0 z-0">
@@ -165,6 +180,7 @@ const Home = () => {
         </>
       )}
       {/* <GestureTestPanel /> */}
+      <PomodoroTimer />
       {messageReceiverEnabled && <MessageReceiver />}
       <Toasts />
       <WebSocketManager />
