@@ -7,6 +7,7 @@ import Link from 'next/link'
 import homeStore from '@/features/stores/home'
 import menuStore from '@/features/stores/menu'
 import settingsStore from '@/features/stores/settings'
+import pomodoroStore from '@/features/stores/pomodoro'
 import { resetSessionId } from '@/features/chat/agentCoreChat'
 import { ChatLog } from './chatLog'
 import { IconButton } from './iconButton'
@@ -146,7 +147,7 @@ export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
                 </span>
               </div>
               <div className="flex gap-[8px]">
-                {showControlPanel && (
+                {showControlPanel ? (
                   <>
                     <IconButton
                       iconName="24/Refresh"
@@ -178,6 +179,12 @@ export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
                         height={24}
                       />
                     </Link>
+                    <IconButton
+                      iconName="24/Timer"
+                      isProcessing={false}
+                      onClick={() => pomodoroStore.getState().toggle()}
+                      aria-label="ポモドーロタイマー"
+                    />
                     <button
                       onClick={async () => {
                         await fetch('/api/admin/auth', { method: 'DELETE' })
@@ -195,6 +202,13 @@ export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
                     </button>
                     <NewsNotification />
                   </>
+                ) : (
+                  <IconButton
+                    iconName="24/Timer"
+                    isProcessing={false}
+                    onClick={() => pomodoroStore.getState().toggle()}
+                    aria-label="ポモドーロタイマー"
+                  />
                 )}
               </div>
             </div>

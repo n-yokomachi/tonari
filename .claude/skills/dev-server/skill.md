@@ -15,7 +15,11 @@ Port 3000 / 3001 を使用中のプロセスをキルしてから、Port 3000 �
    Port 3000 と 3001 で起動中のプロセスを停止する。
 
    ```bash
-   lsof -ti:3000,3001 | xargs kill -9 2>/dev/null || true
+   # Windows環境
+   for port in 3000 3001; do
+     pid=$(netstat -ano 2>/dev/null | grep ":${port}.*LISTENING" | awk '{print $5}' | head -1)
+     [ -n "$pid" ] && taskkill //F //PID "$pid" 2>/dev/null || true
+   done
    ```
 
 2. **開発サーバーの起動**
