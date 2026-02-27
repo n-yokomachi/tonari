@@ -1,6 +1,13 @@
 import { useState, useEffect, useCallback, useRef, ReactNode } from 'react'
 import Image from 'next/image'
-import { IconButton } from './iconButton'
+import { Cormorant_Garamond } from 'next/font/google'
+import homeStore from '@/features/stores/home'
+
+const cormorant = Cormorant_Garamond({
+  subsets: ['latin'],
+  weight: ['700'],
+  display: 'swap',
+})
 
 type NewsData = {
   summary: string
@@ -56,7 +63,10 @@ function linkifyText(text: string): ReactNode[] {
 
 export const NewsNotification = () => {
   const [news, setNews] = useState<NewsData | null>(null)
+  const [showIcon, setShowIcon] = useState(false)
+  const [iconVisible, setIconVisible] = useState(false)
   const [showDialog, setShowDialog] = useState(false)
+  const [dialogClosing, setDialogClosing] = useState(false)
   const retryCountRef = useRef(0)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -67,6 +77,10 @@ export const NewsNotification = () => {
       const data = await res.json()
       if (data.news) {
         setNews(data.news)
+        setShowIcon(true)
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => setIconVisible(true))
+        })
         return true
       }
       return false
@@ -116,24 +130,33 @@ export const NewsNotification = () => {
     }
   }, [fetchNews, scheduleNextCheck])
 
-  const handleClose = useCallback(async () => {
-    setShowDialog(false)
-    try {
-      await fetch('/api/admin/news', { method: 'DELETE' })
+  const handleOpenDialog = useCallback(() => {
+    setShowDialog(true)
+    setIconVisible(false)
+    setTimeout(() => setShowIcon(false), 300)
+    fetch('/api/admin/news', { method: 'DELETE' }).catch(() => {})
+
+    const { viewer } = homeStore.getState()
+    viewer?.model?.playGesture('present', { holdDuration: 5.0 })
+  }, [])
+
+  const handleClose = useCallback(() => {
+    setDialogClosing(true)
+    setTimeout(() => {
+      setShowDialog(false)
+      setDialogClosing(false)
       setNews(null)
-    } catch {
-      // ignore
-    }
+    }, 250)
   }, [])
 
   if (!news && !showDialog) return null
 
   return (
     <>
-      {news && (
+      {showIcon && (
         <button
-          onClick={() => setShowDialog(true)}
-          className="rounded-2xl text-sm p-2 text-center inline-flex items-center transition-all duration-200 animate-notification-bell"
+          onClick={handleOpenDialog}
+          className={`rounded-2xl text-sm p-2 text-center inline-flex items-center transition-opacity duration-300 ${iconVisible ? 'opacity-100 animate-notification-bell' : 'opacity-0'}`}
           style={{ backgroundColor: '#cc3355' }}
           aria-label="ニュース"
         >
@@ -148,27 +171,74 @@ export const NewsNotification = () => {
       )}
 
       {showDialog && news && (
-        <div className="fixed inset-0 z-40 bg-white/80 backdrop-blur">
-          <div className="absolute m-6 z-15">
-            <IconButton
-              iconName="24/Close"
-              isProcessing={false}
-              onClick={handleClose}
-            />
-          </div>
-          <main className="max-h-full overflow-auto">
-            <div className="text-text1 max-w-3xl mx-auto px-6 py-20">
-              <h2 className="text-2xl font-bold mb-2">ニュース</h2>
-              <p className="text-sm text-gray-500 mb-6">
-                {new Date(news.updatedAt).toLocaleString('ja-JP', {
-                  timeZone: 'Asia/Tokyo',
-                })}
-              </p>
-              <div className="whitespace-pre-wrap leading-relaxed text-base">
+        <div
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm flex items-center justify-center"
+          style={{
+            animation: `${dialogClosing ? 'dialog-overlay-out 0.25s ease-in both' : 'dialog-overlay-in 0.3s ease-out both'}`,
+          }}
+          onClick={handleClose}
+        >
+          <div
+            className="bg-white/85 backdrop-blur-sm rounded-lg max-w-2xl w-[90%] max-h-[80vh] flex flex-col mx-4 shadow-2xl"
+            style={{
+              animation: `${dialogClosing ? 'dialog-slide-down 0.25s ease-in both' : 'dialog-slide-up 0.4s ease-out both'}`,
+              fontFamily: '"Noto Serif JP", "Georgia", serif',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* ヘッダー: 新聞マストヘッド */}
+            <div className="flex-shrink-0 px-8 pt-5 pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4">
+                  <h2
+                    className={`text-2xl font-bold text-gray-900 italic whitespace-nowrap ${cormorant.className}`}
+                  >
+                    TONaRi Times
+                  </h2>
+                  <p
+                    className="text-xs text-gray-500 tracking-wider"
+                    style={{ fontFamily: 'sans-serif' }}
+                  >
+                    {new Date(news.updatedAt).toLocaleDateString('ja-JP', {
+                      timeZone: 'Asia/Tokyo',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      weekday: 'short',
+                    })}
+                  </p>
+                </div>
+                <button
+                  onClick={handleClose}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label="閉じる"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  >
+                    <line x1="4" y1="4" x2="16" y2="16" />
+                    <line x1="16" y1="4" x2="4" y2="16" />
+                  </svg>
+                </button>
+              </div>
+              <hr
+                className="border-gray-800 mt-3"
+                style={{ borderTopWidth: '2px' }}
+              />
+            </div>
+            {/* 本文 */}
+            <div className="overflow-auto px-8 py-4 pb-8">
+              <div className="whitespace-pre-wrap leading-[1.9] text-sm text-gray-800">
                 {linkifyText(news.summary)}
               </div>
             </div>
-          </main>
+          </div>
         </div>
       )}
     </>
