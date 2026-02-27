@@ -29,8 +29,6 @@ export interface WorkloadConstructProps {
   /** News scheduler config (optional) */
   newsScheduler?: {
     notificationEmail: string
-    vapidSubject: string
-    ssmVapidPrivateKey: string
     cognitoTokenEndpoint: string
     cognitoScope: string
     ssmCognitoClientSecret: string
@@ -46,8 +44,8 @@ export class WorkloadConstruct extends Construct {
   public readonly tweetTriggerLambda?: python.PythonFunction
   public readonly diaryTable: dynamodb.Table
   public readonly diaryToolLambda: python.PythonFunction
-  public readonly pushSubscriptionsTable?: dynamodb.Table
   public readonly newsNotificationTopic?: sns.Topic
+  public readonly newsTable?: dynamodb.Table
   public readonly newsTriggerLambda?: python.PythonFunction
 
   constructor(scope: Construct, id: string, props: WorkloadConstructProps) {
@@ -381,24 +379,16 @@ export class WorkloadConstruct extends Construct {
     if (props.newsScheduler) {
       const ns = props.newsScheduler
 
-      // DynamoDB Table for Push Subscriptions
-      this.pushSubscriptionsTable = new dynamodb.Table(
-        stack,
-        'PushSubscriptionsTable',
-        {
-          tableName: 'tonari-push-subscriptions',
-          partitionKey: {
-            name: 'userId',
-            type: dynamodb.AttributeType.STRING,
-          },
-          sortKey: {
-            name: 'endpoint',
-            type: dynamodb.AttributeType.STRING,
-          },
-          billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-          removalPolicy: cdk.RemovalPolicy.DESTROY,
-        }
-      )
+      // DynamoDB Table for News (1 user = 1 record, overwrite)
+      this.newsTable = new dynamodb.Table(stack, 'NewsTable', {
+        tableName: 'tonari-news',
+        partitionKey: {
+          name: 'userId',
+          type: dynamodb.AttributeType.STRING,
+        },
+        billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+      })
 
       // SNS Topic for email notifications
       this.newsNotificationTopic = new sns.Topic(
@@ -414,38 +404,32 @@ export class WorkloadConstruct extends Construct {
         new subscriptions.EmailSubscription(ns.notificationEmail)
       )
 
-      // Push Subscription CRUD Lambda (API Gateway)
-      const pushSubLambda = new python.PythonFunction(
+      // News CRUD Lambda (API Gateway)
+      const newsCrudLambda = new python.PythonFunction(
         stack,
-        'PushSubscriptionLambda',
+        'NewsCrudLambda',
         {
-          functionName: 'tonari-push-subscription',
-          entry: path.join(__dirname, '../lambda/push-subscription'),
+          functionName: 'tonari-news-crud',
+          entry: path.join(__dirname, '../lambda/news-crud'),
           runtime: lambda.Runtime.PYTHON_3_12,
           handler: 'handler',
           timeout: cdk.Duration.seconds(30),
           memorySize: 128,
           environment: {
-            TABLE_NAME: this.pushSubscriptionsTable.tableName,
+            TABLE_NAME: this.newsTable.tableName,
           },
         }
       )
 
-      this.pushSubscriptionsTable.grantReadWriteData(pushSubLambda)
+      this.newsTable.grantReadWriteData(newsCrudLambda)
 
-      // API Routes: push-subscription (M2M auth)
-      const pushSubscription =
-        this.crudApi.root.addResource('push-subscription')
-      pushSubscription.addMethod(
-        'POST',
-        new apigateway.LambdaIntegration(pushSubLambda),
-        authorizedMethodOptions
+      // API Routes: news (M2M auth)
+      const newsCrudIntegration = new apigateway.LambdaIntegration(
+        newsCrudLambda
       )
-      pushSubscription.addMethod(
-        'DELETE',
-        new apigateway.LambdaIntegration(pushSubLambda),
-        authorizedMethodOptions
-      )
+      const news = this.crudApi.root.addResource('news')
+      news.addMethod('GET', newsCrudIntegration, authorizedMethodOptions)
+      news.addMethod('DELETE', newsCrudIntegration, authorizedMethodOptions)
 
       // News Trigger Lambda
       // AGENTCORE_RUNTIME_ARN is set by the stack after AgentCoreConstruct creation
@@ -466,10 +450,7 @@ export class WorkloadConstruct extends Construct {
             COGNITO_SCOPE: ns.cognitoScope,
             SSM_COGNITO_CLIENT_SECRET: ns.ssmCognitoClientSecret,
             SNS_TOPIC_ARN: this.newsNotificationTopic.topicArn,
-            PUSH_SUBSCRIPTIONS_TABLE:
-              this.pushSubscriptionsTable.tableName,
-            SSM_VAPID_PRIVATE_KEY: ns.ssmVapidPrivateKey,
-            VAPID_SUBJECT: ns.vapidSubject,
+            NEWS_TABLE: this.newsTable.tableName,
           },
         }
       )
@@ -480,13 +461,12 @@ export class WorkloadConstruct extends Construct {
           actions: ['ssm:GetParameter'],
           resources: [
             `arn:aws:ssm:${region}:${account}:parameter${ns.ssmCognitoClientSecret}`,
-            `arn:aws:ssm:${region}:${account}:parameter${ns.ssmVapidPrivateKey}`,
           ],
         })
       )
 
       this.newsNotificationTopic.grantPublish(this.newsTriggerLambda)
-      this.pushSubscriptionsTable.grantReadWriteData(this.newsTriggerLambda)
+      this.newsTable.grantReadWriteData(this.newsTriggerLambda)
 
       const newsTarget = new targets.LambdaInvoke(this.newsTriggerLambda)
 

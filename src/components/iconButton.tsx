@@ -67,7 +67,7 @@ export const IconButton = ({
       {...rest}
       aria-label={ariaLabel || label}
       className={`${backgroundColor} rounded-2xl text-sm p-2 text-center inline-flex items-center focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 transition-all duration-200
-        ${iconColor || 'text-theme'}
+        ${iconColor || 'text-secondary'}
         ${rest.className}
       `}
     >

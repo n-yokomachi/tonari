@@ -10,6 +10,7 @@ import settingsStore from '@/features/stores/settings'
 import { resetSessionId } from '@/features/chat/agentCoreChat'
 import { ChatLog } from './chatLog'
 import { IconButton } from './iconButton'
+import { NewsNotification } from './newsNotification'
 import Settings from './settings'
 import { VRM_MODELS } from '@/features/constants/settings'
 
@@ -192,6 +193,7 @@ export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
                         height={24}
                       />
                     </button>
+                    <NewsNotification />
                   </>
                 )}
               </div>

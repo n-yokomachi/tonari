@@ -22,8 +22,6 @@ new TonariStack(app, 'TonariStack', {
   newsScheduler: newsSchedulerConfig
     ? {
         notificationEmail: newsSchedulerConfig.notificationEmail,
-        vapidSubject: newsSchedulerConfig.vapidSubject,
-        ssmVapidPrivateKey: newsSchedulerConfig.ssmVapidPrivateKey,
         ssmCognitoClientSecret:
           tweetSchedulerConfig?.ssmCognitoClientSecret ??
           '/tonari/cognito/client_secret',
