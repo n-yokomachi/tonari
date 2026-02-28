@@ -83,6 +83,9 @@ const Home = () => {
         : `url(${buildUrl(backgroundImageUrl)})`
   const messageReceiverEnabled = settingsStore((s) => s.messageReceiverEnabled)
 
+  const colorTheme = settingsStore((s) => s.colorTheme)
+  const isDark = colorTheme === 'tonari-dark'
+
   const backgroundStyle =
     webcamStatus && useVideoAsBackground
       ? {}
@@ -90,12 +93,13 @@ const Home = () => {
         ? { backgroundColor: '#00FF00' }
         : backgroundImageUrl === 'gradient'
           ? {
-              background:
-                'linear-gradient(135deg, #f5f0e8 0%, #f0ece4 40%, #e8efe6 70%, #e0ebe0 100%)',
+              background: isDark
+                ? 'linear-gradient(135deg, #1a1a2e 0%, #1e1e35 40%, #1a2530 70%, #1a2a28 100%)'
+                : 'linear-gradient(135deg, #f5f0e8 0%, #f0ece4 40%, #e8efe6 70%, #e0ebe0 100%)',
             }
           : backgroundImageUrl
             ? { backgroundImage: bgUrl }
-            : { backgroundColor: '#E8E8E8' }
+            : { backgroundColor: isDark ? '#1a1a2e' : '#E8E8E8' }
 
   const layoutReady = isMobile !== null && isPortrait !== null
 

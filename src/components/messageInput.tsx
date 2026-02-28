@@ -262,11 +262,11 @@ export const MessageInput = ({
 
   return (
     <div className="w-full flex-shrink-0">
-      <div className="bg-base-light text-black">
+      <div className="bg-base-light text-black dark:text-gray-200">
         <div className="mx-auto max-w-4xl p-4 pb-3">
           {/* エラーメッセージ表示 */}
           {fileError && (
-            <div className="mb-2 p-2 bg-red-100 border border-red-300 text-red-700 rounded-lg text-sm">
+            <div className="mb-2 p-2 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 rounded-lg text-sm">
               {fileError}
             </div>
           )}
@@ -275,7 +275,7 @@ export const MessageInput = ({
           {/* 画像プレビュー */}
           {modalImage && (
             <div
-              className="mb-2 p-2 bg-gray-100 rounded-lg relative"
+              className="mb-2 p-2 bg-gray-100 dark:bg-gray-800 rounded-lg relative"
               onDragOver={handleDragOver}
               onDrop={handleDrop}
             >
@@ -307,7 +307,7 @@ export const MessageInput = ({
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 disabled={chatProcessing}
-                className="bg-white hover:bg-white-hover focus:bg-white focus:ring-2 focus:ring-secondary focus:outline-none disabled:bg-gray-100 disabled:text-primary-disabled disabled:cursor-not-allowed rounded-2xl w-full px-4 text-theme-default font-bold transition-all duration-200"
+                className="bg-white dark:bg-white/10 hover:bg-white-hover focus:bg-white dark:focus:bg-white/15 focus:ring-2 focus:ring-secondary focus:outline-none disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-primary-disabled disabled:cursor-not-allowed rounded-2xl w-full px-4 text-theme-default font-bold transition-all duration-200"
                 value={userMessage}
                 rows={rows}
                 aria-label={t('EnterYourQuestion')}

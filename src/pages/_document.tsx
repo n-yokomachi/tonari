@@ -16,6 +16,11 @@ export default function Document() {
         />
       </Head>
       <body>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var d=JSON.parse(localStorage.getItem('aitube-kit-settings')||'{}');var t=(d.state&&d.state.colorTheme)||'tonari';if(t==='tonari-dark'){document.documentElement.classList.add('dark');document.documentElement.setAttribute('data-theme','tonari-dark');document.documentElement.style.backgroundColor='#0f0f1a'}}catch(e){}})()`,
+          }}
+        />
         <Main />
         <NextScript />
       </body>

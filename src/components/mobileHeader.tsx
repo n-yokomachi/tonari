@@ -41,7 +41,7 @@ export const MobileHeader = ({ showLogo }: { showLogo?: boolean }) => {
             <span className="text-2xl font-light tracking-[0.2em] text-secondary font-Montserrat leading-tight">
               TONaRi
             </span>
-            <span className="text-[7px] text-gray-400 tracking-[0.08em] font-light font-Montserrat">
+            <span className="text-[7px] text-gray-400 dark:text-gray-500 tracking-[0.08em] font-light font-Montserrat">
               An AI Agent Standing With You
             </span>
           </div>

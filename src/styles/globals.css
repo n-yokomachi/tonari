@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  background-color: var(--color-base-light);
+}
+
 body {
   background-position: top center;
   background-attachment: fixed;

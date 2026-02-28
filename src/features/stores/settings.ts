@@ -39,7 +39,7 @@ interface General {
   maxPastMessages: number
   useVideoAsBackground: boolean
   showPresetQuestions: boolean
-  colorTheme: 'tonari'
+  colorTheme: 'tonari' | 'tonari-dark'
   enableAutoCapture: boolean
   voiceEnabled: boolean
   voiceModel: 'Tomoko' | 'Kazuha'

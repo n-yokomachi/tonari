@@ -15,31 +15,43 @@ export default function App({ Component, pageProps }: AppProps) {
     const hs = homeStore.getState()
     const ss = settingsStore.getState()
 
-    if (hs.userOnboarded) {
+    if (!hs.userOnboarded) {
+      migrateStore()
+
+      const browserLanguage = navigator.language
+      const languageCode = browserLanguage.match(/^zh/i)
+        ? 'zh'
+        : browserLanguage.split('-')[0].toLowerCase()
+
+      let language = ss.selectLanguage
+      if (!language) {
+        language = isLanguageSupported(languageCode) ? languageCode : 'ja'
+      }
+      i18n.changeLanguage(language)
+      settingsStore.setState({ selectLanguage: language })
+      homeStore.setState({ userOnboarded: true })
+    } else {
       i18n.changeLanguage(ss.selectLanguage)
-      // 保存されたテーマを適用
-      document.documentElement.setAttribute('data-theme', ss.colorTheme)
-      return
     }
-
-    migrateStore()
-
-    const browserLanguage = navigator.language
-    const languageCode = browserLanguage.match(/^zh/i)
-      ? 'zh'
-      : browserLanguage.split('-')[0].toLowerCase()
-
-    let language = ss.selectLanguage
-    if (!language) {
-      language = isLanguageSupported(languageCode) ? languageCode : 'ja'
-    }
-    i18n.changeLanguage(language)
-    settingsStore.setState({ selectLanguage: language })
 
     // 初期テーマを適用
     document.documentElement.setAttribute('data-theme', ss.colorTheme)
+    if (ss.colorTheme === 'tonari-dark') {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
 
-    homeStore.setState({ userOnboarded: true })
+    // テーマ変更をリアルタイムに反映
+    const unsub = settingsStore.subscribe((state) => {
+      document.documentElement.setAttribute('data-theme', state.colorTheme)
+      if (state.colorTheme === 'tonari-dark') {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+    })
+    return () => unsub()
   }, [])
 
   return (

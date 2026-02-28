@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react'
 import pomodoroStore from '@/features/stores/pomodoro'
+import settingsStore from '@/features/stores/settings'
 
 interface PomodoroSettingsProps {
   onClose: () => void
@@ -48,17 +49,19 @@ const ScrollNumberInput = ({
   return (
     <div className={`${disabled ? 'opacity-40 pointer-events-none' : ''}`}>
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[#5c4b7d] text-sm font-medium">{label}</span>
+        <span className="text-[#5c4b7d] dark:text-[#c9b8e8] text-sm font-medium">
+          {label}
+        </span>
       </div>
       <div
         ref={containerRef}
-        className="flex items-center justify-center gap-2 bg-[#5c4b7d]/[0.03] rounded-xl py-2 px-3 group"
+        className="flex items-center justify-center gap-2 bg-[#5c4b7d]/[0.03] dark:bg-[#c9b8e8]/[0.06] rounded-xl py-2 px-3 group"
         onWheel={handleWheel}
       >
         <button
           onClick={decrement}
           disabled={disabled || value <= min}
-          className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#5c4b7d]/[0.06] text-[#5c4b7d]/50 hover:bg-[#5c4b7d]/15 hover:text-[#5c4b7d] active:bg-[#5c4b7d]/20 transition-all disabled:opacity-20 disabled:hover:bg-[#5c4b7d]/[0.06] text-lg select-none"
+          className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#5c4b7d]/[0.06] dark:bg-[#c9b8e8]/[0.08] text-[#5c4b7d]/50 dark:text-[#c9b8e8]/50 hover:bg-[#5c4b7d]/15 dark:hover:bg-[#c9b8e8]/15 hover:text-[#5c4b7d] dark:hover:text-[#c9b8e8] active:bg-[#5c4b7d]/20 dark:active:bg-[#c9b8e8]/20 transition-all disabled:opacity-20 disabled:hover:bg-[#5c4b7d]/[0.06] dark:disabled:hover:bg-[#c9b8e8]/[0.08] text-lg select-none"
         >
           &#x25BC;
         </button>
@@ -73,16 +76,16 @@ const ScrollNumberInput = ({
               if (!isNaN(val) && val >= min && val <= max) onChange(val)
             }}
             disabled={disabled}
-            className="w-10 bg-transparent text-right text-[#5c4b7d] font-Montserrat text-2xl font-light disabled:opacity-40 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="w-10 bg-transparent text-right text-[#5c4b7d] dark:text-[#c9b8e8] font-Montserrat text-2xl font-light disabled:opacity-40 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
-          <span className="text-[#5c4b7d]/60 text-xs font-Montserrat ml-1 w-14">
+          <span className="text-[#5c4b7d]/60 dark:text-[#c9b8e8]/60 text-xs font-Montserrat ml-1 w-14">
             {unit}
           </span>
         </div>
         <button
           onClick={increment}
           disabled={disabled || value >= max}
-          className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#5c4b7d]/[0.06] text-[#5c4b7d]/50 hover:bg-[#5c4b7d]/15 hover:text-[#5c4b7d] active:bg-[#5c4b7d]/20 transition-all disabled:opacity-20 disabled:hover:bg-[#5c4b7d]/[0.06] text-lg select-none"
+          className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#5c4b7d]/[0.06] dark:bg-[#c9b8e8]/[0.08] text-[#5c4b7d]/50 dark:text-[#c9b8e8]/50 hover:bg-[#5c4b7d]/15 dark:hover:bg-[#c9b8e8]/15 hover:text-[#5c4b7d] dark:hover:text-[#c9b8e8] active:bg-[#5c4b7d]/20 dark:active:bg-[#c9b8e8]/20 transition-all disabled:opacity-20 disabled:hover:bg-[#5c4b7d]/[0.06] dark:disabled:hover:bg-[#c9b8e8]/[0.08] text-lg select-none"
         >
           &#x25B2;
         </button>
@@ -105,6 +108,8 @@ export const PomodoroSettings = ({
   const phase = pomodoroStore((s) => s.phase)
   const isRunning = pomodoroStore((s) => s.isRunning)
 
+  const isDark = settingsStore((s) => s.colorTheme === 'tonari-dark')
+
   const isTimerActive =
     isRunning ||
     (phase !== 'idle' && phase !== 'completed' && phase !== 'paused')
@@ -113,21 +118,26 @@ export const PomodoroSettings = ({
     <div
       className="rounded-2xl p-6 text-sm w-80"
       style={{
-        backgroundColor: 'rgba(255, 255, 255, 0.55)',
+        backgroundColor: isDark
+          ? 'rgba(20, 20, 35, 0.75)'
+          : 'rgba(255, 255, 255, 0.55)',
         backdropFilter: 'blur(20px) saturate(1.4)',
         WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
-        border: '1px solid rgba(255, 255, 255, 0.5)',
-        boxShadow:
-          '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.4)',
+        border: isDark
+          ? '1px solid rgba(255, 255, 255, 0.1)'
+          : '1px solid rgba(255, 255, 255, 0.5)',
+        boxShadow: isDark
+          ? '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+          : '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.4)',
       }}
     >
       <div className="flex justify-between items-center mb-6">
-        <span className="font-Montserrat font-light text-lg tracking-[0.1em] text-[#5c4b7d]">
+        <span className="font-Montserrat font-light text-lg tracking-[0.1em] text-[#5c4b7d] dark:text-[#c9b8e8]">
           Settings
         </span>
         <button
           onClick={onClose}
-          className="w-8 h-8 flex items-center justify-center rounded-full text-[#5c4b7d]/40 hover:text-[#5c4b7d] hover:bg-[#5c4b7d]/10 transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded-full text-[#5c4b7d]/40 dark:text-[#c9b8e8]/40 hover:text-[#5c4b7d] dark:hover:text-[#c9b8e8] hover:bg-[#5c4b7d]/10 dark:hover:bg-[#c9b8e8]/10 transition-colors"
         >
           ✕
         </button>
@@ -170,9 +180,9 @@ export const PomodoroSettings = ({
           label="Sessions"
         />
 
-        <div className="border-t border-[#5c4b7d]/10 pt-3 space-y-3">
+        <div className="border-t border-[#5c4b7d]/10 dark:border-[#c9b8e8]/10 pt-3 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-[#5c4b7d] text-sm font-medium">
+            <span className="text-[#5c4b7d] dark:text-[#c9b8e8] text-sm font-medium">
               Auto Start
             </span>
             <button
@@ -182,7 +192,9 @@ export const PomodoroSettings = ({
                 })
               }}
               className={`w-12 h-7 rounded-full transition-colors flex-shrink-0 ${
-                autoStart ? 'bg-[#5c4b7d]' : 'bg-[#5c4b7d]/15'
+                autoStart
+                  ? 'bg-[#5c4b7d] dark:bg-[#c9b8e8]'
+                  : 'bg-[#5c4b7d]/15 dark:bg-[#c9b8e8]/15'
               }`}
             >
               <div
@@ -194,7 +206,9 @@ export const PomodoroSettings = ({
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-[#5c4b7d] text-sm font-medium">Overlay</span>
+            <span className="text-[#5c4b7d] dark:text-[#c9b8e8] text-sm font-medium">
+              Overlay
+            </span>
             <button
               onClick={() => {
                 pomodoroStore.getState().updateSettings({
@@ -202,7 +216,9 @@ export const PomodoroSettings = ({
                 })
               }}
               className={`w-12 h-7 rounded-full transition-colors flex-shrink-0 ${
-                showOverlay ? 'bg-[#5c4b7d]' : 'bg-[#5c4b7d]/15'
+                showOverlay
+                  ? 'bg-[#5c4b7d] dark:bg-[#c9b8e8]'
+                  : 'bg-[#5c4b7d]/15 dark:bg-[#c9b8e8]/15'
               }`}
             >
               <div
@@ -217,10 +233,10 @@ export const PomodoroSettings = ({
             className={`${!showOverlay ? 'opacity-40 pointer-events-none' : ''}`}
           >
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[#5c4b7d] text-sm font-medium">
+              <span className="text-[#5c4b7d] dark:text-[#c9b8e8] text-sm font-medium">
                 Opacity
               </span>
-              <span className="text-[#5c4b7d]/60 text-xs font-Montserrat">
+              <span className="text-[#5c4b7d]/60 dark:text-[#c9b8e8]/60 text-xs font-Montserrat">
                 {overlayOpacity}%
               </span>
             </div>
@@ -234,14 +250,16 @@ export const PomodoroSettings = ({
                   overlayOpacity: parseInt(e.target.value, 10),
                 })
               }}
-              className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-[#5c4b7d]/15 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#5c4b7d] [&::-webkit-slider-thumb]:shadow-sm [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[#5c4b7d] [&::-moz-range-thumb]:border-0"
+              className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-[#5c4b7d]/15 dark:bg-[#c9b8e8]/15 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#5c4b7d] dark:[&::-webkit-slider-thumb]:bg-[#c9b8e8] [&::-webkit-slider-thumb]:shadow-sm [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[#5c4b7d] dark:[&::-moz-range-thumb]:bg-[#c9b8e8] [&::-moz-range-thumb]:border-0"
             />
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[#5c4b7d] text-sm font-medium">Volume</span>
-              <span className="text-[#5c4b7d]/60 text-xs font-Montserrat">
+              <span className="text-[#5c4b7d] dark:text-[#c9b8e8] text-sm font-medium">
+                Volume
+              </span>
+              <span className="text-[#5c4b7d]/60 dark:text-[#c9b8e8]/60 text-xs font-Montserrat">
                 {volume}%
               </span>
             </div>
@@ -255,13 +273,13 @@ export const PomodoroSettings = ({
                   volume: parseInt(e.target.value, 10),
                 })
               }}
-              className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-[#5c4b7d]/15 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#5c4b7d] [&::-webkit-slider-thumb]:shadow-sm [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[#5c4b7d] [&::-moz-range-thumb]:border-0"
+              className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-[#5c4b7d]/15 dark:bg-[#c9b8e8]/15 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#5c4b7d] dark:[&::-webkit-slider-thumb]:bg-[#c9b8e8] [&::-webkit-slider-thumb]:shadow-sm [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[#5c4b7d] dark:[&::-moz-range-thumb]:bg-[#c9b8e8] [&::-moz-range-thumb]:border-0"
             />
           </div>
 
           <button
             onClick={onResetLayout}
-            className="w-full py-2 rounded-xl text-[#5c4b7d]/50 text-xs hover:text-[#5c4b7d] hover:bg-[#5c4b7d]/[0.06] active:bg-[#5c4b7d]/10 transition-colors"
+            className="w-full py-2 rounded-xl text-[#5c4b7d]/50 dark:text-[#c9b8e8]/50 text-xs hover:text-[#5c4b7d] dark:hover:text-[#c9b8e8] hover:bg-[#5c4b7d]/[0.06] dark:hover:bg-[#c9b8e8]/[0.06] active:bg-[#5c4b7d]/10 dark:active:bg-[#c9b8e8]/10 transition-colors"
           >
             Reset Position & Size
           </button>

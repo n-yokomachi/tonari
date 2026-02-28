@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import Image from 'next/image'
 import pomodoroStore, { PomodoroPhase } from '@/features/stores/pomodoro'
+import settingsStore from '@/features/stores/settings'
 import { CircularProgress } from './circularProgress'
 import { PomodoroSettings } from './pomodoroSettings'
 
@@ -8,8 +9,10 @@ const SECONDARY = '#5c4b7d'
 const BREAK_COLOR = '#8b7aab'
 const ACTIVE_SESSION_COLOR = '#cc3355'
 
-const ICON_FILTER =
+const ICON_FILTER_LIGHT =
   'brightness(0) saturate(100%) invert(30%) sepia(15%) saturate(1200%) hue-rotate(230deg)'
+const ICON_FILTER_DARK =
+  'brightness(0) saturate(100%) invert(70%) sepia(15%) saturate(800%) hue-rotate(230deg)'
 
 const STORAGE_KEY = 'tonari-pomodoro-layout'
 const BASE_SIZE = 180
@@ -78,6 +81,7 @@ export const PomodoroTimer = () => {
   const isRunning = pomodoroStore((s) => s.isRunning)
   const showOverlay = pomodoroStore((s) => s.showOverlay)
   const overlayOpacity = pomodoroStore((s) => s.overlayOpacity)
+  const isDark = settingsStore((s) => s.colorTheme === 'tonari-dark')
 
   const [showSettings, setShowSettings] = useState(false)
   const [settingsVisible, setSettingsVisible] = useState(false)
@@ -290,6 +294,7 @@ export const PomodoroTimer = () => {
   const circleSize = Math.round(BASE_SIZE * scale)
   const iconSize = Math.round(22 * scale)
   const showHandle = isHovered && !isDragging
+  const iconFilter = isDark ? ICON_FILTER_DARK : ICON_FILTER_LIGHT
 
   return (
     <>
@@ -301,15 +306,23 @@ export const PomodoroTimer = () => {
           cursor: isDragging ? 'grabbing' : 'grab',
           padding: showOverlay ? 20 : 0,
           backgroundColor: showOverlay
-            ? `rgba(255, 255, 255, ${overlayOpacity / 100})`
+            ? isDark
+              ? `rgba(20, 20, 35, ${overlayOpacity / 100})`
+              : `rgba(255, 255, 255, ${overlayOpacity / 100})`
             : 'transparent',
           backdropFilter: showOverlay ? 'blur(20px) saturate(1.4)' : 'none',
           WebkitBackdropFilter: showOverlay
             ? 'blur(20px) saturate(1.4)'
             : 'none',
-          border: showOverlay ? '1px solid rgba(255, 255, 255, 0.5)' : 'none',
+          border: showOverlay
+            ? isDark
+              ? '1px solid rgba(255, 255, 255, 0.1)'
+              : '1px solid rgba(255, 255, 255, 0.5)'
+            : 'none',
           boxShadow: showOverlay
-            ? '0 8px 32px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.4)'
+            ? isDark
+              ? '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+              : '0 8px 32px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.4)'
             : 'none',
           opacity: timerVisible ? 1 : 0,
           transition: `opacity ${FADE_DURATION}ms ease`,
@@ -410,7 +423,7 @@ export const PomodoroTimer = () => {
                   alt={isRunning ? '一時停止' : '再開'}
                   width={iconSize}
                   height={iconSize}
-                  style={{ filter: ICON_FILTER }}
+                  style={{ filter: iconFilter }}
                 />
               </button>
 
@@ -431,7 +444,7 @@ export const PomodoroTimer = () => {
                   alt="スキップ"
                   width={iconSize}
                   height={iconSize}
-                  style={{ filter: ICON_FILTER }}
+                  style={{ filter: iconFilter }}
                 />
               </button>
 
@@ -445,7 +458,7 @@ export const PomodoroTimer = () => {
                   alt="リセット"
                   width={iconSize}
                   height={iconSize}
-                  style={{ filter: ICON_FILTER }}
+                  style={{ filter: iconFilter }}
                 />
               </button>
 
@@ -466,7 +479,7 @@ export const PomodoroTimer = () => {
                   alt="設定"
                   width={iconSize}
                   height={iconSize}
-                  style={{ filter: ICON_FILTER }}
+                  style={{ filter: iconFilter }}
                 />
               </button>
             </>
@@ -495,7 +508,7 @@ export const PomodoroTimer = () => {
           >
             <path
               d="M14 2L2 14M14 6L6 14M14 10L10 14"
-              stroke="#5c4b7d"
+              stroke={isDark ? '#9d8dbd' : '#5c4b7d'}
               strokeWidth="1.5"
               strokeLinecap="round"
               strokeOpacity="0.4"

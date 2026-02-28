@@ -76,3 +76,20 @@ div {
   --tonari-text: #f5f0e8;
   --tonari-accent: #e8c4a0;
 }
+
+/* ダークモード */
+.dark {
+  --color-primary: #c9a96e;
+  --color-primary-hover: #d4bf96;
+  --color-primary-press: #b89e72;
+  --color-primary-disabled: #c9a96e4d;
+  --color-secondary: #8b7aab;
+  --color-secondary-hover: #9d8dbd;
+  --color-secondary-press: #6f5d94;
+  --color-secondary-disabled: #8b7aab4d;
+  --color-text-primary: #e8dcc8;
+  --color-text-base: #ffffff;
+  --color-text-default: #e0dcd6;
+  --color-base-light: #1a1a2e;
+  --color-base-dark: #0f0f1a;
+}

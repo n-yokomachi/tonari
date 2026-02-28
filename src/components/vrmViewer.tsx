@@ -6,6 +6,16 @@ import settingsStore from '@/features/stores/settings'
 export default function VrmViewer() {
   const containerRef = useRef<HTMLDivElement>(null)
 
+  // ダークモード切替時にVRMライティングを調整
+  useEffect(() => {
+    const unsub = settingsStore.subscribe((state) => {
+      const { viewer } = homeStore.getState()
+      const isDark = state.colorTheme === 'tonari-dark'
+      viewer.updateLightingIntensity(isDark ? 0.3 : 1.0)
+    })
+    return () => unsub()
+  }, [])
+
   // ResizeObserverでコンテナサイズの変更を検知
   useEffect(() => {
     const container = containerRef.current
@@ -26,8 +36,9 @@ export default function VrmViewer() {
   const canvasRef = useCallback((canvas: HTMLCanvasElement) => {
     if (canvas) {
       const { viewer } = homeStore.getState()
-      const { selectedVrmPath } = settingsStore.getState()
+      const { selectedVrmPath, colorTheme } = settingsStore.getState()
       viewer.setup(canvas)
+      viewer.updateLightingIntensity(colorTheme === 'tonari-dark' ? 0.3 : 1.0)
       viewer.loadVrm(selectedVrmPath)
 
       // Drag and DropでVRMを差し替え

@@ -258,7 +258,7 @@ export default function AdminPerfumes() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
         <div className="flex gap-2">
           {[0, 1, 2].map((i) => (
             <div
@@ -293,8 +293,8 @@ export default function AdminPerfumes() {
       <Head>
         <title>香水データ管理 - TONaRi</title>
       </Head>
-      <div className="min-h-screen bg-gray-100">
-        <header className="bg-white shadow">
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+        <header className="bg-white dark:bg-gray-800 shadow">
           <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <svg
@@ -310,17 +310,17 @@ export default function AdminPerfumes() {
                   d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
                 />
               </svg>
-              <span className="text-sm font-medium text-gray-600 tracking-wider">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-300 tracking-wider">
                 PERFUMES
               </span>
             </div>
             <button
               onClick={handleBack}
-              className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
+              className="w-10 h-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors"
               title="戻る"
             >
               <svg
-                className="w-5 h-5 text-gray-500"
+                className="w-5 h-5 text-gray-500 dark:text-gray-400"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -338,11 +338,11 @@ export default function AdminPerfumes() {
 
         <main className="max-w-7xl mx-auto px-4 py-6">
           {error && (
-            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
+            <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg">
               {error}
               <button
                 onClick={() => setError('')}
-                className="ml-2 text-red-800 font-bold"
+                className="ml-2 text-red-800 dark:text-red-200 font-bold"
               >
                 ×
               </button>
@@ -374,14 +374,14 @@ export default function AdminPerfumes() {
           )}
 
           {showForm && (
-            <div className="mb-6 bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-bold mb-4">
+            <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h2 className="text-lg font-bold dark:text-gray-100 mb-4">
                 {isEditing ? '香水を編集' : '新規香水を追加'}
               </h2>
               <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       ブランド名 *
                     </label>
                     <input
@@ -390,12 +390,12 @@ export default function AdminPerfumes() {
                       onChange={(e) =>
                         setFormData({ ...formData, brand: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       商品名 *
                     </label>
                     <input
@@ -404,12 +404,12 @@ export default function AdminPerfumes() {
                       onChange={(e) =>
                         setFormData({ ...formData, name: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       生産国
                     </label>
                     <input
@@ -418,11 +418,11 @@ export default function AdminPerfumes() {
                       onChange={(e) =>
                         setFormData({ ...formData, country: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       トップノート（カンマ区切り）
                     </label>
                     <input
@@ -431,11 +431,11 @@ export default function AdminPerfumes() {
                       onChange={(e) =>
                         setFormData({ ...formData, topNotes: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       ミドルノート（カンマ区切り）
                     </label>
                     <input
@@ -447,11 +447,11 @@ export default function AdminPerfumes() {
                           middleNotes: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       ベースノート（カンマ区切り）
                     </label>
                     <input
@@ -460,11 +460,11 @@ export default function AdminPerfumes() {
                       onChange={(e) =>
                         setFormData({ ...formData, baseNotes: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       評価
                     </label>
                     <select
@@ -475,7 +475,7 @@ export default function AdminPerfumes() {
                           rating: parseInt(e.target.value),
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg"
                     >
                       {[1, 2, 3, 4, 5].map((n) => (
                         <option key={n} value={n}>
@@ -486,7 +486,7 @@ export default function AdminPerfumes() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       季節
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -498,7 +498,7 @@ export default function AdminPerfumes() {
                           className={`px-3 py-1 rounded-full text-sm ${
                             formData.seasons.includes(season)
                               ? 'bg-secondary text-white'
-                              : 'bg-gray-200 text-gray-700'
+                              : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
                           }`}
                         >
                           {season}
@@ -507,7 +507,7 @@ export default function AdminPerfumes() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       シーン
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -519,7 +519,7 @@ export default function AdminPerfumes() {
                           className={`px-3 py-1 rounded-full text-sm ${
                             formData.scenes.includes(scene)
                               ? 'bg-secondary text-white'
-                              : 'bg-gray-200 text-gray-700'
+                              : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
                           }`}
                         >
                           {scene}
@@ -528,7 +528,7 @@ export default function AdminPerfumes() {
                     </div>
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       感想・コメント
                     </label>
                     <textarea
@@ -539,7 +539,7 @@ export default function AdminPerfumes() {
                           impression: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg"
                       rows={3}
                     />
                   </div>
@@ -555,7 +555,7 @@ export default function AdminPerfumes() {
                   <button
                     type="button"
                     onClick={handleCancel}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                    className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
                   >
                     キャンセル
                   </button>
@@ -571,23 +571,23 @@ export default function AdminPerfumes() {
               placeholder="検索..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary"
+              className="w-full md:w-64 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary"
             />
           </div>
 
-          <div className="bg-white rounded-lg shadow overflow-hidden overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-900">
                 <tr>
                   <th
-                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
                     onClick={() => handleSort('brand')}
                   >
                     ブランド
                     <SortIcon column="brand" />
                   </th>
                   <th
-                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
                     onClick={() => handleSort('name')}
                   >
                     商品名
@@ -607,29 +607,29 @@ export default function AdminPerfumes() {
                     評価
                     <SortIcon column="rating" />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">
                     トップ
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">
                     ミドル
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">
                     ベース
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">
                     季節
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-24">
                     操作
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredPerfumes.length === 0 ? (
                   <tr>
                     <td
                       colSpan={9}
-                      className="px-4 py-8 text-center text-gray-500"
+                      className="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
                     >
                       {searchQuery
                         ? '検索結果がありません'
@@ -640,16 +640,16 @@ export default function AdminPerfumes() {
                   filteredPerfumes.map((perfume) => (
                     <tr
                       key={`${perfume.brand}#${perfume.name}`}
-                      className="hover:bg-gray-50 cursor-pointer"
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                       onClick={() => setSelectedPerfume(perfume)}
                     >
-                      <td className="px-4 py-4 text-sm text-gray-600">
+                      <td className="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">
                         {perfume.brand}
                       </td>
-                      <td className="px-4 py-4 font-medium text-gray-900">
+                      <td className="px-4 py-4 font-medium text-gray-900 dark:text-gray-100">
                         {perfume.name}
                       </td>
-                      <td className="px-4 py-4 hidden md:table-cell text-sm text-gray-600">
+                      <td className="px-4 py-4 hidden md:table-cell text-sm text-gray-600 dark:text-gray-400">
                         {perfume.country || '-'}
                       </td>
                       <td className="px-4 py-4 hidden md:table-cell">
@@ -658,13 +658,13 @@ export default function AdminPerfumes() {
                           {'☆'.repeat(5 - perfume.rating)}
                         </span>
                       </td>
-                      <td className="px-4 py-4 hidden lg:table-cell text-sm text-gray-600">
+                      <td className="px-4 py-4 hidden lg:table-cell text-sm text-gray-600 dark:text-gray-400">
                         {perfume.topNotes[0] || '-'}
                       </td>
-                      <td className="px-4 py-4 hidden lg:table-cell text-sm text-gray-600">
+                      <td className="px-4 py-4 hidden lg:table-cell text-sm text-gray-600 dark:text-gray-400">
                         {perfume.middleNotes[0] || '-'}
                       </td>
-                      <td className="px-4 py-4 hidden lg:table-cell text-sm text-gray-600">
+                      <td className="px-4 py-4 hidden lg:table-cell text-sm text-gray-600 dark:text-gray-400">
                         {perfume.baseNotes[0] || '-'}
                       </td>
                       <td className="px-4 py-4 hidden md:table-cell">
@@ -672,7 +672,7 @@ export default function AdminPerfumes() {
                           {perfume.seasons.map((season) => (
                             <span
                               key={season}
-                              className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded"
+                              className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 text-xs rounded"
                             >
                               {season}
                             </span>
@@ -685,7 +685,7 @@ export default function AdminPerfumes() {
                             e.stopPropagation()
                             handleEdit(perfume)
                           }}
-                          className="w-8 h-8 rounded-full hover:bg-gray-200 inline-flex items-center justify-center transition-colors mr-1"
+                          className="w-8 h-8 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 inline-flex items-center justify-center transition-colors mr-1"
                           title="編集"
                         >
                           <svg
@@ -707,7 +707,7 @@ export default function AdminPerfumes() {
                             e.stopPropagation()
                             handleDelete(perfume)
                           }}
-                          className="w-8 h-8 rounded-full hover:bg-red-50 inline-flex items-center justify-center transition-colors"
+                          className="w-8 h-8 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30 inline-flex items-center justify-center transition-colors"
                           title="削除"
                         >
                           <svg
@@ -741,26 +741,26 @@ export default function AdminPerfumes() {
           onClick={() => setSelectedPerfume(null)}
         >
           <div
-            className="bg-white rounded-xl max-w-lg w-full max-h-[80vh] overflow-y-auto"
+            className="bg-white dark:bg-gray-800 rounded-xl max-w-lg w-full max-h-[80vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
                     {selectedPerfume.name}
                   </h2>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     {selectedPerfume.brand}
                     {selectedPerfume.country && ` / ${selectedPerfume.country}`}
                   </p>
                 </div>
                 <button
                   onClick={() => setSelectedPerfume(null)}
-                  className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center"
+                  className="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center"
                 >
                   <svg
-                    className="w-5 h-5 text-gray-400"
+                    className="w-5 h-5 text-gray-400 dark:text-gray-500"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -785,12 +785,14 @@ export default function AdminPerfumes() {
 
                 {selectedPerfume.seasons.length > 0 && (
                   <div>
-                    <p className="text-xs text-gray-400 mb-1">SEASON</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">
+                      SEASON
+                    </p>
                     <div className="flex flex-wrap gap-1">
                       {selectedPerfume.seasons.map((season) => (
                         <span
                           key={season}
-                          className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
+                          className="px-2 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 text-xs rounded"
                         >
                           {season}
                         </span>
@@ -801,12 +803,14 @@ export default function AdminPerfumes() {
 
                 {selectedPerfume.scenes.length > 0 && (
                   <div>
-                    <p className="text-xs text-gray-400 mb-1">SCENE</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">
+                      SCENE
+                    </p>
                     <div className="flex flex-wrap gap-1">
                       {selectedPerfume.scenes.map((scene) => (
                         <span
                           key={scene}
-                          className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded"
+                          className="px-2 py-1 bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300 text-xs rounded"
                         >
                           {scene}
                         </span>
@@ -817,8 +821,10 @@ export default function AdminPerfumes() {
 
                 {selectedPerfume.topNotes.length > 0 && (
                   <div>
-                    <p className="text-xs text-gray-400 mb-1">TOP NOTES</p>
-                    <p className="text-sm text-gray-700">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">
+                      TOP NOTES
+                    </p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
                       {selectedPerfume.topNotes.join(', ')}
                     </p>
                   </div>
@@ -826,8 +832,10 @@ export default function AdminPerfumes() {
 
                 {selectedPerfume.middleNotes.length > 0 && (
                   <div>
-                    <p className="text-xs text-gray-400 mb-1">MIDDLE NOTES</p>
-                    <p className="text-sm text-gray-700">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">
+                      MIDDLE NOTES
+                    </p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
                       {selectedPerfume.middleNotes.join(', ')}
                     </p>
                   </div>
@@ -835,8 +843,10 @@ export default function AdminPerfumes() {
 
                 {selectedPerfume.baseNotes.length > 0 && (
                   <div>
-                    <p className="text-xs text-gray-400 mb-1">BASE NOTES</p>
-                    <p className="text-sm text-gray-700">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">
+                      BASE NOTES
+                    </p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
                       {selectedPerfume.baseNotes.join(', ')}
                     </p>
                   </div>
@@ -844,15 +854,17 @@ export default function AdminPerfumes() {
 
                 {selectedPerfume.impression && (
                   <div>
-                    <p className="text-xs text-gray-400 mb-1">IMPRESSION</p>
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">
+                      IMPRESSION
+                    </p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                       {selectedPerfume.impression}
                     </p>
                   </div>
                 )}
               </div>
 
-              <div className="mt-6 pt-4 border-t flex justify-end gap-2">
+              <div className="mt-6 pt-4 border-t dark:border-gray-700 flex justify-end gap-2">
                 <button
                   onClick={() => {
                     handleEdit(selectedPerfume)
