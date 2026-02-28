@@ -167,9 +167,7 @@ export class Viewer {
 
     // Listen for position lock changes
     this._cameraControls.addEventListener('end', () => {
-      if (!settingsStore.getState().fixedCharacterPosition) {
-        this.saveCameraPosition()
-      }
+      this.saveCameraPosition()
     })
 
     window.addEventListener('resize', () => {
@@ -212,13 +210,7 @@ export class Viewer {
    * VRMのheadノードを参照してカメラ位置を調整する
    */
   public resetCamera() {
-    const { fixedCharacterPosition } = settingsStore.getState()
-    // If position is fixed, restore saved position instead of auto-adjusting
-    if (fixedCharacterPosition) {
-      this.restoreCameraPosition()
-      return
-    }
-
+    // First, set default position based on head node
     const headNode = this.model?.vrm?.humanoid.getNormalizedBoneNode('head')
 
     if (headNode) {
@@ -232,6 +224,9 @@ export class Viewer {
       this._cameraControls?.target.set(headWPos.x, headWPos.y, headWPos.z)
       this._cameraControls?.update()
     }
+
+    // Then restore saved camera position and rotation
+    this.restoreCameraPosition()
   }
 
   public update = () => {
@@ -275,27 +270,27 @@ export class Viewer {
   public restoreCameraPosition() {
     if (!this._camera || !this._cameraControls) return
 
-    const { characterPosition, characterRotation, fixedCharacterPosition } =
-      settingsStore.getState()
+    const { characterPosition, characterRotation } = settingsStore.getState()
 
     if (
-      fixedCharacterPosition &&
-      (characterPosition.x !== 0 ||
-        characterPosition.y !== 0 ||
-        characterPosition.z !== 0)
+      characterPosition.x === 0 &&
+      characterPosition.y === 0 &&
+      characterPosition.z === 0
     ) {
-      this._camera.position.set(
-        characterPosition.x,
-        characterPosition.y,
-        characterPosition.z
-      )
-      this._cameraControls.target.set(
-        characterRotation.x,
-        characterRotation.y,
-        characterRotation.z
-      )
-      this._cameraControls.update()
+      return
     }
+
+    this._camera.position.set(
+      characterPosition.x,
+      characterPosition.y,
+      characterPosition.z
+    )
+    this._cameraControls.target.set(
+      characterRotation.x,
+      characterRotation.y,
+      characterRotation.z
+    )
+    this._cameraControls.update()
   }
 
   /**

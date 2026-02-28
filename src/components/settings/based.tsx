@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import settingsStore from '@/features/stores/settings'
+import homeStore from '@/features/stores/home'
 import { TextButton } from '../textButton'
 
 const Based = () => {
@@ -38,6 +39,20 @@ const Based = () => {
             }
           >
             {isDark ? 'ON' : 'OFF'}
+          </TextButton>
+        </div>
+      </div>
+
+      {/* キャラクター位置リセット */}
+      <div className="my-6">
+        <div className="my-4 text-xl font-bold">Character Position</div>
+        <div className="my-2">
+          <TextButton
+            onClick={() => {
+              homeStore.getState().viewer?.resetCameraPosition()
+            }}
+          >
+            Reset Position
           </TextButton>
         </div>
       </div>

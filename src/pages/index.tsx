@@ -21,6 +21,7 @@ import { usePomodoroMotion } from '@/hooks/usePomodoroMotion'
 import { MobileHeader } from '@/components/mobileHeader'
 import { GestureTestPanel } from '@/components/gestureTestPanel'
 import { PomodoroTimer } from '@/components/pomodoroTimer'
+import { TaskListPanel } from '@/components/taskListPanel'
 
 const CHAT_WIDTH_KEY = 'tonari-chat-width'
 const DEFAULT_CHAT_WIDTH = 500
@@ -32,6 +33,7 @@ const Home = () => {
   const isPortrait = useIsPortrait()
   const [chatWidth, setChatWidth] = useState(DEFAULT_CHAT_WIDTH)
   const [pageReady, setPageReady] = useState(false)
+  const [animationDone, setAnimationDone] = useState(false)
 
   // 縦モニター: チャットログの自動非表示
   const [chatVisible, setChatVisible] = useState(true)
@@ -112,13 +114,25 @@ const Home = () => {
     }
   }, [layoutReady, pageReady])
 
+  // Remove transform after animation completes so position:fixed works correctly
+  useEffect(() => {
+    if (pageReady) {
+      const timer = setTimeout(() => setAnimationDone(true), 900)
+      return () => clearTimeout(timer)
+    }
+  }, [pageReady])
+
   return (
     <div
       className="w-screen h-screen overflow-hidden flex flex-col"
       style={{
         ...backgroundStyle,
         opacity: pageReady ? 1 : 0,
-        transform: pageReady ? 'translateY(0)' : 'translateY(-12px)',
+        transform: animationDone
+          ? undefined
+          : pageReady
+            ? 'translateY(0)'
+            : 'translateY(-12px)',
         transition: pageReady
           ? 'opacity 0.8s ease-out, transform 0.8s ease-out'
           : 'none',
@@ -156,35 +170,40 @@ const Home = () => {
         </>
       ) : (
         <>
-          {/* デスクトップ: メインエリア（チャット + リサイザー + VRM） */}
-          <div className="flex-1 flex overflow-hidden">
-            {/* 左: チャットUI */}
+          {/* デスクトップ: VRM全画面背景 */}
+          <div className="absolute inset-0 z-0">
+            <VrmViewer />
+          </div>
+          {/* デスクトップ: メインエリア（チャット + リサイザー） */}
+          <div className="flex-1 flex overflow-hidden relative z-10 pointer-events-none">
+            {/* 左: チャットUI（透過） */}
             <div
-              className="overflow-hidden flex-shrink-0"
+              className="overflow-hidden flex-shrink-0 pointer-events-auto"
               style={{ width: chatWidth }}
             >
               <Menu />
             </div>
             {/* リサイザー */}
-            <ResizableDivider
-              onResize={handleResize}
-              minWidth={MIN_CHAT_WIDTH}
-              maxWidth={MAX_CHAT_WIDTH}
-              initialWidth={chatWidth}
-            />
-            {/* 右: VRMビューワー */}
-            <div className="flex-1 overflow-hidden">
-              <VrmViewer />
+            <div className="pointer-events-auto">
+              <ResizableDivider
+                onResize={handleResize}
+                minWidth={MIN_CHAT_WIDTH}
+                maxWidth={MAX_CHAT_WIDTH}
+                initialWidth={chatWidth}
+              />
             </div>
+            {/* 右: VRMへのポインタ透過用スペース */}
+            <div className="flex-1" />
           </div>
           {/* デスクトップ: 下部 - 入力欄（全幅） */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 relative z-10 pointer-events-auto">
             <Form />
           </div>
         </>
       )}
       {/* <GestureTestPanel /> */}
       <PomodoroTimer />
+      <TaskListPanel />
       {messageReceiverEnabled && <MessageReceiver />}
       <Toasts />
       <WebSocketManager />

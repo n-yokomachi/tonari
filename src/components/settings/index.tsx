@@ -85,10 +85,6 @@ const Main = () => {
       key: 'log',
       label: t('LogSettings'),
     },
-    {
-      key: 'other',
-      label: t('OtherSettings'),
-    },
   ]
 
   const renderTabContent = () => {

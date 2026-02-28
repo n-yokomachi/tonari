@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import Image from 'next/image'
 import pomodoroStore, { PomodoroPhase } from '@/features/stores/pomodoro'
 import settingsStore from '@/features/stores/settings'
+import { getNextPanelZ } from '@/utils/panelZIndex'
 import { CircularProgress } from './circularProgress'
 import { PomodoroSettings } from './pomodoroSettings'
 
@@ -94,6 +95,7 @@ export const PomodoroTimer = () => {
   const [isDragging, setIsDragging] = useState(false)
   const [isResizing, setIsResizing] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
+  const [zIndex, setZIndex] = useState(25)
   const dragRef = useRef<{
     startX: number
     startY: number
@@ -179,8 +181,13 @@ export const PomodoroTimer = () => {
     }
   }, [])
 
+  const bringToFront = useCallback(() => {
+    setZIndex(getNextPanelZ())
+  }, [])
+
   // ドラッグ（移動）
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    bringToFront()
     if ((e.target as HTMLElement).closest('button')) return
     if ((e.target as HTMLElement).closest('[data-resize-handle]')) return
     const el = containerRef.current
@@ -300,9 +307,10 @@ export const PomodoroTimer = () => {
     <>
       <div
         ref={containerRef}
-        className="fixed z-[25] flex flex-col items-center gap-3 pointer-events-auto touch-none select-none group rounded-3xl"
+        className="fixed flex flex-col items-center gap-3 pointer-events-auto touch-none select-none group rounded-3xl"
         style={{
           ...positionStyle,
+          zIndex,
           cursor: isDragging ? 'grabbing' : 'grab',
           padding: showOverlay ? 20 : 0,
           backgroundColor: showOverlay

@@ -218,10 +218,10 @@ const LoadingIndicator = ({
         isPortrait ? 'my-2' : 'mx-auto ml-0 md:ml-10 lg:ml-20 my-4 pr-10'
       }
     >
-      <div className="px-6 py-2 rounded-t-lg font-bold tracking-wider bg-secondary text-theme">
+      <div className="px-6 py-2 rounded-t-lg font-bold tracking-wider bg-white/60 dark:bg-white/15 backdrop-blur-sm text-secondary border-2 border-white/50 dark:border-white/10">
         {characterName || 'CHARACTER'}
       </div>
-      <div className="px-6 py-4 bg-white dark:bg-white/10 rounded-b-lg">
+      <div className="px-6 py-4 bg-white/70 dark:bg-white/10 backdrop-blur-sm rounded-b-lg">
         <div className="flex items-center gap-1">
           <span
             className="w-2 h-2 bg-secondary rounded-full animate-bounce"
@@ -256,10 +256,10 @@ const ToolStatusIndicator = ({
         isPortrait ? 'my-2' : 'mx-auto ml-0 md:ml-10 lg:ml-20 my-4 pr-10'
       }
     >
-      <div className="px-6 py-2 rounded-t-lg font-bold tracking-wider bg-secondary text-theme">
+      <div className="px-6 py-2 rounded-t-lg font-bold tracking-wider bg-white/60 dark:bg-white/15 backdrop-blur-sm text-secondary border-2 border-white/50 dark:border-white/10">
         {characterName || 'CHARACTER'}
       </div>
-      <div className="px-6 py-4 bg-white dark:bg-white/10 rounded-b-lg">
+      <div className="px-6 py-4 bg-white/70 dark:bg-white/10 backdrop-blur-sm rounded-b-lg">
         <div className="flex items-center gap-2 animate-pulse">
           <span className="text-base">&#128295;</span>
           <span className="text-secondary font-bold">{toolName}...</span>
@@ -321,7 +321,9 @@ const Chat = ({
   const processedMessage = message.replace(emotionPattern, '')
 
   const roleColor =
-    role !== 'user' ? 'bg-secondary text-theme ' : 'bg-base-light text-primary'
+    role !== 'user'
+      ? 'bg-white/60 dark:bg-white/15 backdrop-blur-sm text-secondary border-2 border-white/50 dark:border-white/10 '
+      : 'bg-white/60 dark:bg-white/15 backdrop-blur-sm text-primary border-2 border-white/50 dark:border-white/10'
   const roleText = role !== 'user' ? 'text-secondary' : 'text-primary'
   const offsetX = role === 'user' ? 'pl-10' : 'pr-10'
 
@@ -345,7 +347,7 @@ const Chat = ({
           >
             {role !== 'user' ? characterName || 'CHARACTER' : 'YOU'}
           </div>
-          <div className="px-6 py-4 bg-white dark:bg-white/10 rounded-b-lg">
+          <div className="px-6 py-4 bg-white/70 dark:bg-white/10 backdrop-blur-sm rounded-b-lg">
             <div className={`font-bold ${roleText}`}>{messageContent}</div>
           </div>
         </>

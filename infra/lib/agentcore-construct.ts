@@ -21,6 +21,8 @@ export interface AgentCoreConstructProps {
   twitterWriteLambda?: lambda.IFunction
   /** diary-tool Lambda function (Gateway target, optional) */
   diaryLambda?: lambda.IFunction
+  /** task-tool Lambda function (Gateway target) */
+  taskToolLambda: lambda.IFunction
 }
 
 export class AgentCoreConstruct extends Construct {
@@ -74,7 +76,7 @@ export class AgentCoreConstruct extends Construct {
     this.memoryId = memory.attrMemoryId
 
     // ========== Gateway (L2) ==========
-    const lambdaFunctions = [props.searchLambda]
+    const lambdaFunctions = [props.searchLambda, props.taskToolLambda]
     if (props.twitterReadLambda) lambdaFunctions.push(props.twitterReadLambda)
     if (props.twitterWriteLambda) lambdaFunctions.push(props.twitterWriteLambda)
     if (props.diaryLambda) lambdaFunctions.push(props.diaryLambda)
@@ -282,6 +284,111 @@ export class AgentCoreConstruct extends Construct {
         ]),
       })
     }
+
+    // Gateway Target: task-tool
+    gateway.addLambdaTarget('TaskTool', {
+      gatewayTargetName: 'task-tool',
+      lambdaFunction: props.taskToolLambda,
+      credentialProviderConfigurations: iamCredential,
+      toolSchema: agentcore.ToolSchema.fromInline([
+        {
+          name: 'list_tasks',
+          description:
+            'List active tasks with optional deadline filter. Use to check current tasks or find tasks due soon.',
+          inputSchema: {
+            type: agentcore.SchemaDefinitionType.OBJECT,
+            properties: {
+              user_id: {
+                type: agentcore.SchemaDefinitionType.STRING,
+                description: 'User ID of the task owner',
+              },
+              include_completed: {
+                type: agentcore.SchemaDefinitionType.BOOLEAN,
+                description:
+                  'Include completed tasks in results (default: false)',
+              },
+              days_until_due: {
+                type: agentcore.SchemaDefinitionType.NUMBER,
+                description:
+                  'Filter tasks with due date within N days from now',
+              },
+            },
+            required: ['user_id'],
+          },
+        },
+        {
+          name: 'add_task',
+          description:
+            'Add a new task for the user. Use when the user wants to create a task or when auto-detecting task-like statements.',
+          inputSchema: {
+            type: agentcore.SchemaDefinitionType.OBJECT,
+            properties: {
+              user_id: {
+                type: agentcore.SchemaDefinitionType.STRING,
+                description: 'User ID of the task owner',
+              },
+              title: {
+                type: agentcore.SchemaDefinitionType.STRING,
+                description: 'Task title',
+              },
+              due_date: {
+                type: agentcore.SchemaDefinitionType.STRING,
+                description:
+                  'Optional due date in YYYY-MM-DD format',
+              },
+            },
+            required: ['user_id', 'title'],
+          },
+        },
+        {
+          name: 'complete_task',
+          description:
+            'Mark a task as completed. Use when the user says they finished a task.',
+          inputSchema: {
+            type: agentcore.SchemaDefinitionType.OBJECT,
+            properties: {
+              user_id: {
+                type: agentcore.SchemaDefinitionType.STRING,
+                description: 'User ID of the task owner',
+              },
+              task_id: {
+                type: agentcore.SchemaDefinitionType.STRING,
+                description: 'ID of the task to complete',
+              },
+            },
+            required: ['user_id', 'task_id'],
+          },
+        },
+        {
+          name: 'update_task',
+          description:
+            'Update a task title or due date.',
+          inputSchema: {
+            type: agentcore.SchemaDefinitionType.OBJECT,
+            properties: {
+              user_id: {
+                type: agentcore.SchemaDefinitionType.STRING,
+                description: 'User ID of the task owner',
+              },
+              task_id: {
+                type: agentcore.SchemaDefinitionType.STRING,
+                description: 'ID of the task to update',
+              },
+              title: {
+                type: agentcore.SchemaDefinitionType.STRING,
+                description: 'New task title',
+              },
+              due_date: {
+                type: agentcore.SchemaDefinitionType.STRING,
+                description:
+                  'New due date in YYYY-MM-DD format, or empty string to remove',
+              },
+            },
+            required: ['user_id', 'task_id'],
+          },
+        },
+      ]),
+    })
 
     // ========== Runtime (L2) ==========
     const artifact = agentcore.AgentRuntimeArtifact.fromAsset(
