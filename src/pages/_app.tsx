@@ -42,6 +42,11 @@ export default function App({ Component, pageProps }: AppProps) {
       document.documentElement.classList.remove('dark')
     }
 
+    // Service Worker登録
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {})
+    }
+
     // テーマ変更をリアルタイムに反映
     const unsub = settingsStore.subscribe((state) => {
       document.documentElement.setAttribute('data-theme', state.colorTheme)
