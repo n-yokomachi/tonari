@@ -18,15 +18,66 @@ logger.setLevel(logging.INFO)
 JST = timezone(timedelta(hours=9))
 
 
-def _build_news_prompt(now_str: str) -> str:
+def _get_urgent_tasks(table_name: str, days: int = 3) -> list[dict]:
+    """Get tasks with due dates within N days.
+
+    Args:
+        table_name: DynamoDB table name for tasks.
+        days: Number of days to look ahead.
+
+    Returns:
+        List of task dicts with title and dueDate.
+    """
+    dynamodb = boto3.resource("dynamodb")
+    table = dynamodb.Table(table_name)
+    now = datetime.now(JST)
+    threshold = (now + timedelta(days=days)).strftime("%Y-%m-%d")
+    today = now.strftime("%Y-%m-%d")
+
+    try:
+        response = table.scan(
+            FilterExpression="attribute_exists(dueDate) AND completed = :false AND dueDate <= :threshold",
+            ExpressionAttributeValues={
+                ":false": False,
+                ":threshold": threshold,
+            },
+        )
+        tasks = response.get("Items", [])
+        # Sort by due date
+        tasks.sort(key=lambda t: t.get("dueDate", ""))
+        result = []
+        for t in tasks:
+            due = t.get("dueDate", "")
+            label = "期限切れ" if due < today else ("今日" if due == today else due)
+            result.append({"title": t.get("title", ""), "dueDate": label})
+        return result
+    except Exception:
+        logger.exception("Failed to get urgent tasks")
+        return []
+
+
+def _build_news_prompt(now_str: str, urgent_tasks: list[dict] | None = None) -> str:
     """Build news collection prompt for the agent.
 
     Args:
         now_str: Current time string in JST.
+        urgent_tasks: Optional list of urgent tasks to include.
 
     Returns:
         Prompt string for AgentCore Runtime.
     """
+    task_section = ""
+    if urgent_tasks:
+        task_lines = "\n".join(
+            f"  - {t['title']}（{t['dueDate']}）" for t in urgent_tasks
+        )
+        task_section = (
+            "\n\n### タスクリマインド\n"
+            "冒頭の挨拶の直後に、以下の期限が近いタスクについてリマインドしてください。\n"
+            "「そういえば、期限が近いタスクがありますよ。」のように自然に伝えてください。\n\n"
+            f"{task_lines}\n"
+        )
+
     return (
         f"現在{now_str}（JST）です。定時のニュース配信を行います。\n\n"
         "## 最重要ルール\n"
@@ -66,6 +117,7 @@ def _build_news_prompt(now_str: str) -> str:
         "- 該当するものがなければ「TONaRiのおすすめ」セクション自体を省略してよい\n\n"
         "### ステップ4: 出力\n"
         "以下のフォーマットで出力する。\n\n"
+        f"{task_section}"
         "## 出力フォーマット\n\n"
         "（冒頭の挨拶：時間帯に合った親しみのある一言。例：「オーナー、おはようございます！今朝のニュースをお届けします。」「オーナー、お疲れ様です。夜のニュースまとめです。」など。タスクの説明や「検索します」等の作業報告は絶対に書かない）\n\n"
         "---\n\n"
@@ -251,6 +303,7 @@ def handler(event, context):
     region = os.environ.get("AGENTCORE_REGION", "ap-northeast-1")
     sns_topic_arn = os.environ["SNS_TOPIC_ARN"]
     news_table = os.environ["NEWS_TABLE"]
+    tasks_table = os.environ.get("TASKS_TABLE", "")
 
     # Get secrets from SSM
     try:
@@ -265,7 +318,13 @@ def handler(event, context):
     # Build prompt and session ID
     now_jst = datetime.now(JST)
     now_str = now_jst.strftime("%Y年%m月%d日 %H:%M")
-    prompt = _build_news_prompt(now_str)
+
+    # Get urgent tasks for reminder
+    urgent_tasks = _get_urgent_tasks(tasks_table) if tasks_table else []
+    if urgent_tasks:
+        logger.info("Found %d urgent tasks for reminder", len(urgent_tasks))
+
+    prompt = _build_news_prompt(now_str, urgent_tasks if urgent_tasks else None)
     session_id = (
         f"tonari-news-pipeline-{now_jst.strftime('%Y-%m-%d')}"
         f"-{now_jst.strftime('%H%M')}-{uuid.uuid4().hex[:8]}"

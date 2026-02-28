@@ -8,6 +8,7 @@ import homeStore from '@/features/stores/home'
 import menuStore from '@/features/stores/menu'
 import settingsStore from '@/features/stores/settings'
 import pomodoroStore from '@/features/stores/pomodoro'
+import taskStore from '@/features/stores/tasks'
 import { resetSessionId } from '@/features/chat/agentCoreChat'
 import { ChatLog } from './chatLog'
 import { IconButton } from './iconButton'
@@ -35,6 +36,29 @@ const useIsMobile = () => {
   }, [])
 
   return isMobile
+}
+
+const TaskIconButton = () => {
+  const urgentTaskCount = taskStore((s) => s.urgentTaskCount)
+  return (
+    <button
+      onClick={() => taskStore.getState().toggle()}
+      className="bg-primary hover:bg-primary-hover active:bg-primary-press rounded-2xl text-sm p-2 text-center inline-flex items-center transition-all duration-200 text-theme relative"
+      aria-label="タスク一覧"
+    >
+      <Image
+        src="/images/icons/tasks.svg"
+        alt="タスク"
+        width={24}
+        height={24}
+      />
+      {urgentTaskCount > 0 && (
+        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+          {urgentTaskCount > 9 ? '9+' : urgentTaskCount}
+        </span>
+      )}
+    </button>
+  )
 }
 
 export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
@@ -185,6 +209,7 @@ export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
                       onClick={() => pomodoroStore.getState().toggle()}
                       aria-label="ポモドーロタイマー"
                     />
+                    <TaskIconButton />
                     <button
                       onClick={async () => {
                         await fetch('/api/admin/auth', { method: 'DELETE' })

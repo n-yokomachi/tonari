@@ -44,6 +44,9 @@ export class WorkloadConstruct extends Construct {
   public readonly tweetTriggerLambda?: python.PythonFunction
   public readonly diaryTable: dynamodb.Table
   public readonly diaryToolLambda: python.PythonFunction
+  public readonly tasksTable: dynamodb.Table
+  public readonly taskCrudLambda: python.PythonFunction
+  public readonly taskToolLambda: python.PythonFunction
   public readonly newsNotificationTopic?: sns.Topic
   public readonly newsTable?: dynamodb.Table
   public readonly newsTriggerLambda?: python.PythonFunction
@@ -248,6 +251,69 @@ export class WorkloadConstruct extends Construct {
     const diaryByDate = diaries.addResource('{date}')
     diaryByDate.addMethod('GET', diaryCrudIntegration, authorizedMethodOptions)
 
+    // ========== Tasks ==========
+    this.tasksTable = new dynamodb.Table(stack, 'TasksTable', {
+      tableName: 'tonari-tasks',
+      partitionKey: { name: 'taskId', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      timeToLiveAttribute: 'ttl',
+    })
+
+    // Task CRUD Lambda (API Gateway)
+    this.taskCrudLambda = new python.PythonFunction(
+      stack,
+      'TaskCrudLambda',
+      {
+        functionName: 'tonari-task-crud',
+        entry: path.join(__dirname, '../lambda/task-crud'),
+        runtime: lambda.Runtime.PYTHON_3_12,
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: this.tasksTable.tableName,
+        },
+      }
+    )
+
+    this.tasksTable.grantReadWriteData(this.taskCrudLambda)
+
+    // API Routes: tasks (M2M auth)
+    const taskCrudIntegration = new apigateway.LambdaIntegration(
+      this.taskCrudLambda
+    )
+    const tasks = this.crudApi.root.addResource('tasks')
+    tasks.addMethod('GET', taskCrudIntegration, authorizedMethodOptions)
+    tasks.addMethod('POST', taskCrudIntegration, authorizedMethodOptions)
+
+    const taskReorder = tasks.addResource('reorder')
+    taskReorder.addMethod('PUT', taskCrudIntegration, authorizedMethodOptions)
+
+    const taskById = tasks.addResource('{taskId}')
+    taskById.addMethod('GET', taskCrudIntegration, authorizedMethodOptions)
+    taskById.addMethod('PUT', taskCrudIntegration, authorizedMethodOptions)
+    taskById.addMethod('DELETE', taskCrudIntegration, authorizedMethodOptions)
+
+    // Task Tool Lambda (MCP Gateway Target)
+    this.taskToolLambda = new python.PythonFunction(
+      stack,
+      'TaskToolLambda',
+      {
+        functionName: 'tonari-task-tool',
+        entry: path.join(__dirname, '../lambda/task-tool'),
+        runtime: lambda.Runtime.PYTHON_3_12,
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: this.tasksTable.tableName,
+        },
+      }
+    )
+
+    this.tasksTable.grantReadWriteData(this.taskToolLambda)
+
     // ========== Twitter Gateway Tools ==========
     if (props.tweetScheduler) {
       const ts = props.tweetScheduler
@@ -451,6 +517,7 @@ export class WorkloadConstruct extends Construct {
             SSM_COGNITO_CLIENT_SECRET: ns.ssmCognitoClientSecret,
             SNS_TOPIC_ARN: this.newsNotificationTopic.topicArn,
             NEWS_TABLE: this.newsTable.tableName,
+            TASKS_TABLE: this.tasksTable.tableName,
           },
         }
       )
@@ -467,6 +534,7 @@ export class WorkloadConstruct extends Construct {
 
       this.newsNotificationTopic.grantPublish(this.newsTriggerLambda)
       this.newsTable.grantReadWriteData(this.newsTriggerLambda)
+      this.tasksTable.grantReadData(this.newsTriggerLambda)
 
       const newsTarget = new targets.LambdaInvoke(this.newsTriggerLambda)
 

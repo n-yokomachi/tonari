@@ -57,6 +57,7 @@ export class TonariStack extends cdk.Stack {
       twitterReadLambda: workload.twitterReadLambda,
       twitterWriteLambda: workload.twitterWriteLambda,
       diaryLambda: workload.diaryToolLambda,
+      taskToolLambda: workload.taskToolLambda,
     })
 
     // ========== Cross-Construct Wiring ==========
@@ -130,6 +131,11 @@ export class TonariStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'CognitoScope', {
       value: cognito.scope,
       description: 'Cognito OAuth2 Scope',
+    })
+
+    new cdk.CfnOutput(this, 'TasksTableName', {
+      value: workload.tasksTable.tableName,
+      description: 'DynamoDB table name for task data',
     })
 
     if (workload.newsTable) {

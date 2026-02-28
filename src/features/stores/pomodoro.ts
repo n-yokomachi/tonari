@@ -258,6 +258,9 @@ const pomodoroStore = create<PomodoroState>()(
         showOverlay: state.showOverlay,
         overlayOpacity: state.overlayOpacity,
         volume: state.volume,
+        phase: state.phase,
+        timeRemaining: state.timeRemaining,
+        completedSessions: state.completedSessions,
       }),
     }
   )
