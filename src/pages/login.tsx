@@ -42,6 +42,7 @@ export default function Login() {
 
   const navigateWithTransition = useCallback((url: string) => {
     setIsExiting(true)
+    document.documentElement.style.overflow = 'hidden'
     setTimeout(() => {
       window.location.href = url
     }, 600)
@@ -362,7 +363,7 @@ export default function Login() {
               title="Password login"
             >
               <svg
-                className="w-5 h-5 text-white"
+                className="w-5 h-5 text-white dark:text-gray-900"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
