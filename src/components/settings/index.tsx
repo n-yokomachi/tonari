@@ -13,7 +13,7 @@ type Props = {
 }
 const Settings = (props: Props) => {
   return (
-    <div className="fixed inset-0 z-40 bg-white/80 backdrop-blur">
+    <div className="fixed inset-0 z-40 bg-white/80 dark:bg-gray-900/90 backdrop-blur">
       <Header {...props} />
       <Main />
     </div>
@@ -144,7 +144,7 @@ const Main = () => {
           {/* モバイル版ドロップダウンナビゲーション */}
           <div className="md:hidden mb-4 relative" ref={dropdownRef}>
             <button
-              className="flex items-center justify-between w-full py-3 px-4 font-medium text-left bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="flex items-center justify-between w-full py-3 px-4 font-medium text-left bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
               <div className="flex items-center">
@@ -175,11 +175,11 @@ const Main = () => {
             </button>
 
             {isDropdownOpen && (
-              <div className="absolute top-full left-0 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-80 overflow-y-auto">
+              <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-10 max-h-80 overflow-y-auto">
                 {tabs.map((tab) => (
                   <button
                     key={tab.key}
-                    className={`flex items-center w-full py-3 px-4 text-left hover:bg-gray-50 ${activeTab === tab.key ? 'bg-primary text-theme' : ''}`}
+                    className={`flex items-center w-full py-3 px-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700 ${activeTab === tab.key ? 'bg-primary text-theme' : ''}`}
                     onClick={() => setActiveTab(tab.key)}
                   >
                     <div
@@ -203,7 +203,7 @@ const Main = () => {
           </div>
 
           {/* タブコンテンツ */}
-          <div className="p-6 bg-gray-400 bg-opacity-20 text-medium rounded-lg w-full">
+          <div className="p-6 bg-gray-400/20 dark:bg-gray-700/30 text-medium rounded-lg w-full">
             {renderTabContent()}
           </div>
         </div>

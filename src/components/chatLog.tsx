@@ -221,7 +221,7 @@ const LoadingIndicator = ({
       <div className="px-6 py-2 rounded-t-lg font-bold tracking-wider bg-secondary text-theme">
         {characterName || 'CHARACTER'}
       </div>
-      <div className="px-6 py-4 bg-white rounded-b-lg">
+      <div className="px-6 py-4 bg-white dark:bg-white/10 rounded-b-lg">
         <div className="flex items-center gap-1">
           <span
             className="w-2 h-2 bg-secondary rounded-full animate-bounce"
@@ -259,7 +259,7 @@ const ToolStatusIndicator = ({
       <div className="px-6 py-2 rounded-t-lg font-bold tracking-wider bg-secondary text-theme">
         {characterName || 'CHARACTER'}
       </div>
-      <div className="px-6 py-4 bg-white rounded-b-lg">
+      <div className="px-6 py-4 bg-white dark:bg-white/10 rounded-b-lg">
         <div className="flex items-center gap-2 animate-pulse">
           <span className="text-base">&#128295;</span>
           <span className="text-secondary font-bold">{toolName}...</span>
@@ -345,7 +345,7 @@ const Chat = ({
           >
             {role !== 'user' ? characterName || 'CHARACTER' : 'YOU'}
           </div>
-          <div className="px-6 py-4 bg-white rounded-b-lg">
+          <div className="px-6 py-4 bg-white dark:bg-white/10 rounded-b-lg">
             <div className={`font-bold ${roleText}`}>{messageContent}</div>
           </div>
         </>

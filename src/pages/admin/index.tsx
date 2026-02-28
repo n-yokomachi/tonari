@@ -52,8 +52,8 @@ export default function AdminMenu() {
       <Head>
         <title>管理画面 - TONaRi</title>
       </Head>
-      <div className="min-h-screen bg-gray-100">
-        <header className="bg-white shadow">
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+        <header className="bg-white dark:bg-gray-800 shadow">
           <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <svg
@@ -75,17 +75,17 @@ export default function AdminMenu() {
                   d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                 />
               </svg>
-              <span className="text-sm font-medium text-gray-600 tracking-wider">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-300 tracking-wider">
                 ADMIN
               </span>
             </div>
             <button
               onClick={() => router.push('/')}
-              className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
+              className="w-10 h-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors"
               title="戻る"
             >
               <svg
-                className="w-5 h-5 text-gray-500"
+                className="w-5 h-5 text-gray-500 dark:text-gray-400"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -107,14 +107,14 @@ export default function AdminMenu() {
               <button
                 key={item.href}
                 onClick={() => router.push(item.href)}
-                className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6 text-left flex items-start gap-4"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow p-6 text-left flex items-start gap-4"
               >
                 <div className="text-secondary flex-shrink-0">{item.icon}</div>
                 <div>
-                  <h2 className="text-lg font-bold text-gray-900">
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
                     {item.title}
                   </h2>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     {item.description}
                   </p>
                 </div>

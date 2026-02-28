@@ -63,7 +63,7 @@ export default function AdminDiary() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
         <div className="flex gap-2">
           {[0, 1, 2].map((i) => (
             <div
@@ -98,8 +98,8 @@ export default function AdminDiary() {
       <Head>
         <title>日記管理 - TONaRi</title>
       </Head>
-      <div className="min-h-screen bg-gray-100">
-        <header className="bg-white shadow">
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+        <header className="bg-white dark:bg-gray-800 shadow">
           <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <svg
@@ -115,17 +115,17 @@ export default function AdminDiary() {
                   d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
                 />
               </svg>
-              <span className="text-sm font-medium text-gray-600 tracking-wider">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-300 tracking-wider">
                 DIARY
               </span>
             </div>
             <button
               onClick={() => router.push('/admin')}
-              className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
+              className="w-10 h-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors"
               title="戻る"
             >
               <svg
-                className="w-5 h-5 text-gray-500"
+                className="w-5 h-5 text-gray-500 dark:text-gray-400"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -143,11 +143,11 @@ export default function AdminDiary() {
 
         <main className="max-w-7xl mx-auto px-4 py-6">
           {error && (
-            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
+            <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg">
               {error}
               <button
                 onClick={() => setError('')}
-                className="ml-2 text-red-800 font-bold"
+                className="ml-2 text-red-800 dark:text-red-200 font-bold"
               >
                 ×
               </button>
@@ -155,29 +155,29 @@ export default function AdminDiary() {
           )}
 
           {diaries.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center text-gray-500 dark:text-gray-400">
               まだ日記がありません
             </div>
           ) : (
-            <div className="bg-white rounded-lg shadow divide-y divide-gray-200">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow divide-y divide-gray-200 dark:divide-gray-700">
               {diaries.map((diary) => (
                 <button
                   key={diary.date}
                   onClick={() => fetchDiaryDetail(diary.date)}
-                  className="w-full px-4 py-4 text-left hover:bg-gray-50 transition-colors flex items-center justify-between gap-3"
+                  className="w-full px-4 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-between gap-3"
                 >
                   <div className="min-w-0">
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
                       {formatDate(diary.date)}
                     </p>
                     {diary.body && (
-                      <p className="text-sm text-gray-500 mt-1 truncate">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">
                         {truncate(diary.body, 60)}
                       </p>
                     )}
                   </div>
                   <svg
-                    className="w-5 h-5 text-gray-400 flex-shrink-0"
+                    className="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -203,7 +203,7 @@ export default function AdminDiary() {
           onClick={() => setSelectedDiary(null)}
         >
           <div
-            className="bg-white rounded-xl max-w-lg w-full max-h-[80vh] overflow-y-auto"
+            className="bg-white dark:bg-gray-800 rounded-xl max-w-lg w-full max-h-[80vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {isLoadingDetail ? (
@@ -224,15 +224,15 @@ export default function AdminDiary() {
             ) : (
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
-                  <p className="text-lg font-bold text-gray-900">
+                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                     {formatDate(selectedDiary.date)}
                   </p>
                   <button
                     onClick={() => setSelectedDiary(null)}
-                    className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center"
+                    className="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center"
                   >
                     <svg
-                      className="w-5 h-5 text-gray-400"
+                      className="w-5 h-5 text-gray-400 dark:text-gray-500"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -247,7 +247,7 @@ export default function AdminDiary() {
                   </button>
                 </div>
 
-                <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
                   {selectedDiary.body}
                 </div>
               </div>

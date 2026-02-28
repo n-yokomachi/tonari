@@ -4,8 +4,10 @@ import { TextButton } from '../textButton'
 
 const Based = () => {
   const { t } = useTranslation()
+  const colorTheme = settingsStore((s) => s.colorTheme)
   const voiceEnabled = settingsStore((s) => s.voiceEnabled)
   const voiceModel = settingsStore((s) => s.voiceModel)
+  const isDark = colorTheme === 'tonari-dark'
 
   return (
     <>
@@ -21,6 +23,22 @@ const Based = () => {
             }}
           />
           <h2 className="text-2xl font-bold">{t('BasedSettings')}</h2>
+        </div>
+      </div>
+
+      {/* ダークモード設定 */}
+      <div className="my-6">
+        <div className="my-4 text-xl font-bold">Dark Mode</div>
+        <div className="my-2">
+          <TextButton
+            onClick={() =>
+              settingsStore.setState({
+                colorTheme: isDark ? 'tonari' : 'tonari-dark',
+              })
+            }
+          >
+            {isDark ? 'ON' : 'OFF'}
+          </TextButton>
         </div>
       </div>
 

@@ -92,8 +92,8 @@ export const CameraButton = () => {
       isProcessing={false}
       disabled={chatProcessing}
       onClick={() => homeStore.setState({ cameraOpen: true })}
-      className="bg-white/70 hover:bg-white hover:shadow-md border border-gray-400/60 disabled:opacity-50 disabled:cursor-not-allowed"
-      iconColor="text-gray-700"
+      className="bg-white/70 hover:bg-white hover:shadow-md border border-gray-400/60 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700/70 dark:hover:bg-gray-600 dark:border-gray-500/60"
+      iconColor="text-gray-700 dark:text-gray-300"
       aria-label={t('OpenCamera')}
     />
   )
