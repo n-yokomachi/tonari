@@ -40,12 +40,26 @@ const Home = () => {
   // 縦モニター: チャットログの自動非表示
   const [chatVisible, setChatVisible] = useState(true)
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const formAreaRef = useRef<HTMLDivElement>(null)
   const chatLog = homeStore((s) => s.chatLog)
 
   const showChatTemporarily = useCallback(() => {
     setChatVisible(true)
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current)
-    hideTimerRef.current = setTimeout(() => setChatVisible(false), 10000)
+    const scheduleHide = () => {
+      hideTimerRef.current = setTimeout(() => {
+        // 入力フォームにフォーカスがある場合はフェードアウトしない
+        if (
+          formAreaRef.current &&
+          formAreaRef.current.contains(document.activeElement)
+        ) {
+          scheduleHide()
+          return
+        }
+        setChatVisible(false)
+      }, 10000)
+    }
+    scheduleHide()
   }, [])
 
   // 新しいメッセージが来たら表示してタイマーリセット（モバイル・縦モニター共通）
@@ -163,6 +177,7 @@ const Home = () => {
           </div>
           {/* モバイル/縦モニター: 入力欄（最下部） */}
           <div
+            ref={formAreaRef}
             className={`flex-shrink-0 relative z-10 transition-opacity duration-500 ${
               chatVisible ? 'opacity-100' : 'opacity-0'
             }`}
