@@ -13,7 +13,7 @@ type Props = {
 }
 const Settings = (props: Props) => {
   return (
-    <div className="fixed inset-0 z-40 bg-white/80 dark:bg-gray-900/90 backdrop-blur">
+    <div className="fixed inset-0 z-[9999] bg-white/80 dark:bg-gray-900/90 backdrop-blur">
       <Header {...props} />
       <Main />
     </div>

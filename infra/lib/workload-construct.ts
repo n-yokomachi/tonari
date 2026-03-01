@@ -47,6 +47,8 @@ export class WorkloadConstruct extends Construct {
   public readonly tasksTable: dynamodb.Table
   public readonly taskCrudLambda: python.PythonFunction
   public readonly taskToolLambda: python.PythonFunction
+  public readonly calendarToolLambda: python.PythonFunction
+  public readonly dateToolLambda: lambda.Function
   public readonly newsNotificationTopic?: sns.Topic
   public readonly newsTable?: dynamodb.Table
   public readonly newsTriggerLambda?: python.PythonFunction
@@ -313,6 +315,39 @@ export class WorkloadConstruct extends Construct {
     )
 
     this.tasksTable.grantReadWriteData(this.taskToolLambda)
+
+    // ========== Calendar (Google Calendar Gateway Tool) ==========
+    this.calendarToolLambda = new python.PythonFunction(
+      stack,
+      'CalendarToolLambda',
+      {
+        functionName: 'tonari-calendar-tool',
+        entry: path.join(__dirname, '../lambda/calendar-tool'),
+        runtime: lambda.Runtime.PYTHON_3_12,
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 128,
+      }
+    )
+
+    this.calendarToolLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['ssm:GetParameter'],
+        resources: [
+          `arn:aws:ssm:${region}:${account}:parameter/tonari/google/*`,
+        ],
+      })
+    )
+
+    // ========== Date Utility (Gateway Tool) ==========
+    this.dateToolLambda = new lambda.Function(stack, 'DateToolLambda', {
+      functionName: 'tonari-date-tool',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/date-tool')),
+      runtime: lambda.Runtime.PYTHON_3_12,
+      handler: 'index.handler',
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+    })
 
     // ========== Twitter Gateway Tools ==========
     if (props.tweetScheduler) {

@@ -10,6 +10,7 @@ import { WebSocketManager } from '@/components/websocketManager'
 import ImageOverlay from '@/components/ImageOverlay'
 import { ResizableDivider } from '@/components/resizableDivider'
 import homeStore from '@/features/stores/home'
+import menuStore from '@/features/stores/menu'
 import settingsStore from '@/features/stores/settings'
 import '@/lib/i18n'
 import { buildUrl } from '@/utils/buildUrl'
@@ -21,6 +22,7 @@ import { usePomodoroMotion } from '@/hooks/usePomodoroMotion'
 import { MobileHeader } from '@/components/mobileHeader'
 import { GestureTestPanel } from '@/components/gestureTestPanel'
 import { PomodoroTimer } from '@/components/pomodoroTimer'
+import Settings from '@/components/settings'
 import { TaskListPanel } from '@/components/taskListPanel'
 
 const CHAT_WIDTH_KEY = 'tonari-chat-width'
@@ -85,6 +87,7 @@ const Home = () => {
         : `url(${buildUrl(backgroundImageUrl)})`
   const messageReceiverEnabled = settingsStore((s) => s.messageReceiverEnabled)
 
+  const showSettings = menuStore((s) => s.showSettings)
   const colorTheme = settingsStore((s) => s.colorTheme)
   const isDark = colorTheme === 'tonari-dark'
 
@@ -204,6 +207,11 @@ const Home = () => {
       {/* <GestureTestPanel /> */}
       <PomodoroTimer />
       <TaskListPanel />
+      {showSettings && (
+        <Settings
+          onClickClose={() => menuStore.setState({ showSettings: false })}
+        />
+      )}
       {messageReceiverEnabled && <MessageReceiver />}
       <Toasts />
       <WebSocketManager />
