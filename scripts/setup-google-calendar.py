@@ -1,7 +1,7 @@
 """
-Google Calendar OAuth2 Setup Script
+Google OAuth2 Setup Script
 
-Initial authorization flow for Google Calendar API.
+Authorization flow for Google Calendar and Gmail APIs.
 Obtains a refresh token and stores credentials in AWS SSM Parameter Store.
 
 Usage:
@@ -9,19 +9,22 @@ Usage:
     python scripts/setup-google-calendar.py
 """
 
-import json
 import sys
 
 import boto3
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-SCOPES = ["https://www.googleapis.com/auth/calendar"]
+SCOPES = [
+    "https://www.googleapis.com/auth/calendar",
+    "https://www.googleapis.com/auth/gmail.modify",
+    "https://www.googleapis.com/auth/gmail.compose",
+]
 SSM_PREFIX = "/tonari/google"
 AWS_REGION = "ap-northeast-1"
 
 
 def main():
-    print("=== Google Calendar OAuth2 Setup ===\n")
+    print("=== Google OAuth2 Setup (Calendar + Gmail) ===\n")
 
     # Collect credentials
     client_id = input("Client ID: ").strip()

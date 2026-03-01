@@ -226,8 +226,8 @@ export class Model {
   /**
    * 感情表現を再生する
    */
-  public async playEmotion(preset: VRMExpressionPresetName) {
-    this.emoteController?.playEmotion(preset)
+  public async playEmotion(preset: VRMExpressionPresetName, weight?: number) {
+    this.emoteController?.playEmotion(preset, weight)
   }
 
   /**
