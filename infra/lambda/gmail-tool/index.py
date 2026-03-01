@@ -39,7 +39,6 @@ INITIAL_BACKOFF = 1.0  # seconds
 
 def _call_with_retry(fn):
     """Execute a Gmail API call with exponential backoff on 429/5xx errors."""
-    last_error = None
     for attempt in range(MAX_RETRIES + 1):
         try:
             return fn()
@@ -52,10 +51,8 @@ def _call_with_retry(fn):
                     f"(attempt {attempt + 1}/{MAX_RETRIES})"
                 )
                 time.sleep(wait)
-                last_error = e
             else:
                 raise
-    raise last_error
 
 
 # ---------------------------------------------------------------------------
@@ -246,15 +243,7 @@ def handler(event, context):
         if action == "archive_email":
             return archive_email(event)
 
-        # Fallback: parameter-based routing (legacy / direct invocation)
-        if "query" in event:
-            return search_emails(event)
-        if "to" in event and "subject" in event and "body" in event:
-            return create_draft(event)
-        if "message_id" in event:
-            return get_email(event)
-
-        return {"success": False, "message": "不明なツール呼び出しです。"}
+        return {"success": False, "message": "不明なツール呼び出しです。action フィールドが必要です。"}
     except HttpError as e:
         return _handle_gmail_error(e)
     except Exception as e:

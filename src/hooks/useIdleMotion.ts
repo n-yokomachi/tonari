@@ -37,6 +37,7 @@ const getRandomMotion = () =>
 
 export const useIdleMotion = () => {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const emotionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // 待機モーションのスケジューリング
   useEffect(() => {
@@ -61,7 +62,7 @@ export const useIdleMotion = () => {
               const holdTime = motion.options?.holdDuration ?? def.holdDuration
               const returnTime = 0.8 / speed
               const totalMs = (tiltTime + holdTime + returnTime) * 1000 + 500
-              setTimeout(() => {
+              emotionTimerRef.current = setTimeout(() => {
                 viewer.model?.playEmotion('neutral')
               }, totalMs)
             }
@@ -76,6 +77,7 @@ export const useIdleMotion = () => {
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
+      if (emotionTimerRef.current) clearTimeout(emotionTimerRef.current)
     }
   }, [])
 
@@ -84,6 +86,10 @@ export const useIdleMotion = () => {
     let prev = homeStore.getState().chatProcessing
     const unsub = homeStore.subscribe((state) => {
       if (state.chatProcessing && !prev) {
+        if (emotionTimerRef.current) {
+          clearTimeout(emotionTimerRef.current)
+          emotionTimerRef.current = null
+        }
         state.viewer?.model?.cancelGesture()
         state.viewer?.model?.playEmotion('neutral')
       }
