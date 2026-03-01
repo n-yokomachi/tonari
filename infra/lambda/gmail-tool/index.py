@@ -319,33 +319,49 @@ def search_emails(event):
             "message": "該当するメールが見つかりませんでした。",
         }
 
-    # Step 2: Get metadata for each message
+    # Step 2: Get metadata for each message (batch API)
     emails = []
+    errors = []
+
+    def _make_callback(msg_id):
+        def _cb(_req_id, response, exception):
+            if exception is not None:
+                logger.warning(f"Batch get failed for {msg_id}: {exception}")
+                errors.append(msg_id)
+                return
+            headers = response.get("payload", {}).get("headers", [])
+            emails.append(
+                {
+                    "id": response["id"],
+                    "threadId": response.get("threadId", ""),
+                    "subject": _get_header(headers, "Subject"),
+                    "from": _get_header(headers, "From"),
+                    "date": _get_header(headers, "Date"),
+                    "snippet": response.get("snippet", ""),
+                    "labels": response.get("labelIds", []),
+                }
+            )
+
+        return _cb
+
+    batch = service.new_batch_http_request()
     for msg in messages:
-        detail = _call_with_retry(
-            lambda msg_id=msg["id"]: service.users()
+        batch.add(
+            service.users()
             .messages()
             .get(
                 userId="me",
-                id=msg_id,
+                id=msg["id"],
                 format="metadata",
                 metadataHeaders=["From", "Subject", "Date"],
-            )
-            .execute()
+            ),
+            request_id=msg["id"],
+            callback=_make_callback(msg["id"]),
         )
+    batch.execute()
 
-        headers = detail.get("payload", {}).get("headers", [])
-        emails.append(
-            {
-                "id": detail["id"],
-                "threadId": detail.get("threadId", ""),
-                "subject": _get_header(headers, "Subject"),
-                "from": _get_header(headers, "From"),
-                "date": _get_header(headers, "Date"),
-                "snippet": detail.get("snippet", ""),
-                "labels": detail.get("labelIds", []),
-            }
-        )
+    if errors:
+        logger.warning(f"Batch: {len(errors)} message(s) failed to fetch")
 
     return {
         "emails": emails,
@@ -409,6 +425,14 @@ def create_draft(event):
         return {"success": False, "message": "subject（件名）は必須です。"}
     if not body:
         return {"success": False, "message": "body（本文）は必須です。"}
+
+    # Header injection defense
+    for field_name, field_value in [("to", to), ("subject", subject)]:
+        if "\r" in field_value or "\n" in field_value:
+            return {
+                "success": False,
+                "message": f"{field_name} に改行文字を含めることはできません。",
+            }
 
     message = EmailMessage()
     message.set_content(body)
