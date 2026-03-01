@@ -1,11 +1,11 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { IconButton } from './iconButton'
 import { NewsNotification } from './newsNotification'
-import Settings from './settings'
 import homeStore from '@/features/stores/home'
+import menuStore from '@/features/stores/menu'
 import settingsStore from '@/features/stores/settings'
 import pomodoroStore from '@/features/stores/pomodoro'
 import taskStore from '@/features/stores/tasks'
@@ -36,7 +36,6 @@ const TaskIconButton = () => {
 }
 
 export const MobileHeader = ({ showLogo }: { showLogo?: boolean }) => {
-  const [showSettings, setShowSettings] = useState(false)
   const showControlPanel = settingsStore((s) => s.showControlPanel)
   const { t } = useTranslation()
 
@@ -88,7 +87,7 @@ export const MobileHeader = ({ showLogo }: { showLogo?: boolean }) => {
               <IconButton
                 iconName="24/Settings"
                 isProcessing={false}
-                onClick={() => setShowSettings(true)}
+                onClick={() => menuStore.setState({ showSettings: true })}
                 aria-label={t('BasedSettings')}
               />
               <Link
@@ -141,7 +140,6 @@ export const MobileHeader = ({ showLogo }: { showLogo?: boolean }) => {
           )}
         </nav>
       </header>
-      {showSettings && <Settings onClickClose={() => setShowSettings(false)} />}
     </>
   )
 }

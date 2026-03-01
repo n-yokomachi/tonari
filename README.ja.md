@@ -4,6 +4,8 @@ AWS Bedrock AgentCoreを活用した、3D VRMアバター付きパーソナルAI
 
 [AITuber-kit](https://github.com/tegnike/aituber-kit)をベースに、会話AIバックエンド、永続的メモリ、ドメイン固有の知識（香水の専門知識）を追加して構築しています。
 
+![Tonari](docs/images/screenshot.png)
+
 ## 機能
 
 - **3Dアバター** — ジェスチャー、感情表現、リップシンク、自動まばたき/視線追従を備えたVRMモデル
@@ -27,30 +29,10 @@ AWS Bedrock AgentCoreを活用した、3D VRMアバター付きパーソナルAI
 | インフラ | AWS Bedrock AgentCore, Lambda, DynamoDB |
 | デプロイ | Vercel (フロントエンド), AgentCore Runtime (バックエンド) |
 
-## セットアップ
+## ドキュメント
 
-### 前提条件
-
-- Node.js >= 20.0.0 ([Volta](https://volta.sh/)で管理)
-- Python 3.12
-- Bedrock AgentCoreアクセス権を持つAWSアカウント
-- [uv](https://docs.astral.sh/uv/) (Pythonパッケージマネージャー)
-
-### フロントエンド
-
-```bash
-npm install
-cp .env.example .env  # 環境変数を設定
-npm run dev
-```
-
-### バックエンド
-
-```bash
-cd agentcore
-uv sync
-uv run agentcore deploy
-```
+- [エージェントツール一覧](docs/tools.md) — Tonariエージェントが使用可能なMCPツールのリファレンス
+- [ツール設計](docs/tool-design/architecture.md) — 各ツールのアーキテクチャと設計ドキュメント
 
 ## ライセンス
 

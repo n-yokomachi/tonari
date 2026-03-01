@@ -58,6 +58,8 @@ export class TonariStack extends cdk.Stack {
       twitterWriteLambda: workload.twitterWriteLambda,
       diaryLambda: workload.diaryToolLambda,
       taskToolLambda: workload.taskToolLambda,
+      calendarToolLambda: workload.calendarToolLambda,
+      dateToolLambda: workload.dateToolLambda,
     })
 
     // ========== Cross-Construct Wiring ==========

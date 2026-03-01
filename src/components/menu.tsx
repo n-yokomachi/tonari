@@ -13,7 +13,6 @@ import { resetSessionId } from '@/features/chat/agentCoreChat'
 import { ChatLog } from './chatLog'
 import { IconButton } from './iconButton'
 import { NewsNotification } from './newsNotification'
-import Settings from './settings'
 import { VRM_MODELS } from '@/features/constants/settings'
 
 // モバイルデバイス検出用のカスタムフック
@@ -64,7 +63,11 @@ const TaskIconButton = () => {
 export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
   const showControlPanel = settingsStore((s) => s.showControlPanel)
 
-  const [showSettings, setShowSettings] = useState(false)
+  const showSettings = menuStore((s) => s.showSettings)
+  const setShowSettings = useCallback(
+    (v: boolean) => menuStore.setState({ showSettings: v }),
+    []
+  )
 
   // ロングタップ用のステート
   const [touchStartTime, setTouchStartTime] = useState<number | null>(null)
@@ -132,7 +135,7 @@ export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === '.') {
-        setShowSettings((prevState) => !prevState)
+        setShowSettings(!menuStore.getState().showSettings)
       }
     }
 
@@ -244,7 +247,6 @@ export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
           <ChatLog isPortrait={isPortrait} />
         </div>
       </div>
-      {showSettings && <Settings onClickClose={() => setShowSettings(false)} />}
       <input
         type="file"
         className="hidden"

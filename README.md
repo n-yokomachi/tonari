@@ -6,6 +6,8 @@ A personal AI assistant with a 3D VRM avatar, powered by AWS Bedrock AgentCore.
 
 Tonari is built on top of [AITuber-kit](https://github.com/tegnike/aituber-kit) and extends it with a conversational AI backend, persistent memory, and domain-specific knowledge (perfume expertise).
 
+![Tonari](docs/images/screenshot.png)
+
 ## Features
 
 - **3D Avatar** — Interactive VRM model with gestures, emotions, lip-sync, and auto-blink/look-at
@@ -29,30 +31,10 @@ Tonari is built on top of [AITuber-kit](https://github.com/tegnike/aituber-kit) 
 | Infrastructure | AWS Bedrock AgentCore, Lambda, DynamoDB |
 | Deployment | Vercel (frontend), AgentCore Runtime (backend) |
 
-## Getting Started
+## Documentation
 
-### Prerequisites
-
-- Node.js >= 20.0.0 (managed via [Volta](https://volta.sh/))
-- Python 3.12
-- AWS account with Bedrock AgentCore access
-- [uv](https://docs.astral.sh/uv/) (Python package manager)
-
-### Frontend Setup
-
-```bash
-npm install
-cp .env.example .env  # Configure environment variables
-npm run dev
-```
-
-### Backend Setup
-
-```bash
-cd agentcore
-uv sync
-uv run agentcore deploy
-```
+- [Agent Tools Reference](docs/tools.md) — List of all MCP tools available to the Tonari agent
+- [Tool Design](docs/tool-design/architecture.md) — Architecture and design docs for each tool
 
 ## License
 

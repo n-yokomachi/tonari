@@ -6,12 +6,14 @@ interface MenuState {
   fileInput: HTMLInputElement | null
   bgFileInput: HTMLInputElement | null
   activeSettingsTab: SettingsTabKey
+  showSettings: boolean
 }
 
 const menuStore = create<MenuState>(() => ({
   fileInput: null,
   bgFileInput: null,
   activeSettingsTab: 'based',
+  showSettings: false,
 }))
 
 export default menuStore
