@@ -1,12 +1,16 @@
 import { useEffect, useRef } from 'react'
+import { VRMExpressionPresetName } from '@pixiv/three-vrm'
 import homeStore from '@/features/stores/home'
 import pomodoroStore from '@/features/stores/pomodoro'
 import { GestureType } from '@/features/emoteController/gestures/types'
 import { GesturePlayOptions } from '@/features/emoteController/gestureController'
+import { gestureDefinitions } from '@/features/emoteController/gestures'
 
 interface IdleMotionConfig {
   gesture: GestureType
   options?: GesturePlayOptions
+  emotion?: VRMExpressionPresetName
+  emotionWeight?: number
 }
 
 const IDLE_MOTIONS: IdleMotionConfig[] = [
@@ -17,6 +21,8 @@ const IDLE_MOTIONS: IdleMotionConfig[] = [
   {
     gesture: 'head_tilt',
     options: { speed: 0.5 },
+    emotion: 'relaxed',
+    emotionWeight: 0.5,
   },
 ]
 
@@ -45,6 +51,21 @@ export const useIdleMotion = () => {
           viewer?.model
         ) {
           const motion = getRandomMotion()
+          if (motion.emotion) {
+            viewer.model.playEmotion(motion.emotion, motion.emotionWeight)
+            const def = gestureDefinitions.get(motion.gesture)
+            if (def) {
+              const speed = motion.options?.speed ?? 1
+              const tiltTime =
+                def.keyframes.reduce((s, kf) => s + kf.duration, 0) / speed
+              const holdTime = motion.options?.holdDuration ?? def.holdDuration
+              const returnTime = 0.8 / speed
+              const totalMs = (tiltTime + holdTime + returnTime) * 1000 + 500
+              setTimeout(() => {
+                viewer.model?.playEmotion('neutral')
+              }, totalMs)
+            }
+          }
           viewer.model.playGesture(motion.gesture, motion.options)
         }
         scheduleNext()
@@ -64,6 +85,7 @@ export const useIdleMotion = () => {
     const unsub = homeStore.subscribe((state) => {
       if (state.chatProcessing && !prev) {
         state.viewer?.model?.cancelGesture()
+        state.viewer?.model?.playEmotion('neutral')
       }
       prev = state.chatProcessing
     })

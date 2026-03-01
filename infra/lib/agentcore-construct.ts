@@ -27,6 +27,8 @@ export interface AgentCoreConstructProps {
   calendarToolLambda: lambda.IFunction
   /** date-tool Lambda function (Gateway target) */
   dateToolLambda: lambda.IFunction
+  /** gmail-tool Lambda function (Gateway target) */
+  gmailToolLambda: lambda.IFunction
 }
 
 export class AgentCoreConstruct extends Construct {
@@ -85,6 +87,7 @@ export class AgentCoreConstruct extends Construct {
       props.taskToolLambda,
       props.calendarToolLambda,
       props.dateToolLambda,
+      props.gmailToolLambda,
     ]
     if (props.twitterReadLambda) lambdaFunctions.push(props.twitterReadLambda)
     if (props.twitterWriteLambda) lambdaFunctions.push(props.twitterWriteLambda)
@@ -663,6 +666,110 @@ export class AgentCoreConstruct extends Construct {
               },
             },
             required: ['start_date', 'end_date', 'weekday'],
+          },
+        },
+      ]),
+    })
+
+    // Gateway Target: gmail-tool
+    gateway.addLambdaTarget('GmailTool', {
+      gatewayTargetName: 'gmail-tool',
+      lambdaFunction: props.gmailToolLambda,
+      credentialProviderConfigurations: iamCredential,
+      toolSchema: agentcore.ToolSchema.fromInline([
+        {
+          name: 'search_emails',
+          description:
+            'Search emails using Gmail query syntax (e.g. is:unread, newer_than:1d, from:xxx). Returns email metadata list with IDs, subjects, senders, dates, and snippets.',
+          inputSchema: {
+            type: agentcore.SchemaDefinitionType.OBJECT,
+            properties: {
+              action: {
+                type: agentcore.SchemaDefinitionType.STRING,
+                description: 'Must be "search_emails"',
+              },
+              query: {
+                type: agentcore.SchemaDefinitionType.STRING,
+                description:
+                  'Gmail search query (e.g. "is:unread newer_than:1d", "from:example@gmail.com", "subject:invoice")',
+              },
+              max_results: {
+                type: agentcore.SchemaDefinitionType.NUMBER,
+                description:
+                  'Maximum number of results to return (default: 20)',
+              },
+            },
+            required: ['action', 'query'],
+          },
+        },
+        {
+          name: 'get_email',
+          description:
+            'Get full email content by message ID. Returns subject, from, to, date, body text, and labels.',
+          inputSchema: {
+            type: agentcore.SchemaDefinitionType.OBJECT,
+            properties: {
+              action: {
+                type: agentcore.SchemaDefinitionType.STRING,
+                description: 'Must be "get_email"',
+              },
+              message_id: {
+                type: agentcore.SchemaDefinitionType.STRING,
+                description: 'Gmail message ID to retrieve',
+              },
+            },
+            required: ['action', 'message_id'],
+          },
+        },
+        {
+          name: 'create_draft',
+          description:
+            'Create a Gmail draft email. Does NOT send the email. Use thread_id for reply drafts.',
+          inputSchema: {
+            type: agentcore.SchemaDefinitionType.OBJECT,
+            properties: {
+              action: {
+                type: agentcore.SchemaDefinitionType.STRING,
+                description: 'Must be "create_draft"',
+              },
+              to: {
+                type: agentcore.SchemaDefinitionType.STRING,
+                description: 'Recipient email address',
+              },
+              subject: {
+                type: agentcore.SchemaDefinitionType.STRING,
+                description: 'Email subject line',
+              },
+              body: {
+                type: agentcore.SchemaDefinitionType.STRING,
+                description: 'Email body text',
+              },
+              thread_id: {
+                type: agentcore.SchemaDefinitionType.STRING,
+                description:
+                  'Thread ID for reply drafts (optional)',
+              },
+            },
+            required: ['action', 'to', 'subject', 'body'],
+          },
+        },
+        {
+          name: 'archive_email',
+          description:
+            'Mark an email as read and archive it (removes UNREAD and INBOX labels).',
+          inputSchema: {
+            type: agentcore.SchemaDefinitionType.OBJECT,
+            properties: {
+              action: {
+                type: agentcore.SchemaDefinitionType.STRING,
+                description: 'Must be "archive_email"',
+              },
+              message_id: {
+                type: agentcore.SchemaDefinitionType.STRING,
+                description: 'Gmail message ID to archive',
+              },
+            },
+            required: ['action', 'message_id'],
           },
         },
       ]),

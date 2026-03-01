@@ -58,8 +58,8 @@ export class EmoteController {
     }
   }
 
-  public playEmotion(preset: VRMExpressionPresetName) {
-    this._expressionController.playEmotion(preset)
+  public playEmotion(preset: VRMExpressionPresetName, weight?: number) {
+    this._expressionController.playEmotion(preset, weight)
   }
 
   public playGesture(gesture: GestureType, options?: GesturePlayOptions) {

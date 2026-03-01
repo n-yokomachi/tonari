@@ -10,6 +10,7 @@ import settingsStore from '@/features/stores/settings'
 import pomodoroStore from '@/features/stores/pomodoro'
 import taskStore from '@/features/stores/tasks'
 import { resetSessionId } from '@/features/chat/agentCoreChat'
+import { processAIResponse } from '@/features/chat/handlers'
 import { VRM_MODELS } from '@/features/constants/settings'
 
 const TaskIconButton = () => {
@@ -31,6 +32,40 @@ const TaskIconButton = () => {
           {urgentTaskCount > 9 ? '9+' : urgentTaskCount}
         </span>
       )}
+    </button>
+  )
+}
+
+const BriefingButton = () => {
+  const chatProcessing = homeStore((s) => s.chatProcessing)
+  return (
+    <button
+      onClick={async () => {
+        if (homeStore.getState().chatProcessing) return
+        const message = 'ブリーフィングお願い'
+        homeStore.setState({ chatProcessing: true })
+        homeStore.getState().upsertMessage({
+          role: 'user',
+          content: message,
+          timestamp: new Date().toISOString(),
+        })
+        try {
+          await processAIResponse(message)
+        } catch (e) {
+          console.error(e)
+          homeStore.setState({ chatProcessing: false })
+        }
+      }}
+      disabled={chatProcessing}
+      className="bg-primary hover:bg-primary-hover active:bg-primary-press disabled:bg-primary-disabled disabled:opacity-50 rounded-2xl text-sm p-2 text-center inline-flex items-center transition-all duration-200 text-theme"
+      aria-label="ブリーフィング"
+    >
+      <Image
+        src="/images/icons/briefing.svg"
+        alt="ブリーフィング"
+        width={24}
+        height={24}
+      />
     </button>
   )
 }
@@ -109,6 +144,7 @@ export const MobileHeader = ({ showLogo }: { showLogo?: boolean }) => {
                 aria-label="ポモドーロタイマー"
               />
               <TaskIconButton />
+              <BriefingButton />
               <button
                 onClick={async () => {
                   await fetch('/api/admin/auth', { method: 'DELETE' })

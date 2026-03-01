@@ -48,6 +48,7 @@ export class WorkloadConstruct extends Construct {
   public readonly taskCrudLambda: python.PythonFunction
   public readonly taskToolLambda: python.PythonFunction
   public readonly calendarToolLambda: python.PythonFunction
+  public readonly gmailToolLambda: python.PythonFunction
   public readonly dateToolLambda: lambda.Function
   public readonly newsNotificationTopic?: sns.Topic
   public readonly newsTable?: dynamodb.Table
@@ -331,6 +332,29 @@ export class WorkloadConstruct extends Construct {
     )
 
     this.calendarToolLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['ssm:GetParameter'],
+        resources: [
+          `arn:aws:ssm:${region}:${account}:parameter/tonari/google/*`,
+        ],
+      })
+    )
+
+    // ========== Gmail (Gateway Tool) ==========
+    this.gmailToolLambda = new python.PythonFunction(
+      stack,
+      'GmailToolLambda',
+      {
+        functionName: 'tonari-gmail-tool',
+        entry: path.join(__dirname, '../lambda/gmail-tool'),
+        runtime: lambda.Runtime.PYTHON_3_12,
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 128,
+      }
+    )
+
+    this.gmailToolLambda.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['ssm:GetParameter'],
         resources: [

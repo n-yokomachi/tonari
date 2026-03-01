@@ -68,6 +68,23 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
   'diary-tool___save_diary': '日記を保存中',
   'diary-tool___get_diaries': '日記を取得中',
   TavilySearch___TavilySearchPost: 'Webを検索中',
+  'task-tool___list_tasks': 'タスクを確認中',
+  'task-tool___add_task': 'タスクを追加中',
+  'task-tool___complete_task': 'タスクを完了中',
+  'task-tool___update_task': 'タスクを更新中',
+  'calendar-tool___list_events': '予定を確認中',
+  'calendar-tool___check_availability': '空き状況を確認中',
+  'calendar-tool___create_event': '予定を作成中',
+  'calendar-tool___update_event': '予定を更新中',
+  'calendar-tool___delete_event': '予定を削除中',
+  'calendar-tool___suggest_schedule': '候補日を検索中',
+  'date-tool___get_current_datetime': '日時を確認中',
+  'date-tool___calculate_date': '日付を計算中',
+  'date-tool___list_dates_in_range': '日付を検索中',
+  'gmail-tool___search_emails': 'メールを検索中',
+  'gmail-tool___get_email': 'メールを取得中',
+  'gmail-tool___create_draft': '下書きを作成中',
+  'gmail-tool___archive_email': 'メールをアーカイブ中',
 }
 
 const TOOL_STATUS_ID = 'tool-status'
@@ -485,6 +502,17 @@ export const processAIResponse = async (
         if (typeof value === 'object' && 'type' in value) {
           const toolEvent = value as ToolEvent
           if (toolEvent.type === 'tool_start') {
+            // Finalize current message before tool execution (split bubble)
+            if (currentMessageId !== null && currentMessageContent.trim()) {
+              homeStore.getState().upsertMessage({
+                id: currentMessageId,
+                role: 'assistant',
+                content: removeGestureTags(currentMessageContent.trim()),
+              })
+              currentMessageId = null
+              currentMessageContent = ''
+            }
+
             const toolName = toolEvent.tool || 'unknown'
             const displayName = TOOL_DISPLAY_NAMES[toolName] || toolName
             homeStore.getState().upsertMessage({
@@ -507,26 +535,42 @@ export const processAIResponse = async (
             }
           }
 
+          // Accumulate text into current message
           if (currentMessageId === null) {
             currentMessageId = generateMessageId()
             currentMessageContent = textToAdd
-            if (currentMessageContent) {
-              homeStore.getState().upsertMessage({
-                id: currentMessageId,
-                role: 'assistant',
-                content: removeGestureTags(currentMessageContent),
-              })
-            }
           } else if (!isCodeBlock) {
             currentMessageContent += textToAdd
+          }
 
-            if (textToAdd) {
+          // Split chat bubbles at \n\n boundaries (blank line)
+          if (!isCodeBlock && currentMessageContent.includes('\n\n')) {
+            const segments = currentMessageContent.split('\n\n')
+            for (let i = 0; i < segments.length - 1; i++) {
+              const segment = segments[i].trimEnd()
+              if (segment) {
+                homeStore.getState().upsertMessage({
+                  id: currentMessageId!,
+                  role: 'assistant',
+                  content: removeGestureTags(segment),
+                })
+              }
+              currentMessageId = generateMessageId()
+            }
+            currentMessageContent = segments[segments.length - 1].trimStart()
+            if (currentMessageContent) {
               homeStore.getState().upsertMessage({
-                id: currentMessageId,
+                id: currentMessageId!,
                 role: 'assistant',
                 content: removeGestureTags(currentMessageContent),
               })
             }
+          } else if (!isCodeBlock && currentMessageContent && textToAdd) {
+            homeStore.getState().upsertMessage({
+              id: currentMessageId!,
+              role: 'assistant',
+              content: removeGestureTags(currentMessageContent),
+            })
           }
 
           receivedChunksForSpeech += textValue

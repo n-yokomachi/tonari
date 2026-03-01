@@ -1,9 +1,9 @@
 {
   "feature_name": "briefing-mode",
   "created_at": "2026-03-01T17:30:00+09:00",
-  "updated_at": "2026-03-01T20:00:00+09:00",
+  "updated_at": "2026-03-01T20:15:00+09:00",
   "language": "ja",
-  "phase": "tasks-generated",
+  "phase": "implementation",
   "approvals": {
     "requirements": {
       "generated": true,
@@ -15,8 +15,8 @@
     },
     "tasks": {
       "generated": true,
-      "approved": false
+      "approved": true
     }
   },
-  "ready_for_implementation": false
+  "ready_for_implementation": true
 }
