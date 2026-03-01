@@ -71,6 +71,7 @@ export class EmoteController {
   }
 
   public enterDrowsy(): void {
+    this._expressionController.playEmotion('neutral')
     this._expressionController.setAutoBlinkEnable(false)
     this._sleepController?.enterDrowsy()
   }
@@ -102,8 +103,9 @@ export class EmoteController {
     const sleeping = this._sleepController?.phase !== 'awake'
 
     if (sleeping) {
-      // 睡眠中はautoBlink・感情表現をスキップし、sleepControllerが目を制御
       this._sleepController!.update(delta)
+      // 睡眠中も感情のフェードアウトを処理（autoBlinkはスキップ）
+      this._expressionController.update(delta, true)
       // waking完了後にautoBlink復帰
       if (this._sleepController!.phase === 'awake') {
         this._expressionController.setAutoBlinkEnable(true)
