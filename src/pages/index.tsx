@@ -49,7 +49,7 @@ const Home = () => {
     hideTimerRef.current = setTimeout(() => {
       if (formFocusedRef.current) return
       setChatVisible(false)
-    }, 10000)
+    }, 60000)
   }, [])
 
   // 新しいメッセージが来たら表示してタイマーリセット（モバイル・縦モニター共通）

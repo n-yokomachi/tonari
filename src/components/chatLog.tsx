@@ -7,8 +7,7 @@ import { messageSelectors } from '@/features/messages/messageSelectors'
 
 export const ChatLog = ({ isPortrait }: { isPortrait?: boolean }) => {
   const chatScrollRef = useRef<HTMLDivElement>(null)
-  const leftScrollRef = useRef<HTMLDivElement>(null)
-  const rightScrollRef = useRef<HTMLDivElement>(null)
+  const portraitScrollRef = useRef<HTMLDivElement>(null)
 
   const characterName = settingsStore((s) => s.characterName)
   const chatProcessing = homeStore((s) => s.chatProcessing)
@@ -21,11 +20,8 @@ export const ChatLog = ({ isPortrait }: { isPortrait?: boolean }) => {
 
   useEffect(() => {
     if (isPortrait) {
-      leftScrollRef.current?.scrollTo({
-        top: leftScrollRef.current.scrollHeight,
-      })
-      rightScrollRef.current?.scrollTo({
-        top: rightScrollRef.current.scrollHeight,
+      portraitScrollRef.current?.scrollTo({
+        top: portraitScrollRef.current.scrollHeight,
       })
     } else {
       chatScrollRef.current?.scrollIntoView({
@@ -37,12 +33,8 @@ export const ChatLog = ({ isPortrait }: { isPortrait?: boolean }) => {
 
   useEffect(() => {
     if (isPortrait) {
-      leftScrollRef.current?.scrollTo({
-        top: leftScrollRef.current.scrollHeight,
-        behavior: 'smooth',
-      })
-      rightScrollRef.current?.scrollTo({
-        top: rightScrollRef.current.scrollHeight,
+      portraitScrollRef.current?.scrollTo({
+        top: portraitScrollRef.current.scrollHeight,
         behavior: 'smooth',
       })
     } else {
@@ -54,43 +46,42 @@ export const ChatLog = ({ isPortrait }: { isPortrait?: boolean }) => {
   }, [messages, chatProcessing, toolStatusMessage, isPortrait])
 
   if (isPortrait) {
-    const assistantMessages = messages.filter((msg) => msg.role !== 'user')
-    const userMessages = messages.filter((msg) => msg.role === 'user')
-
     return (
-      <div className="h-full w-full grid grid-cols-2 gap-2 px-4 py-2">
-        {/* 左列: Tonariのチャット */}
-        <div ref={leftScrollRef} className="overflow-y-auto">
-          {assistantMessages.map((msg, i) => (
-            <div key={i}>
-              {typeof msg.content === 'string' ? (
-                <Chat
-                  role={msg.role}
-                  message={msg.content}
-                  characterName={characterName}
-                  isPortrait
-                />
-              ) : (
-                <>
-                  {msg.content?.[0]?.text ? (
-                    <Chat
-                      role={msg.role}
-                      message={msg.content[0].text}
-                      characterName={characterName}
-                      isPortrait
-                    />
-                  ) : null}
-                  <ChatImage
+      <div
+        ref={portraitScrollRef}
+        className="h-full w-full overflow-y-auto px-4 py-2"
+      >
+        {messages.map((msg, i) => (
+          <div key={i} className={msg.role === 'user' ? 'ml-8' : 'mr-8'}>
+            {typeof msg.content === 'string' ? (
+              <Chat
+                role={msg.role}
+                message={msg.content}
+                characterName={characterName}
+                isPortrait
+              />
+            ) : (
+              <>
+                {msg.content?.[0]?.text ? (
+                  <Chat
                     role={msg.role}
-                    imageUrl={msg.content ? msg.content[1].image : ''}
+                    message={msg.content[0].text}
                     characterName={characterName}
                     isPortrait
                   />
-                </>
-              )}
-            </div>
-          ))}
-          {chatProcessing && toolStatusMessage ? (
+                ) : null}
+                <ChatImage
+                  role={msg.role}
+                  imageUrl={msg.content ? msg.content[1].image : ''}
+                  characterName={characterName}
+                  isPortrait
+                />
+              </>
+            )}
+          </div>
+        ))}
+        {chatProcessing && toolStatusMessage ? (
+          <div className="mr-8">
             <ToolStatusIndicator
               characterName={characterName}
               toolName={
@@ -100,46 +91,16 @@ export const ChatLog = ({ isPortrait }: { isPortrait?: boolean }) => {
               }
               isPortrait
             />
-          ) : (
-            chatProcessing &&
-            (messages.length === 0 ||
-              messages[messages.length - 1].role === 'user') && (
+          </div>
+        ) : (
+          chatProcessing &&
+          (messages.length === 0 ||
+            messages[messages.length - 1].role === 'user') && (
+            <div className="mr-8">
               <LoadingIndicator characterName={characterName} isPortrait />
-            )
-          )}
-        </div>
-        {/* 右列: オーナーのチャット */}
-        <div ref={rightScrollRef} className="overflow-y-auto">
-          {userMessages.map((msg, i) => (
-            <div key={i}>
-              {typeof msg.content === 'string' ? (
-                <Chat
-                  role={msg.role}
-                  message={msg.content}
-                  characterName={characterName}
-                  isPortrait
-                />
-              ) : (
-                <>
-                  {msg.content?.[0]?.text ? (
-                    <Chat
-                      role={msg.role}
-                      message={msg.content[0].text}
-                      characterName={characterName}
-                      isPortrait
-                    />
-                  ) : null}
-                  <ChatImage
-                    role={msg.role}
-                    imageUrl={msg.content ? msg.content[1].image : ''}
-                    characterName={characterName}
-                    isPortrait
-                  />
-                </>
-              )}
             </div>
-          ))}
-        </div>
+          )
+        )}
       </div>
     )
   }
