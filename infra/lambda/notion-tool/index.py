@@ -279,7 +279,7 @@ def _create_page(client: Client, event: dict) -> dict:
         }
 
     if database_id:
-        parent = {"database_id": database_id}
+        parent = {"data_source_id": database_id}
     else:
         parent = {"page_id": parent_page_id}
 
