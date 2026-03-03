@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { Cormorant_Garamond } from 'next/font/google'
 import homeStore from '@/features/stores/home'
@@ -61,6 +62,19 @@ function linkifyText(text: string): ReactNode[] {
   )
 }
 
+// TODO: テスト用フラグ - 確認後に false に戻すこと
+const TEST_MODE = true
+const TEST_NEWS: NewsData = {
+  summary: `【テストニュース】本日のトピックをお届けします。
+
+🌸 春の新作フレグランスが入荷しました！ローズとジャスミンの華やかなブレンドが特徴の「Spring Blossom」は、軽やかなトップノートから始まり、温かみのあるウッディなベースへと変化します。
+
+📰 AIアシスタント機能がアップデートされました。より自然な会話体験をお楽しみいただけます。
+
+🔗 詳しくはこちら: https://example.com/news/spring-2026`,
+  updatedAt: new Date().toISOString(),
+}
+
 export const NewsNotification = () => {
   const [news, setNews] = useState<NewsData | null>(null)
   const [showIcon, setShowIcon] = useState(false)
@@ -71,6 +85,16 @@ export const NewsNotification = () => {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const fetchNews = useCallback(async (): Promise<boolean> => {
+    // TODO: テスト用 - テストデータを使用
+    if (TEST_MODE) {
+      setNews(TEST_NEWS)
+      setShowIcon(true)
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setIconVisible(true))
+      })
+      return true
+    }
+
     try {
       const res = await fetch('/api/admin/news')
       if (!res.ok) return false
@@ -131,21 +155,34 @@ export const NewsNotification = () => {
   }, [fetchNews, scheduleNextCheck])
 
   const handleOpenDialog = useCallback(() => {
+    // TODO: テスト用 - テストデータをセット
+    if (TEST_MODE && !news) {
+      setNews(TEST_NEWS)
+    }
     setShowDialog(true)
     setIconVisible(false)
-    setTimeout(() => setShowIcon(false), 300)
-    fetch('/api/admin/news', { method: 'DELETE' }).catch(() => {})
+    if (!TEST_MODE) {
+      fetch('/api/admin/news', { method: 'DELETE' }).catch(() => {})
+    }
 
     const { viewer } = homeStore.getState()
     viewer?.model?.playGesture('present', { holdDuration: 5.0 })
-  }, [])
+  }, [news])
 
   const handleClose = useCallback(() => {
     setDialogClosing(true)
     setTimeout(() => {
       setShowDialog(false)
       setDialogClosing(false)
-      setNews(null)
+      // TODO: テスト用 - 閉じた後にアイコンを再表示（繰り返しテスト可能）
+      if (TEST_MODE) {
+        setNews(TEST_NEWS)
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => setIconVisible(true))
+        })
+      } else {
+        setNews(null)
+      }
     }, 250)
   }, [])
 
@@ -153,11 +190,22 @@ export const NewsNotification = () => {
 
   return (
     <>
-      {showIcon && (
+      <div
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+          iconVisible ? 'max-w-[40px] opacity-100' : 'max-w-0 opacity-0'
+        }`}
+      >
         <button
           onClick={handleOpenDialog}
-          className={`rounded-2xl text-sm p-2 text-center inline-flex items-center transition-opacity duration-300 ${iconVisible ? 'opacity-100 animate-notification-bell' : 'opacity-0'}`}
-          style={{ backgroundColor: '#cc3355' }}
+          className="rounded-2xl text-sm p-2 text-center inline-flex items-center border border-red-300/50 dark:border-red-400/20"
+          style={{
+            minWidth: '40px',
+            backgroundColor: 'rgba(200, 50, 80, 0.55)',
+            backdropFilter: 'blur(20px) saturate(1.4)',
+            WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
+            boxShadow:
+              '0 8px 32px rgba(200, 50, 80, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
+          }}
           aria-label="ニュース"
         >
           <Image
@@ -168,91 +216,94 @@ export const NewsNotification = () => {
             className="invert"
           />
         </button>
-      )}
+      </div>
 
-      {showDialog && news && (
-        <div
-          className="fixed inset-0 z-40 flex items-center justify-center"
-          style={{
-            backgroundColor: dialogClosing
-              ? 'transparent'
-              : 'rgba(0, 0, 0, 0.1)',
-            transition: 'background-color 0.3s ease',
-          }}
-          onClick={handleClose}
-        >
+      {showDialog &&
+        news &&
+        createPortal(
           <div
-            className="rounded-2xl max-w-2xl w-[90%] max-h-[80vh] flex flex-col mx-4"
+            className="fixed inset-0 z-40 flex items-center justify-center"
             style={{
-              animation: `${dialogClosing ? 'dialog-slide-down 0.25s ease-in both' : 'dialog-slide-up 0.4s ease-out both'}`,
-              fontFamily: '"Noto Serif JP", "Georgia", serif',
-              backgroundColor: 'rgba(255, 255, 255, 0.55)',
-              backdropFilter: 'blur(20px) saturate(1.4)',
-              WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
-              border: '1px solid rgba(255, 255, 255, 0.5)',
-              boxShadow:
-                '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.4)',
+              backgroundColor: dialogClosing
+                ? 'transparent'
+                : 'rgba(0, 0, 0, 0.1)',
+              transition: 'background-color 0.3s ease',
             }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={handleClose}
           >
-            {/* ヘッダー: 新聞マストヘッド */}
-            <div className="flex-shrink-0 px-8 pt-5 pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4">
-                  <h2
-                    className={`text-2xl font-bold text-[#5c4b7d] italic whitespace-nowrap ${cormorant.className}`}
+            <div
+              className="rounded-2xl max-w-2xl w-[90%] max-h-[80vh] flex flex-col mx-4"
+              style={{
+                animation: `${dialogClosing ? 'dialog-slide-down 0.25s ease-in both' : 'dialog-slide-up 0.4s ease-out both'}`,
+                fontFamily: '"Noto Serif JP", "Georgia", serif',
+                backgroundColor: 'rgba(255, 255, 255, 0.55)',
+                backdropFilter: 'blur(20px) saturate(1.4)',
+                WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
+                border: '1px solid rgba(255, 255, 255, 0.5)',
+                boxShadow:
+                  '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.4)',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* ヘッダー: 新聞マストヘッド */}
+              <div className="flex-shrink-0 px-8 pt-5 pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4">
+                    <h2
+                      className={`text-2xl font-bold text-[#5c4b7d] italic whitespace-nowrap ${cormorant.className}`}
+                    >
+                      TONaRi Times
+                    </h2>
+                    <p
+                      className="text-xs text-[#5c4b7d]/60 tracking-wider"
+                      style={{ fontFamily: 'sans-serif' }}
+                    >
+                      {new Date(news.updatedAt).toLocaleDateString('ja-JP', {
+                        timeZone: 'Asia/Tokyo',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        weekday: 'short',
+                      })}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleClose}
+                    className="text-[#5c4b7d]/40 hover:text-[#5c4b7d] hover:bg-[#5c4b7d]/10 w-8 h-8 flex items-center justify-center rounded-full transition-colors"
+                    aria-label="閉じる"
                   >
-                    TONaRi Times
-                  </h2>
-                  <p
-                    className="text-xs text-[#5c4b7d]/60 tracking-wider"
-                    style={{ fontFamily: 'sans-serif' }}
-                  >
-                    {new Date(news.updatedAt).toLocaleDateString('ja-JP', {
-                      timeZone: 'Asia/Tokyo',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      weekday: 'short',
-                    })}
-                  </p>
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    >
+                      <line x1="4" y1="4" x2="16" y2="16" />
+                      <line x1="16" y1="4" x2="4" y2="16" />
+                    </svg>
+                  </button>
                 </div>
-                <button
-                  onClick={handleClose}
-                  className="text-[#5c4b7d]/40 hover:text-[#5c4b7d] hover:bg-[#5c4b7d]/10 w-8 h-8 flex items-center justify-center rounded-full transition-colors"
-                  aria-label="閉じる"
-                >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  >
-                    <line x1="4" y1="4" x2="16" y2="16" />
-                    <line x1="16" y1="4" x2="4" y2="16" />
-                  </svg>
-                </button>
+                <hr
+                  className="mt-3"
+                  style={{
+                    borderTopWidth: '1px',
+                    borderColor: 'rgba(92, 75, 125, 0.2)',
+                  }}
+                />
               </div>
-              <hr
-                className="mt-3"
-                style={{
-                  borderTopWidth: '1px',
-                  borderColor: 'rgba(92, 75, 125, 0.2)',
-                }}
-              />
-            </div>
-            {/* 本文 */}
-            <div className="overflow-auto px-8 py-4 pb-8">
-              <div className="whitespace-pre-wrap leading-[1.9] text-sm text-[#3a3050]">
-                {linkifyText(news.summary)}
+              {/* 本文 */}
+              <div className="overflow-auto px-8 py-4 pb-8">
+                <div className="whitespace-pre-wrap leading-[1.9] text-sm text-[#3a3050]">
+                  {linkifyText(news.summary)}
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </>
   )
 }
