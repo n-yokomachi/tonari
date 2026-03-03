@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next build && next start",
     "export": "next export",
+    "typecheck": "tsc --noEmit && next lint",
     "lint": "next lint",
     "lint:fix": "eslint --fix .",
     "format": "prettier --write .",
