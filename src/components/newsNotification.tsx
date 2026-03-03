@@ -62,19 +62,6 @@ function linkifyText(text: string): ReactNode[] {
   )
 }
 
-// TODO: テスト用フラグ - 確認後に false に戻すこと
-const TEST_MODE = true
-const TEST_NEWS: NewsData = {
-  summary: `【テストニュース】本日のトピックをお届けします。
-
-🌸 春の新作フレグランスが入荷しました！ローズとジャスミンの華やかなブレンドが特徴の「Spring Blossom」は、軽やかなトップノートから始まり、温かみのあるウッディなベースへと変化します。
-
-📰 AIアシスタント機能がアップデートされました。より自然な会話体験をお楽しみいただけます。
-
-🔗 詳しくはこちら: https://example.com/news/spring-2026`,
-  updatedAt: new Date().toISOString(),
-}
-
 export const NewsNotification = () => {
   const [news, setNews] = useState<NewsData | null>(null)
   const [showIcon, setShowIcon] = useState(false)
@@ -85,16 +72,6 @@ export const NewsNotification = () => {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const fetchNews = useCallback(async (): Promise<boolean> => {
-    // TODO: テスト用 - テストデータを使用
-    if (TEST_MODE) {
-      setNews(TEST_NEWS)
-      setShowIcon(true)
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => setIconVisible(true))
-      })
-      return true
-    }
-
     try {
       const res = await fetch('/api/admin/news')
       if (!res.ok) return false
@@ -155,34 +132,20 @@ export const NewsNotification = () => {
   }, [fetchNews, scheduleNextCheck])
 
   const handleOpenDialog = useCallback(() => {
-    // TODO: テスト用 - テストデータをセット
-    if (TEST_MODE && !news) {
-      setNews(TEST_NEWS)
-    }
     setShowDialog(true)
     setIconVisible(false)
-    if (!TEST_MODE) {
-      fetch('/api/admin/news', { method: 'DELETE' }).catch(() => {})
-    }
+    fetch('/api/admin/news', { method: 'DELETE' }).catch(() => {})
 
     const { viewer } = homeStore.getState()
     viewer?.model?.playGesture('present', { holdDuration: 5.0 })
-  }, [news])
+  }, [])
 
   const handleClose = useCallback(() => {
     setDialogClosing(true)
     setTimeout(() => {
       setShowDialog(false)
       setDialogClosing(false)
-      // TODO: テスト用 - 閉じた後にアイコンを再表示（繰り返しテスト可能）
-      if (TEST_MODE) {
-        setNews(TEST_NEWS)
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => setIconVisible(true))
-        })
-      } else {
-        setNews(null)
-      }
+      setNews(null)
     }, 250)
   }, [])
 
