@@ -65,7 +65,11 @@ export const PresetQuestionButtons = ({ onSelectQuestion }: Props) => {
               key={question.id}
               onClick={() => handleQuestionClick(question.text)}
               disabled={isProcessing}
-              className="rounded-2xl px-4 py-2.5 whitespace-nowrap transition-all duration-200 border border-gray-400/60 text-gray-700 bg-white/70 backdrop-blur-sm hover:bg-white hover:border-gray-500 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              className="rounded-2xl px-4 py-2.5 whitespace-nowrap transition-all duration-200 border border-white/40 dark:border-white/10 text-gray-700 dark:text-gray-300 bg-white/25 dark:bg-[rgba(20,20,35,0.45)] hover:bg-white/40 dark:hover:bg-white/15 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              style={{
+                backdropFilter: 'blur(16px) saturate(1.6)',
+                WebkitBackdropFilter: 'blur(16px) saturate(1.6)',
+              }}
             >
               {question.text}
             </button>

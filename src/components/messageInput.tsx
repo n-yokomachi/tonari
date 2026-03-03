@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import Image from 'next/image'
 
 import homeStore from '@/features/stores/home'
+import settingsStore from '@/features/stores/settings'
 import { IconButton } from './iconButton'
 import { CameraPreview, CameraButton } from './cameraPreview'
 
@@ -34,6 +35,7 @@ export const MessageInput = ({
 }: Props) => {
   const chatProcessing = homeStore((s) => s.chatProcessing)
   const modalImage = homeStore((s) => s.modalImage)
+  const isDark = settingsStore((s) => s.colorTheme === 'tonari-dark')
   const [rows, setRows] = useState(1)
   const [fileError, setFileError] = useState<string>('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -262,7 +264,16 @@ export const MessageInput = ({
 
   return (
     <div className="w-full flex-shrink-0">
-      <div className="bg-base-light text-black dark:text-gray-200">
+      <div
+        className="text-black dark:text-gray-200 bg-white/25 dark:bg-[rgba(20,20,35,0.45)] border-t border-white/40 dark:border-white/10"
+        style={{
+          backdropFilter: 'blur(16px) saturate(1.6)',
+          WebkitBackdropFilter: 'blur(16px) saturate(1.6)',
+          boxShadow: isDark
+            ? '0 -4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)'
+            : '0 -4px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5)',
+        }}
+      >
         <div className="mx-auto max-w-4xl p-4 pb-3">
           {/* エラーメッセージ表示 */}
           {fileError && (
@@ -307,7 +318,7 @@ export const MessageInput = ({
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 disabled={chatProcessing}
-                className="bg-white dark:bg-white/10 hover:bg-white-hover focus:bg-white dark:focus:bg-white/15 focus:ring-2 focus:ring-secondary focus:outline-none disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-primary-disabled disabled:cursor-not-allowed rounded-2xl w-full px-4 text-theme-default font-bold transition-all duration-200"
+                className="bg-white/50 dark:bg-white/10 hover:bg-white/70 dark:hover:bg-white/15 focus:bg-white/70 dark:focus:bg-white/20 focus:ring-2 focus:ring-secondary focus:outline-none disabled:bg-gray-100/50 dark:disabled:bg-gray-800/50 disabled:text-primary-disabled disabled:cursor-not-allowed rounded-2xl w-full px-4 text-theme-default font-bold transition-all duration-200"
                 value={userMessage}
                 rows={rows}
                 aria-label={t('EnterYourQuestion')}

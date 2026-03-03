@@ -16,7 +16,7 @@ main ──→ feature/xxx ──→ PR ──→ main
 **開発フロー:**
 
 1. `main`から`feature/xxx`ブランチを切って実装
-2. コミット前に `npm run build` でビルドチェック（Prettier/ESLintエラー確認）
+2. コミット前に `npm run typecheck` で型チェック＋Lint（Prettier/ESLintエラー確認）
 3. コミット・プッシュ
 4. `main`ブランチあてにPRを作成
 5. PRを客観的にセルフレビュー
@@ -26,16 +26,17 @@ main ──→ feature/xxx ──→ PR ──→ main
 **コミット前チェック（必須）:**
 
 ```bash
-npm run build
+npm run typecheck
 ```
 
-ビルドが失敗した場合は `npx prettier --write <ファイルパス>` で修正してからコミットすること。
+Prettierエラーが出た場合は `npx prettier --write <ファイルパス>` で修正してからコミットすること。
+フルビルド（`npm run build`）はVercel CI/CDで実行されるため、ローカルでは不要。
 
-**ビルド実行タイミング（厳守）:**
+**typecheckの実行タイミング（厳守）:**
 
 - コミット直前（必須）
 - ユーザーから明示的に指示された時
-- **上記以外でビルドを実行してはならない**（編集のたびにビルドを回さないこと）
+- **上記以外で実行してはならない**（編集のたびに回さないこと）
 
 **本番デプロイ:**
 
