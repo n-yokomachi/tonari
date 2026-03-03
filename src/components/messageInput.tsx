@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import Image from 'next/image'
 
 import homeStore from '@/features/stores/home'
+import settingsStore from '@/features/stores/settings'
 import { IconButton } from './iconButton'
 import { CameraPreview, CameraButton } from './cameraPreview'
 
@@ -34,6 +35,7 @@ export const MessageInput = ({
 }: Props) => {
   const chatProcessing = homeStore((s) => s.chatProcessing)
   const modalImage = homeStore((s) => s.modalImage)
+  const isDark = settingsStore((s) => s.colorTheme === 'tonari-dark')
   const [rows, setRows] = useState(1)
   const [fileError, setFileError] = useState<string>('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -267,8 +269,9 @@ export const MessageInput = ({
         style={{
           backdropFilter: 'blur(16px) saturate(1.6)',
           WebkitBackdropFilter: 'blur(16px) saturate(1.6)',
-          boxShadow:
-            '0 -4px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5)',
+          boxShadow: isDark
+            ? '0 -4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)'
+            : '0 -4px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5)',
         }}
       >
         <div className="mx-auto max-w-4xl p-4 pb-3">

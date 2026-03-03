@@ -62,6 +62,7 @@ const TaskIconButton = () => {
 
 export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
   const showControlPanel = settingsStore((s) => s.showControlPanel)
+  const isDark = settingsStore((s) => s.colorTheme === 'tonari-dark')
 
   const showSettings = menuStore((s) => s.showSettings)
   const setShowSettings = useCallback(
@@ -178,8 +179,9 @@ export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
                 style={{
                   backdropFilter: 'blur(16px) saturate(1.6)',
                   WebkitBackdropFilter: 'blur(16px) saturate(1.6)',
-                  boxShadow:
-                    '0 4px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5)',
+                  boxShadow: isDark
+                    ? '0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)'
+                    : '0 4px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5)',
                 }}
               >
                 {showControlPanel ? (
