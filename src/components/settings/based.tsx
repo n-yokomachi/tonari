@@ -8,6 +8,7 @@ const Based = () => {
   const colorTheme = settingsStore((s) => s.colorTheme)
   const voiceEnabled = settingsStore((s) => s.voiceEnabled)
   const voiceModel = settingsStore((s) => s.voiceModel)
+  const wakeWordEnabled = settingsStore((s) => s.wakeWordEnabled)
   const isDark = colorTheme === 'tonari-dark'
 
   return (
@@ -91,6 +92,26 @@ const Based = () => {
             </div>
           </div>
         )}
+      </div>
+      {/* ウェイクワード検知設定 */}
+      <div className="my-6">
+        <div className="my-4 text-xl font-bold">Wake Word Detection</div>
+        <div className="my-4 whitespace-pre-wrap text-sm opacity-70">
+          「TONaRi」と呼びかけると音声入力モードが起動します。
+        </div>
+
+        {/* ON/OFF トグル */}
+        <div className="my-2">
+          <TextButton
+            onClick={() =>
+              settingsStore.setState((s) => ({
+                wakeWordEnabled: !s.wakeWordEnabled,
+              }))
+            }
+          >
+            {wakeWordEnabled ? 'ON' : 'OFF'}
+          </TextButton>
+        </div>
       </div>
     </>
   )

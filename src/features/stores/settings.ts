@@ -43,6 +43,7 @@ interface General {
   enableAutoCapture: boolean
   voiceEnabled: boolean
   voiceModel: 'Tomoko' | 'Kazuha'
+  wakeWordEnabled: boolean
 }
 
 export type SettingsState = Character & General
@@ -84,6 +85,7 @@ const getInitialValuesFromEnv = (): SettingsState => {
     enableAutoCapture: true,
     voiceEnabled: false,
     voiceModel: 'Tomoko',
+    wakeWordEnabled: false,
   }
 }
 
@@ -145,6 +147,7 @@ const settingsStore = create<SettingsState>()(
       enableAutoCapture: state.enableAutoCapture,
       voiceEnabled: state.voiceEnabled,
       voiceModel: state.voiceModel,
+      wakeWordEnabled: state.wakeWordEnabled,
     }),
   })
 )
