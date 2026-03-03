@@ -181,12 +181,15 @@ export const useWakeWordDetection = () => {
       return
     }
 
+    let aborted = false
+
     const initPorcupine = async () => {
       try {
         // Fetch access key from server-side API
         const res = await fetch('/api/picovoice-key')
         if (!res.ok) throw new Error('Failed to fetch access key')
         const { accessKey } = await res.json()
+        if (aborted) return
         accessKeyRef.current = accessKey
 
         await porcupineRef.current.init(
@@ -198,10 +201,15 @@ export const useWakeWordDetection = () => {
           },
           { publicPath: PORCUPINE_MODEL_PATH }
         )
+        if (aborted) {
+          porcupineRef.current.release()
+          return
+        }
         await porcupineRef.current.start()
         initializedRef.current = true
         voiceInputStore.getState().setPhase('idle')
       } catch (e) {
+        if (aborted) return
         console.error('Porcupine init error:', e)
         toastStore.getState().addToast({
           message: 'ウェイクワード検知の初期化に失敗しました',
@@ -214,9 +222,12 @@ export const useWakeWordDetection = () => {
     initPorcupine()
 
     return () => {
+      aborted = true
       cleanupAll()
-      porcupineRef.current.release()
-      initializedRef.current = false
+      if (initializedRef.current) {
+        porcupineRef.current.release()
+        initializedRef.current = false
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wakeWordEnabled])
