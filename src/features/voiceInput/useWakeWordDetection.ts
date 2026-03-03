@@ -167,6 +167,8 @@ export const useWakeWordDetection = () => {
   }
 
   // --- Effect: Initialize/cleanup Porcupine based on settings ---
+  // NOTE: init() does NOT throw on failure — it calls setError() internally.
+  // We rely on the isLoaded effect below to detect success and call start().
 
   useEffect(() => {
     if (!wakeWordEnabled) {
@@ -199,10 +201,7 @@ export const useWakeWordDetection = () => {
           },
           { publicPath: PORCUPINE_MODEL_PATH }
         )
-        if (aborted) return
-        await porcupineRef.current.start()
-        initializedRef.current = true
-        voiceInputStore.getState().setPhase('idle')
+        // Do NOT call start() here — wait for isLoaded effect
       } catch (e) {
         if (aborted) return
         console.error('Porcupine init error:', e)
@@ -226,6 +225,18 @@ export const useWakeWordDetection = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wakeWordEnabled])
+
+  // --- Effect: Start Porcupine when loaded ---
+
+  useEffect(() => {
+    if (!porcupine.isLoaded || !wakeWordEnabled) return
+    if (initializedRef.current) return // Already running
+
+    initializedRef.current = true
+    porcupineRef.current.start()
+    voiceInputStore.getState().setPhase('idle')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [porcupine.isLoaded, wakeWordEnabled])
 
   // --- Effect: Handle wake word detection ---
 
@@ -276,12 +287,16 @@ export const useWakeWordDetection = () => {
 
   useEffect(() => {
     if (!porcupine.error) return
-    // Suppress the race condition error during init/cleanup
+    // Suppress the race condition error during cleanup
     if (porcupine.error.message?.includes('has not been initialized')) return
     console.error('Porcupine error:', porcupine.error)
     toastStore.getState().addToast({
       message: `ウェイクワード検知エラー: ${porcupine.error.message}`,
       type: 'error',
     })
-  }, [porcupine.error])
+    // If init failed, disable wake word
+    if (!initializedRef.current && wakeWordEnabled) {
+      settingsStore.setState({ wakeWordEnabled: false })
+    }
+  }, [porcupine.error, wakeWordEnabled])
 }
