@@ -17,7 +17,7 @@ const TaskIconButton = () => {
   return (
     <button
       onClick={() => taskStore.getState().toggle()}
-      className="bg-primary hover:bg-primary-hover active:bg-primary-press rounded-2xl text-sm p-2 text-center inline-flex items-center transition-all duration-200 text-theme relative"
+      className="bg-transparent hover:bg-white/10 active:bg-white/20 rounded-2xl text-sm p-2 text-center inline-flex items-center transition-all duration-200 text-theme relative"
       aria-label="タスク一覧"
     >
       <Image
@@ -69,30 +69,42 @@ export const MobileHeader = ({ showLogo }: { showLogo?: boolean }) => {
             </span>
           </div>
         )}
-        <nav className="flex gap-2" aria-label="Main navigation">
+        <nav
+          className="flex gap-2 rounded-3xl px-2 py-1 bg-white/25 dark:bg-[rgba(20,20,35,0.45)] border border-white/40 dark:border-white/10"
+          style={{
+            backdropFilter: 'blur(16px) saturate(1.6)',
+            WebkitBackdropFilter: 'blur(16px) saturate(1.6)',
+            boxShadow:
+              '0 4px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5)',
+          }}
+          aria-label="Main navigation"
+        >
           {showControlPanel ? (
             <>
               <IconButton
                 iconName="24/Refresh"
                 isProcessing={false}
+                backgroundColor="bg-transparent hover:bg-white/10 active:bg-white/20"
                 onClick={handleNewSession}
                 aria-label="新しいセッション"
               />
               <IconButton
                 iconName="24/Swap"
                 isProcessing={false}
+                backgroundColor="bg-transparent hover:bg-white/10 active:bg-white/20"
                 onClick={handleSwitchVrmModel}
                 aria-label="モデル切り替え"
               />
               <IconButton
                 iconName="24/Settings"
                 isProcessing={false}
+                backgroundColor="bg-transparent hover:bg-white/10 active:bg-white/20"
                 onClick={() => menuStore.setState({ showSettings: true })}
                 aria-label={t('BasedSettings')}
               />
               <Link
                 href="/admin"
-                className="bg-primary hover:bg-primary-hover active:bg-primary-press rounded-2xl text-sm p-2 text-center inline-flex items-center transition-all duration-200 text-theme"
+                className="bg-transparent hover:bg-white/10 active:bg-white/20 rounded-2xl text-sm p-2 text-center inline-flex items-center transition-all duration-200 text-theme"
                 aria-label="管理画面"
               >
                 <Image
@@ -105,6 +117,7 @@ export const MobileHeader = ({ showLogo }: { showLogo?: boolean }) => {
               <IconButton
                 iconName="24/Timer"
                 isProcessing={false}
+                backgroundColor="bg-transparent hover:bg-white/10 active:bg-white/20"
                 onClick={() => pomodoroStore.getState().toggle()}
                 aria-label="ポモドーロタイマー"
               />
@@ -114,7 +127,7 @@ export const MobileHeader = ({ showLogo }: { showLogo?: boolean }) => {
                   await fetch('/api/admin/auth', { method: 'DELETE' })
                   window.location.href = '/login'
                 }}
-                className="bg-primary hover:bg-primary-hover active:bg-primary-press rounded-2xl text-sm p-2 text-center inline-flex items-center transition-all duration-200 text-theme"
+                className="bg-transparent hover:bg-white/10 active:bg-white/20 rounded-2xl text-sm p-2 text-center inline-flex items-center transition-all duration-200 text-theme"
                 aria-label="ログアウト"
               >
                 <Image
@@ -131,6 +144,7 @@ export const MobileHeader = ({ showLogo }: { showLogo?: boolean }) => {
               <IconButton
                 iconName="24/Timer"
                 isProcessing={false}
+                backgroundColor="bg-transparent hover:bg-white/10 active:bg-white/20"
                 onClick={() => pomodoroStore.getState().toggle()}
                 aria-label="ポモドーロタイマー"
               />
