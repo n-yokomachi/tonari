@@ -19,6 +19,8 @@ import { useIdleMotion } from '@/hooks/useIdleMotion'
 import { useSleepMode } from '@/hooks/useSleepMode'
 import { usePomodoroTimer } from '@/hooks/usePomodoroTimer'
 import { usePomodoroMotion } from '@/hooks/usePomodoroMotion'
+import { useWakeWordDetection } from '@/features/voiceInput/useWakeWordDetection'
+import { VoiceInputIndicator } from '@/components/voiceInputIndicator'
 import { MobileHeader } from '@/components/mobileHeader'
 import { GestureTestPanel } from '@/components/gestureTestPanel'
 import { PomodoroTimer } from '@/components/pomodoroTimer'
@@ -79,6 +81,7 @@ const Home = () => {
   useSleepMode()
   usePomodoroTimer()
   usePomodoroMotion()
+  useWakeWordDetection()
 
   const webcamStatus = homeStore((s) => s.webcamStatus)
   const backgroundImageUrl = homeStore((s) => s.backgroundImageUrl)
@@ -218,6 +221,7 @@ const Home = () => {
         </>
       )}
       {/* <GestureTestPanel /> */}
+      <VoiceInputIndicator />
       <PomodoroTimer />
       <TaskListPanel />
       {showSettings && (
