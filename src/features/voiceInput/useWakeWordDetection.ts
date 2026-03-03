@@ -199,7 +199,10 @@ export const useWakeWordDetection = () => {
           },
           { publicPath: PORCUPINE_MODEL_PATH }
         )
-        // start() is handled by the isLoaded effect below
+        if (aborted) return
+        await porcupineRef.current.start()
+        initializedRef.current = true
+        voiceInputStore.getState().setPhase('idle')
       } catch (e) {
         if (aborted) return
         console.error('Porcupine init error:', e)
@@ -223,17 +226,6 @@ export const useWakeWordDetection = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wakeWordEnabled])
-
-  // --- Effect: Start Porcupine once loaded ---
-
-  useEffect(() => {
-    if (porcupine.isLoaded && wakeWordEnabled && !initializedRef.current) {
-      initializedRef.current = true
-      porcupineRef.current.start()
-      voiceInputStore.getState().setPhase('idle')
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [porcupine.isLoaded, wakeWordEnabled])
 
   // --- Effect: Handle wake word detection ---
 
@@ -284,8 +276,8 @@ export const useWakeWordDetection = () => {
 
   useEffect(() => {
     if (!porcupine.error) return
-    // Ignore errors during initialization (SDK's init swallows errors internally)
-    if (!initializedRef.current) return
+    // Suppress the race condition error during init/cleanup
+    if (porcupine.error.message?.includes('has not been initialized')) return
     console.error('Porcupine error:', porcupine.error)
     toastStore.getState().addToast({
       message: `ウェイクワード検知エラー: ${porcupine.error.message}`,
