@@ -49,6 +49,7 @@ export class WorkloadConstruct extends Construct {
   public readonly taskToolLambda: python.PythonFunction
   public readonly calendarToolLambda: python.PythonFunction
   public readonly gmailToolLambda: python.PythonFunction
+  public readonly notionToolLambda: python.PythonFunction
   public readonly dateToolLambda: lambda.Function
   public readonly newsNotificationTopic?: sns.Topic
   public readonly newsTable?: dynamodb.Table
@@ -359,6 +360,29 @@ export class WorkloadConstruct extends Construct {
         actions: ['ssm:GetParameter'],
         resources: [
           `arn:aws:ssm:${region}:${account}:parameter/tonari/google/*`,
+        ],
+      })
+    )
+
+    // ========== Notion (Gateway Tool) ==========
+    this.notionToolLambda = new python.PythonFunction(
+      stack,
+      'NotionToolLambda',
+      {
+        functionName: 'tonari-notion-tool',
+        entry: path.join(__dirname, '../lambda/notion-tool'),
+        runtime: lambda.Runtime.PYTHON_3_12,
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 128,
+      }
+    )
+
+    this.notionToolLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['ssm:GetParameter'],
+        resources: [
+          `arn:aws:ssm:${region}:${account}:parameter/tonari/notion/*`,
         ],
       })
     )
