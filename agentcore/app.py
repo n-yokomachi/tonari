@@ -5,6 +5,14 @@ import logging
 
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 
+from src.agent.sub_agents import (
+    calendar_agent,
+    gmail_agent,
+    init_sub_agent_tools,
+    notion_agent,
+    split_mcp_tools,
+    task_agent,
+)
 from src.agent.tonari_agent import (
     create_tonari_agent,
     create_tonari_agent_with_gateway,
@@ -52,10 +60,16 @@ def _get_or_create_agent(session_id: str, actor_id: str):
         tools = [t for t in all_tools if t.tool_name not in EXCLUDED_TOOLS] if all_tools else []
         tool_names = [t.tool_name for t in tools]
         logger.info("Gateway tools discovered: %s (excluded: %s)", tool_names, EXCLUDED_TOOLS)
+
+        # ツールをサブエージェント用とメイン用に分割
+        tool_map = split_mcp_tools(tools)
+        init_sub_agent_tools(tool_map, actor_id=actor_id)
+        main_tools = tool_map["main"] + [task_agent, calendar_agent, gmail_agent, notion_agent]
+
         agent = create_tonari_agent(
             session_id=session_id,
             actor_id=actor_id,
-            mcp_tools=tools,
+            mcp_tools=main_tools,
         )
         _current_mcp_client = mcp_client
     except Exception as e:

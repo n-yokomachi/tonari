@@ -12,6 +12,7 @@ from bedrock_agentcore.memory.integrations.strands.session_manager import (
 )
 from mcp_proxy_for_aws.client import aws_iam_streamablehttp_client
 from strands import Agent
+from strands.agent.conversation_manager import SlidingWindowConversationManager
 from strands.models import BedrockModel
 from strands.tools.mcp import MCPClient
 
@@ -105,6 +106,7 @@ def create_tonari_agent(
     agent = Agent(
         model=_create_bedrock_model(),
         system_prompt=TONARI_SYSTEM_PROMPT,
+        conversation_manager=SlidingWindowConversationManager(window_size=15),
         session_manager=session_manager,
         tools=mcp_tools or [],
     )
@@ -129,6 +131,7 @@ def create_tonari_agent_light(
     agent = Agent(
         model=_create_bedrock_model(),
         system_prompt=TONARI_SYSTEM_PROMPT,
+        conversation_manager=SlidingWindowConversationManager(window_size=15),
         session_manager=session_manager,
         tools=[],
     )
