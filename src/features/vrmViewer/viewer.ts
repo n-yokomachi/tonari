@@ -10,6 +10,13 @@ import settingsStore from '@/features/stores/settings'
  *
  * setup()でcanvasを渡してから使う
  */
+export type EntranceAnimationType =
+  | 'softRise'
+  | 'dissolve'
+  | 'particle'
+  | 'glitch'
+  | 'bloom'
+
 export class Viewer {
   public isReady: boolean
   public model?: Model
@@ -21,6 +28,8 @@ export class Viewer {
   private _cameraControls?: OrbitControls
   private _directionalLight?: THREE.DirectionalLight
   private _ambientLight?: THREE.AmbientLight
+  private _entranceRafId?: number
+  private _particleSystem?: THREE.Points
 
   constructor() {
     this.isReady = false
@@ -88,7 +97,7 @@ export class Viewer {
               this.model.vrm.scene.visible = true
               const canvas = this._renderer?.domElement
               if (canvas) {
-                this.playEntranceAnimation(canvas)
+                this.playEntranceAnimation(canvas, 'softRise')
               }
             }
           } else {
@@ -121,7 +130,73 @@ export class Viewer {
   /**
    * 登場アニメーションを再生する
    */
-  private playEntranceAnimation(canvas: HTMLCanvasElement) {
+  public playEntranceAnimation(
+    canvas?: HTMLCanvasElement,
+    type: EntranceAnimationType = 'softRise'
+  ) {
+    const target = canvas || this._renderer?.domElement
+    if (!target) return
+
+    this._cleanupEntrance()
+
+    switch (type) {
+      case 'softRise':
+        this._animSoftRise(target)
+        break
+      case 'dissolve':
+        this._animDissolve(target)
+        break
+      case 'particle':
+        this._animParticle(target)
+        break
+      case 'glitch':
+        this._animGlitch(target)
+        break
+      case 'bloom':
+        this._animBloom(target)
+        break
+    }
+  }
+
+  private _cleanupEntrance() {
+    if (this._entranceRafId) {
+      cancelAnimationFrame(this._entranceRafId)
+      this._entranceRafId = undefined
+    }
+    if (this._particleSystem) {
+      this._scene.remove(this._particleSystem)
+      this._particleSystem.geometry.dispose()
+      ;(this._particleSystem.material as THREE.Material).dispose()
+      this._particleSystem = undefined
+    }
+    // Reset VRM material opacity
+    this.model?.vrm?.scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mat = (obj as THREE.Mesh).material as THREE.Material
+        mat.opacity = 1
+        mat.transparent = false
+      }
+    })
+    // Reset canvas styles
+    const canvas = this._renderer?.domElement
+    if (canvas) {
+      canvas.style.transition = 'none'
+      canvas.style.filter = ''
+      canvas.style.transform = ''
+      canvas.style.clipPath = ''
+      canvas.style.opacity = '1'
+      canvas.style.animation = ''
+    }
+    // Reset light
+    if (this._directionalLight) {
+      const intensity = settingsStore.getState().lightingIntensity
+      this._directionalLight.intensity = 1.8 * intensity
+      this._directionalLight.color.setHex(0xffffff)
+    }
+  }
+
+  // --- 1. Soft Rise (original) ---
+  private _animSoftRise(canvas: HTMLCanvasElement) {
     canvas.style.transition = 'none'
     canvas.style.opacity = '0'
     canvas.style.transform = 'translateY(20px)'
@@ -134,6 +209,238 @@ export class Viewer {
       canvas.style.transform = 'translateY(0)'
       canvas.style.filter = 'blur(0px)'
     })
+  }
+
+  // --- 2. Dissolve (material opacity) ---
+  private _animDissolve(canvas: HTMLCanvasElement) {
+    canvas.style.opacity = '1'
+    const meshes: THREE.Mesh[] = []
+    this.model?.vrm?.scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh
+        const mat = mesh.material as THREE.Material
+        mat.transparent = true
+        mat.opacity = 0
+        meshes.push(mesh)
+      }
+    })
+
+    const duration = 1500
+    const start = performance.now()
+    const animate = (now: number) => {
+      const t = Math.min((now - start) / duration, 1)
+      const eased = 1 - Math.pow(1 - t, 3) // ease-out cubic
+      meshes.forEach((mesh) => {
+        ;(mesh.material as THREE.Material).opacity = eased
+      })
+      if (t < 1) {
+        this._entranceRafId = requestAnimationFrame(animate)
+      } else {
+        meshes.forEach((mesh) => {
+          const mat = mesh.material as THREE.Material
+          mat.opacity = 1
+          mat.transparent = false
+        })
+      }
+    }
+    this._entranceRafId = requestAnimationFrame(animate)
+  }
+
+  // --- 3. Particle burst + fade in ---
+  private _animParticle(canvas: HTMLCanvasElement) {
+    canvas.style.opacity = '1'
+    // Hide VRM initially
+    const meshes: THREE.Mesh[] = []
+    this.model?.vrm?.scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh
+        const mat = mesh.material as THREE.Material
+        mat.transparent = true
+        mat.opacity = 0
+        meshes.push(mesh)
+      }
+    })
+
+    // Create particles around the model
+    const count = 200
+    const positions = new Float32Array(count * 3)
+    const velocities = new Float32Array(count * 3)
+    for (let i = 0; i < count; i++) {
+      const i3 = i * 3
+      positions[i3] = (Math.random() - 0.5) * 1.2
+      positions[i3 + 1] = Math.random() * 2.0
+      positions[i3 + 2] = (Math.random() - 0.5) * 1.2
+      velocities[i3] = (Math.random() - 0.5) * 0.02
+      velocities[i3 + 1] = (Math.random() - 0.5) * 0.02
+      velocities[i3 + 2] = (Math.random() - 0.5) * 0.02
+    }
+
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+
+    const material = new THREE.PointsMaterial({
+      color: 0x88ccff,
+      size: 0.02,
+      transparent: true,
+      opacity: 1,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    })
+
+    this._particleSystem = new THREE.Points(geometry, material)
+    this._scene.add(this._particleSystem)
+
+    const duration = 2000
+    const start = performance.now()
+
+    const animate = (now: number) => {
+      const t = Math.min((now - start) / duration, 1)
+
+      // Move particles
+      const posAttr = geometry.attributes.position as THREE.BufferAttribute
+      for (let i = 0; i < count; i++) {
+        const i3 = i * 3
+        posAttr.array[i3] += velocities[i3]
+        posAttr.array[i3 + 1] += velocities[i3 + 1]
+        posAttr.array[i3 + 2] += velocities[i3 + 2]
+      }
+      posAttr.needsUpdate = true
+
+      // Fade particles out, model in
+      material.opacity = 1 - t
+      const modelOpacity = Math.max(0, (t - 0.3) / 0.7) // start at 30%
+      const eased = 1 - Math.pow(1 - modelOpacity, 2)
+      meshes.forEach((mesh) => {
+        ;(mesh.material as THREE.Material).opacity = eased
+      })
+
+      if (t < 1) {
+        this._entranceRafId = requestAnimationFrame(animate)
+      } else {
+        // Cleanup particles
+        this._scene.remove(this._particleSystem!)
+        geometry.dispose()
+        material.dispose()
+        this._particleSystem = undefined
+        meshes.forEach((mesh) => {
+          const mat = mesh.material as THREE.Material
+          mat.opacity = 1
+          mat.transparent = false
+        })
+      }
+    }
+    this._entranceRafId = requestAnimationFrame(animate)
+  }
+
+  // --- 4. Digital glitch + scanline ---
+  private _animGlitch(canvas: HTMLCanvasElement) {
+    canvas.style.opacity = '0'
+    void canvas.offsetHeight
+
+    // Inject keyframes if not already present
+    if (!document.getElementById('glitch-entrance-style')) {
+      const style = document.createElement('style')
+      style.id = 'glitch-entrance-style'
+      style.textContent = `
+        @keyframes glitch-entrance {
+          0% { opacity: 0; clip-path: inset(0 100% 0 0); filter: hue-rotate(0deg) brightness(1); }
+          10% { opacity: 1; clip-path: inset(0 60% 0 0); filter: hue-rotate(90deg) brightness(1.3); }
+          15% { clip-path: inset(30% 0 40% 0); filter: hue-rotate(0deg) brightness(1); }
+          20% { clip-path: inset(0 20% 0 30%); filter: hue-rotate(180deg) brightness(1.2); }
+          25% { clip-path: inset(60% 0 10% 0); filter: hue-rotate(0deg) brightness(1); }
+          35% { clip-path: inset(0 10% 0 0); filter: hue-rotate(45deg) brightness(1.1); }
+          45% { clip-path: inset(0 0 0 0); filter: hue-rotate(0deg) brightness(1); }
+          50% { clip-path: inset(20% 0 50% 0); filter: hue-rotate(270deg) brightness(1.2); }
+          55% { clip-path: inset(0 0 0 0); filter: hue-rotate(0deg) brightness(1); }
+          100% { opacity: 1; clip-path: inset(0 0 0 0); filter: hue-rotate(0deg) brightness(1); }
+        }
+      `
+      document.head.appendChild(style)
+    }
+
+    canvas.style.animation = 'glitch-entrance 1.2s ease-out forwards'
+    canvas.addEventListener(
+      'animationend',
+      () => {
+        canvas.style.animation = ''
+        canvas.style.opacity = '1'
+        canvas.style.filter = ''
+        canvas.style.clipPath = ''
+      },
+      { once: true }
+    )
+  }
+
+  // --- 5. Bloom glow entrance ---
+  private _animBloom(canvas: HTMLCanvasElement) {
+    canvas.style.opacity = '1'
+
+    // Use directional light intensity as bloom stand-in
+    const light = this._directionalLight
+    if (!light) {
+      this._animSoftRise(canvas)
+      return
+    }
+
+    // Start with bright glow + slight blur
+    canvas.style.filter = 'blur(4px) brightness(2)'
+    light.intensity = 5.0
+    light.color.setHex(0xaaddff)
+
+    // Hide VRM initially
+    const meshes: THREE.Mesh[] = []
+    this.model?.vrm?.scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh
+        const mat = mesh.material as THREE.Material
+        mat.transparent = true
+        mat.opacity = 0
+        meshes.push(mesh)
+      }
+    })
+
+    const duration = 1800
+    const start = performance.now()
+    const baseIntensity = 1.8 * settingsStore.getState().lightingIntensity
+
+    const animate = (now: number) => {
+      const t = Math.min((now - start) / duration, 1)
+      const eased = 1 - Math.pow(1 - t, 2)
+
+      // Model fades in
+      meshes.forEach((mesh) => {
+        ;(mesh.material as THREE.Material).opacity = eased
+      })
+
+      // Light intensity decreases from bright to normal
+      light.intensity = 5.0 + (baseIntensity - 5.0) * eased
+      // Light color returns to white
+      const b = Math.round(0xaa + (0xff - 0xaa) * eased)
+      light.color.setRGB(
+        (0xaa + (0xff - 0xaa) * eased) / 255,
+        (0xdd + (0xff - 0xdd) * eased) / 255,
+        b / 255
+      )
+
+      // Blur + brightness reduce
+      const blur = 4 * (1 - eased)
+      const brightness = 2 - 1 * eased
+      canvas.style.filter = `blur(${blur}px) brightness(${brightness})`
+
+      if (t < 1) {
+        this._entranceRafId = requestAnimationFrame(animate)
+      } else {
+        canvas.style.filter = ''
+        light.intensity = baseIntensity
+        light.color.setHex(0xffffff)
+        meshes.forEach((mesh) => {
+          const mat = mesh.material as THREE.Material
+          mat.opacity = 1
+          mat.transparent = false
+        })
+      }
+    }
+    this._entranceRafId = requestAnimationFrame(animate)
   }
 
   /**

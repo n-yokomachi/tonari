@@ -23,6 +23,7 @@ import { useWakeWordDetection } from '@/features/voiceInput/useWakeWordDetection
 import { VoiceInputIndicator } from '@/components/voiceInputIndicator'
 import { MobileHeader } from '@/components/mobileHeader'
 import { GestureTestPanel } from '@/components/gestureTestPanel'
+import { EntranceTestPanel } from '@/components/entranceTestPanel'
 import { PomodoroTimer } from '@/components/pomodoroTimer'
 import Settings from '@/components/settings'
 import { TaskListPanel } from '@/components/taskListPanel'
@@ -239,6 +240,7 @@ const Home = () => {
         </>
       )}
       {/* <GestureTestPanel /> */}
+      <EntranceTestPanel />
       <VoiceInputIndicator />
       <PomodoroTimer />
       <TaskListPanel />
