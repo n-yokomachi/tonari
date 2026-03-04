@@ -15,7 +15,7 @@ type NewsData = {
   updatedAt: string
 }
 
-const NEWS_SCHEDULE_HOURS = [9, 21]
+const NEWS_SCHEDULE_HOURS = [9]
 const SCHEDULE_DELAY_MS = 5 * 60 * 1000
 const RETRY_INTERVAL_MS = 5 * 60 * 1000
 const MAX_RETRIES = 3

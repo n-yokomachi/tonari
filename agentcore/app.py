@@ -46,9 +46,12 @@ def _get_or_create_agent(session_id: str, actor_id: str):
             session_id=session_id, actor_id=actor_id
         )
         mcp_client.start()
-        tools = mcp_client.list_tools_sync()
-        tool_names = [t.tool_name for t in tools] if tools else []
-        logger.info("Gateway tools discovered: %s", tool_names)
+        all_tools = mcp_client.list_tools_sync()
+        # 香水系ツールはコスト削減のため除外
+        EXCLUDED_TOOLS = {"perfume-search___search_perfumes"}
+        tools = [t for t in all_tools if t.tool_name not in EXCLUDED_TOOLS] if all_tools else []
+        tool_names = [t.tool_name for t in tools]
+        logger.info("Gateway tools discovered: %s (excluded: %s)", tool_names, EXCLUDED_TOOLS)
         agent = create_tonari_agent(
             session_id=session_id,
             actor_id=actor_id,
