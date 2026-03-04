@@ -185,11 +185,15 @@ export class Viewer {
       canvas.style.opacity = '1'
       canvas.style.animation = ''
     }
-    // Reset light
+    // Reset light (respecting dark mode)
     if (this._directionalLight) {
-      const intensity = settingsStore.getState().lightingIntensity
+      const intensity = this._currentLightingIntensity()
       this._directionalLight.intensity = 1.8 * intensity
       this._directionalLight.color.setHex(0xffffff)
+    }
+    if (this._ambientLight) {
+      const intensity = this._currentLightingIntensity()
+      this._ambientLight.intensity = 1.2 * intensity
     }
   }
 
@@ -449,7 +453,7 @@ export class Viewer {
 
     const duration = 1800
     const start = performance.now()
-    const baseIntensity = 1.8 * settingsStore.getState().lightingIntensity
+    const baseIntensity = 1.8 * this._currentLightingIntensity()
 
     const animate = (now: number) => {
       const t = Math.min((now - start) / duration, 1)
@@ -672,6 +676,11 @@ export class Viewer {
       this._cameraControls.enabled = true
     }
     this.resetCamera()
+  }
+
+  private _currentLightingIntensity(): number {
+    const { colorTheme } = settingsStore.getState()
+    return colorTheme === 'tonari-dark' ? 0.3 : 1.0
   }
 
   /**
