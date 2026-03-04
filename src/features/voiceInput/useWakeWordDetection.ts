@@ -185,8 +185,9 @@ export const useWakeWordDetection = () => {
 
     const initPorcupine = async () => {
       try {
-        // Fetch access key from server-side API
-        const res = await fetch('/api/picovoice-key')
+        // Detect platform and fetch appropriate access key
+        const platform = /Win/.test(navigator.platform) ? 'windows' : 'mac'
+        const res = await fetch(`/api/picovoice-key?platform=${platform}`)
         if (!res.ok) throw new Error('Failed to fetch access key')
         const { accessKey } = await res.json()
         if (aborted) return
