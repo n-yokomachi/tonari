@@ -23,6 +23,7 @@ import { useWakeWordDetection } from '@/features/voiceInput/useWakeWordDetection
 import { VoiceInputIndicator } from '@/components/voiceInputIndicator'
 import { MobileHeader } from '@/components/mobileHeader'
 import { GestureTestPanel } from '@/components/gestureTestPanel'
+import { EntranceTestPanel } from '@/components/entranceTestPanel'
 import { PomodoroTimer } from '@/components/pomodoroTimer'
 import Settings from '@/components/settings'
 import { TaskListPanel } from '@/components/taskListPanel'
@@ -42,17 +43,31 @@ const Home = () => {
   // 縦モニター: チャットログの自動非表示
   const [chatVisible, setChatVisible] = useState(true)
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const focusHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const formFocusedRef = useRef(false)
   const chatLog = homeStore((s) => s.chatLog)
+
+  const hideChatUI = useCallback(() => {
+    setChatVisible(false)
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current)
+    if (focusHideTimerRef.current) clearTimeout(focusHideTimerRef.current)
+    hideTimerRef.current = null
+    focusHideTimerRef.current = null
+  }, [])
 
   const showChatTemporarily = useCallback(() => {
     setChatVisible(true)
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current)
+    if (focusHideTimerRef.current) clearTimeout(focusHideTimerRef.current)
     hideTimerRef.current = setTimeout(() => {
-      if (formFocusedRef.current) return
+      if (formFocusedRef.current) {
+        // フォーカス中でも5分で非表示
+        focusHideTimerRef.current = setTimeout(hideChatUI, 240000)
+        return
+      }
       setChatVisible(false)
     }, 60000)
-  }, [])
+  }, [hideChatUI])
 
   // 新しいメッセージが来たら表示してタイマーリセット（モバイル・縦モニター共通）
   useEffect(() => {
@@ -181,6 +196,10 @@ const Home = () => {
               // フォーム内の別要素への移動は無視
               if (e.currentTarget.contains(e.relatedTarget as Node)) return
               formFocusedRef.current = false
+              if (focusHideTimerRef.current) {
+                clearTimeout(focusHideTimerRef.current)
+                focusHideTimerRef.current = null
+              }
               showChatTemporarily()
             }}
           >
@@ -221,6 +240,7 @@ const Home = () => {
         </>
       )}
       {/* <GestureTestPanel /> */}
+      {/* <EntranceTestPanel /> */}
       <VoiceInputIndicator />
       <PomodoroTimer />
       <TaskListPanel />
