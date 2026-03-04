@@ -12,8 +12,8 @@ from bedrock_agentcore.memory.integrations.strands.session_manager import (
 )
 from mcp_proxy_for_aws.client import aws_iam_streamablehttp_client
 from strands import Agent
+from strands.agent.conversation_manager import SlidingWindowConversationManager
 from strands.models import BedrockModel
-from strands.models.bedrock import CacheConfig
 from strands.tools.mcp import MCPClient
 
 from .prompts import TONARI_SYSTEM_PROMPT
@@ -46,7 +46,6 @@ def _create_bedrock_model() -> BedrockModel:
         ),
         region_name=os.getenv("AWS_REGION", "ap-northeast-1"),
         streaming=True,
-        cache_config=CacheConfig(strategy="auto"),
     )
 
 
@@ -68,7 +67,7 @@ def _create_memory_config(
             # ユーザーの好み（オーナー単位）
             "/preferences/{actorId}/": RetrievalConfig(top_k=5, relevance_score=0.5),
             # 事実情報（購入履歴、試した香水など、オーナー単位）
-            "/facts/{actorId}/": RetrievalConfig(top_k=10, relevance_score=0.4),
+            "/facts/{actorId}/": RetrievalConfig(top_k=5, relevance_score=0.4),
             # セッションサマリー（全セッション横断取得）
             "/summaries/{actorId}/": RetrievalConfig(top_k=3, relevance_score=0.6),
             # エピソード記憶+リフレクション（全セッション横断取得）
@@ -107,6 +106,7 @@ def create_tonari_agent(
     agent = Agent(
         model=_create_bedrock_model(),
         system_prompt=TONARI_SYSTEM_PROMPT,
+        conversation_manager=SlidingWindowConversationManager(window_size=15),
         session_manager=session_manager,
         tools=mcp_tools or [],
     )
@@ -131,6 +131,7 @@ def create_tonari_agent_light(
     agent = Agent(
         model=_create_bedrock_model(),
         system_prompt=TONARI_SYSTEM_PROMPT,
+        conversation_manager=SlidingWindowConversationManager(window_size=15),
         session_manager=session_manager,
         tools=[],
     )

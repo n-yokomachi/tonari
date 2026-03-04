@@ -85,6 +85,10 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
   'gmail-tool___get_email': 'メールを取得中',
   'gmail-tool___create_draft': '下書きを作成中',
   'gmail-tool___archive_email': 'メールをアーカイブ中',
+  task_agent: 'タスクを管理中',
+  calendar_agent: 'カレンダーを操作中',
+  gmail_agent: 'メールを操作中',
+  notion_agent: 'Notionを操作中',
 }
 
 const TOOL_STATUS_ID = 'tool-status'

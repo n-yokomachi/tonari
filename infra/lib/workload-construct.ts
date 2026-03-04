@@ -621,22 +621,12 @@ export class WorkloadConstruct extends Construct {
 
       const newsTarget = new targets.LambdaInvoke(this.newsTriggerLambda)
 
-      // EventBridge Schedules (9:00 and 21:00 JST)
+      // EventBridge Schedule (9:00 JST)
       new scheduler.Schedule(stack, 'NewsScheduleMorning', {
         scheduleName: 'tonari-news-morning',
         schedule: scheduler.ScheduleExpression.cron({
           minute: '0',
           hour: '9',
-          timeZone: cdk.TimeZone.ASIA_TOKYO,
-        }),
-        target: newsTarget,
-      })
-
-      new scheduler.Schedule(stack, 'NewsScheduleEvening', {
-        scheduleName: 'tonari-news-evening',
-        schedule: scheduler.ScheduleExpression.cron({
-          minute: '0',
-          hour: '21',
           timeZone: cdk.TimeZone.ASIA_TOKYO,
         }),
         target: newsTarget,
