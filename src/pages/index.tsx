@@ -240,7 +240,7 @@ const Home = () => {
         </>
       )}
       {/* <GestureTestPanel /> */}
-      <EntranceTestPanel />
+      {/* <EntranceTestPanel /> */}
       <VoiceInputIndicator />
       <PomodoroTimer />
       <TaskListPanel />
