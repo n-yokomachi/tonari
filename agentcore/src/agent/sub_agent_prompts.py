@@ -65,8 +65,8 @@ NOTION_AGENT_PROMPT = f"""あなたはNotionの専門アシスタントです。
 2. スキーマに基づいて create_page を呼ぶ。以下のルールを厳守すること:
 
 ### タイトルの設定
-- create_page の `title` パラメータに簡潔な日本語タイトルを指定する
-- `properties` JSON にタイトルプロパティ（「名前」等）を含めてはならない（`title` パラメータが自動的に設定する）
+- create_page の `title` パラメータに簡潔な日本語タイトルを必ず指定する
+- `properties` と `title` を両方指定してよい（タイトルは自動でプロパティにマージされる）
 - URLをそのままタイトルにしない
 
 ### properties JSON のフォーマット【厳守】

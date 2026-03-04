@@ -289,6 +289,18 @@ def _create_page(client: Client, event: dict) -> dict:
 
     if properties:
         properties = _parse_json_param(properties, "properties")
+        # title パラメータも指定されている場合、properties にタイトルが無ければマージ
+        if title:
+            has_title_prop = any(
+                isinstance(v, dict) and v.get("type") == "title"
+                or (isinstance(v, dict) and "title" in v)
+                for v in properties.values()
+            )
+            if not has_title_prop:
+                title_key = "Name" if database_id else "title"
+                properties[title_key] = {
+                    "title": [{"text": {"content": title}}]
+                }
     elif title:
         if database_id:
             properties = {"Name": {"title": [{"text": {"content": title}}]}}
