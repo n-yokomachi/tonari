@@ -89,6 +89,10 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
   calendar_agent: 'カレンダーを操作中',
   gmail_agent: 'メールを操作中',
   notion_agent: 'Notionを操作中',
+  briefing_agent: 'ブリーフィング中',
+  diary_agent: '日記を作成中',
+  intro_agent: '自己紹介を準備中',
+  twitter_agent: 'Twitterを操作中',
 }
 
 const TOOL_STATUS_ID = 'tool-status'

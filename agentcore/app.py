@@ -6,15 +6,21 @@ import logging
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 
 from src.agent.sub_agents import (
+    briefing_agent,
     calendar_agent,
+    diary_agent,
     gmail_agent,
     init_sub_agent_tools,
+    intro_agent,
     notion_agent,
     split_mcp_tools,
     task_agent,
+    twitter_agent,
 )
 from src.agent.tonari_agent import (
+    create_mcp_client,
     create_tonari_agent,
+    create_tonari_agent_pipeline,
     create_tonari_agent_with_gateway,
 )
 
@@ -64,7 +70,10 @@ def _get_or_create_agent(session_id: str, actor_id: str):
         # ツールをサブエージェント用とメイン用に分割
         tool_map = split_mcp_tools(tools)
         init_sub_agent_tools(tool_map, actor_id=actor_id)
-        main_tools = tool_map["main"] + [task_agent, calendar_agent, gmail_agent, notion_agent]
+        main_tools = tool_map["main"] + [
+            task_agent, calendar_agent, gmail_agent, notion_agent,
+            briefing_agent, diary_agent, intro_agent, twitter_agent,
+        ]
 
         agent = create_tonari_agent(
             session_id=session_id,
@@ -80,6 +89,53 @@ def _get_or_create_agent(session_id: str, actor_id: str):
     _current_session_id = session_id
     _current_actor_id = actor_id
     return agent
+
+
+# パイプラインモード別のツールフィルタ（プレフィックスで絞り込み）
+PIPELINE_TOOL_FILTERS = {
+    "tweet": {"twitter-read", "twitter-write", "TavilySearch"},
+    "news": {"TavilySearch"},
+}
+
+
+def _create_pipeline_agent(session_id: str, actor_id: str, mode: str):
+    """パイプライン用軽量エージェントを作成（毎回新規、キャッシュしない）"""
+    import os
+    gateway_url = os.getenv(
+        "AGENTCORE_GATEWAY_URL",
+        "https://tonari-gateway-umzqvn6zkm.gateway.bedrock-agentcore.ap-northeast-1.amazonaws.com/mcp",
+    )
+    region = os.getenv("AWS_REGION", "ap-northeast-1")
+
+    allowed_prefixes = PIPELINE_TOOL_FILTERS.get(mode, set())
+    mcp_client = create_mcp_client(gateway_url, region)
+
+    try:
+        mcp_client.start()
+        all_tools = mcp_client.list_tools_sync()
+        tools = [
+            t for t in (all_tools or [])
+            if t.tool_name.split("___")[0] in allowed_prefixes
+        ]
+        tool_names = [t.tool_name for t in tools]
+        logger.info("Pipeline[%s] tools: %s", mode, tool_names)
+
+        agent = create_tonari_agent_pipeline(
+            session_id=session_id,
+            actor_id=actor_id,
+            mcp_tools=tools,
+        )
+        return agent, mcp_client
+    except Exception as e:
+        logger.warning("Pipeline gateway failed, running without tools: %s", e)
+        try:
+            mcp_client.stop()
+        except Exception:
+            pass
+        agent = create_tonari_agent_pipeline(
+            session_id=session_id, actor_id=actor_id
+        )
+        return agent, None
 
 
 def build_content_blocks(
@@ -152,12 +208,32 @@ async def invoke(payload: dict):
     prompt = payload.get("prompt", "") if isinstance(payload, dict) else str(payload)
     session_id = payload.get("session_id", "default-session")
     actor_id = payload.get("actor_id", "anonymous")
+    mode = payload.get("mode") if isinstance(payload, dict) else None
     image_base64 = payload.get("image_base64") if isinstance(payload, dict) else None
     image_format = (
         payload.get("image_format", "jpeg") if isinstance(payload, dict) else "jpeg"
     )
 
     content = build_content_blocks(prompt, image_base64, image_format)
+
+    # パイプラインモード: 軽量エージェントを毎回作成
+    if mode in PIPELINE_TOOL_FILTERS:
+        pipeline_mcp_client = None
+        try:
+            agent, pipeline_mcp_client = _create_pipeline_agent(
+                session_id, actor_id, mode
+            )
+            async for chunk in _stream_response(agent, content):
+                yield chunk
+        finally:
+            if pipeline_mcp_client:
+                try:
+                    pipeline_mcp_client.stop()
+                except Exception:
+                    pass
+        return
+
+    # 通常モード: フルエージェント（キャッシュ付き）
     agent = _get_or_create_agent(session_id, actor_id)
 
     async for chunk in _stream_response(agent, content):

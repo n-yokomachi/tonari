@@ -16,7 +16,7 @@ from strands.agent.conversation_manager import SlidingWindowConversationManager
 from strands.models import BedrockModel
 from strands.tools.mcp import MCPClient
 
-from .prompts import TONARI_SYSTEM_PROMPT
+from .prompts import PIPELINE_SYSTEM_PROMPT, TONARI_SYSTEM_PROMPT
 
 # デフォルトのMemory ID（AgentCore CLIで作成済み）
 DEFAULT_MEMORY_ID = "tonari_memory-aky0rJC6wh"
@@ -65,13 +65,13 @@ def _create_memory_config(
     if use_ltm:
         retrieval_config = {
             # ユーザーの好み（オーナー単位）
-            "/preferences/{actorId}/": RetrievalConfig(top_k=5, relevance_score=0.5),
+            "/preferences/{actorId}/": RetrievalConfig(top_k=3, relevance_score=0.5),
             # 事実情報（購入履歴、試した香水など、オーナー単位）
-            "/facts/{actorId}/": RetrievalConfig(top_k=5, relevance_score=0.4),
+            "/facts/{actorId}/": RetrievalConfig(top_k=3, relevance_score=0.4),
             # セッションサマリー（全セッション横断取得）
-            "/summaries/{actorId}/": RetrievalConfig(top_k=3, relevance_score=0.6),
+            "/summaries/{actorId}/": RetrievalConfig(top_k=2, relevance_score=0.6),
             # エピソード記憶+リフレクション（全セッション横断取得）
-            "/episodes/{actorId}/": RetrievalConfig(top_k=5, relevance_score=0.5),
+            "/episodes/{actorId}/": RetrievalConfig(top_k=2, relevance_score=0.5),
         }
 
     return AgentCoreMemoryConfig(
@@ -106,7 +106,7 @@ def create_tonari_agent(
     agent = Agent(
         model=_create_bedrock_model(),
         system_prompt=TONARI_SYSTEM_PROMPT,
-        conversation_manager=SlidingWindowConversationManager(window_size=15),
+        conversation_manager=SlidingWindowConversationManager(window_size=10),
         session_manager=session_manager,
         tools=mcp_tools or [],
     )
@@ -131,9 +131,36 @@ def create_tonari_agent_light(
     agent = Agent(
         model=_create_bedrock_model(),
         system_prompt=TONARI_SYSTEM_PROMPT,
-        conversation_manager=SlidingWindowConversationManager(window_size=15),
+        conversation_manager=SlidingWindowConversationManager(window_size=10),
         session_manager=session_manager,
         tools=[],
+    )
+    return agent
+
+
+def create_tonari_agent_pipeline(
+    session_id: str = "default-session",
+    actor_id: str = "anonymous",
+    mcp_tools: Optional[list] = None,
+) -> Agent:
+    """パイプライン用軽量エージェント（LTM有効、サブエージェントなし、最小プロンプト）
+
+    ツイート・ニュースなどの自動パイプラインで使用。
+    フルエージェントと比べてシステムプロンプトが短く、サブエージェントを含まないため
+    入力トークンを大幅に削減できる。
+    """
+    memory_config = _create_memory_config(session_id, actor_id, use_ltm=True)
+    session_manager = AgentCoreMemorySessionManager(
+        agentcore_memory_config=memory_config,
+        region_name=os.getenv("AWS_REGION", "ap-northeast-1"),
+    )
+
+    agent = Agent(
+        model=_create_bedrock_model(),
+        system_prompt=PIPELINE_SYSTEM_PROMPT,
+        conversation_manager=SlidingWindowConversationManager(window_size=4),
+        session_manager=session_manager,
+        tools=mcp_tools or [],
     )
     return agent
 
