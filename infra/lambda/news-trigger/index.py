@@ -207,6 +207,7 @@ def _call_agentcore(
             "prompt": prompt,
             "session_id": session_id,
             "actor_id": "tonari-owner",
+            "mode": "news",
         }
     ).encode()
 
