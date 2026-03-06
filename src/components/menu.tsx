@@ -95,7 +95,7 @@ const CreepyLogo = ({ isDark }: { isDark: boolean }) => {
               duration: 2,
               times: [0, 0.85, 0.92, 1],
               repeat: Infinity,
-              delay: i * 0.08,
+              delay: 0,
             }}
           />
         ))}
