@@ -4,7 +4,7 @@ import crypto from 'crypto'
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || ''
 const COOKIE_NAME = 'auth_token'
-const COOKIE_MAX_AGE = 60 * 60 * 24 // 24 hours
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 30 // 30 days
 
 export function hashToken(password: string): string {
   return crypto.createHash('sha256').update(password).digest('hex')
