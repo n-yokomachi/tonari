@@ -14,7 +14,6 @@ import menuStore from '@/features/stores/menu'
 import settingsStore from '@/features/stores/settings'
 import '@/lib/i18n'
 import { buildUrl } from '@/utils/buildUrl'
-import { LightLines } from '@/components/lightLines'
 import { useIsMobile, useIsPortrait } from '@/hooks/useMediaQuery'
 import { useIdleMotion } from '@/hooks/useIdleMotion'
 import { useSleepMode } from '@/hooks/useSleepMode'
@@ -165,15 +164,6 @@ const Home = () => {
       }}
     >
       <Meta />
-      {isDark && (
-        <LightLines
-          linesOpacity={0.06}
-          lightsOpacity={0.15}
-          speedMultiplier={0.8}
-          lightColor="#ffffff"
-          lineColor="#ffffff"
-        />
-      )}
       {!layoutReady ? null : isMobile || isPortrait ? (
         <>
           {/* モバイル/縦モニター: VRM全画面背景 */}
