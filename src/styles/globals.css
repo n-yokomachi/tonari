@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+button:focus,
+button:active,
+a:focus,
+a:active {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-focus-ring-color: transparent;
+}
+
+*:focus {
+  outline: none !important;
+}
+
 html {
   background-color: var(--color-base-light);
 }
@@ -119,3 +133,4 @@ body {
   animation: notification-bell 2s ease-in-out infinite;
   transform-origin: top center;
 }
+

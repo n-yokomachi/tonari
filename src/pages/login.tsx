@@ -5,6 +5,7 @@ import {
   startAuthentication,
   browserSupportsWebAuthn,
 } from '@simplewebauthn/browser'
+import { LiquidMetal } from '@/components/liquidMetal'
 
 const CREDENTIAL_STORAGE_KEY = 'tonari-webauthn-credential'
 
@@ -394,9 +395,42 @@ export default function Login() {
 function Branding() {
   return (
     <div className="text-center">
-      <h1 className="text-5xl font-light tracking-[0.3em] text-secondary font-Montserrat">
-        TONaRi
-      </h1>
+      <div className="relative h-[3.5rem] overflow-hidden">
+        <h1
+          className="text-5xl font-light tracking-[0.3em] font-Montserrat text-transparent"
+          aria-label="TONaRi"
+        >
+          TONaRi
+        </h1>
+        <div
+          className="absolute inset-0"
+          style={{
+            WebkitMaskImage: `url("data:image/svg+xml,${encodeURIComponent(
+              '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><text x="50%" y="75%" text-anchor="middle" font-family="Montserrat, sans-serif" font-weight="300" font-size="48" letter-spacing="0.3em" fill="black">TONaRi</text></svg>'
+            )}")`,
+            WebkitMaskSize: 'contain',
+            WebkitMaskRepeat: 'no-repeat',
+            WebkitMaskPosition: 'center',
+            maskImage: `url("data:image/svg+xml,${encodeURIComponent(
+              '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><text x="50%" y="75%" text-anchor="middle" font-family="Montserrat, sans-serif" font-weight="300" font-size="48" letter-spacing="0.3em" fill="black">TONaRi</text></svg>'
+            )}")`,
+            maskSize: 'contain',
+            maskRepeat: 'no-repeat',
+            maskPosition: 'center',
+          }}
+        >
+          <LiquidMetal
+            colorBack="#aaaaac"
+            colorTint="#ffffff"
+            speed={0.6}
+            repetition={5}
+            distortion={0.1}
+            scale={1}
+            shiftRed={0.15}
+            shiftBlue={0.15}
+          />
+        </div>
+      </div>
       <p className="mt-3 text-[11px] text-gray-400 dark:text-gray-500 tracking-[0.25em] font-light">
         An AI Agent Standing With{' '}
         <a

@@ -1,8 +1,9 @@
-import React, { useCallback, useState, useEffect } from 'react'
+import React, { useCallback, useRef, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useRouter } from 'next/router'
 import Image from 'next/image'
 import Link from 'next/link'
+import { animate, motion } from 'framer-motion'
 
 import homeStore from '@/features/stores/home'
 import menuStore from '@/features/stores/menu'
@@ -14,6 +15,7 @@ import { ChatLog } from './chatLog'
 import { IconButton } from './iconButton'
 import { NewsNotification } from './newsNotification'
 import { VRM_MODELS } from '@/features/constants/settings'
+import { LiquidMetal } from './liquidMetal'
 
 // モバイルデバイス検出用のカスタムフック
 const useIsMobile = () => {
@@ -37,12 +39,91 @@ const useIsMobile = () => {
   return isMobile
 }
 
+const useSpotlight = () => {
+  const ref = useRef<HTMLDivElement>(null)
+  const [hoverX, setHoverX] = useState<number | null>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = el.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      setHoverX(x)
+      el.style.setProperty('--spotlight-x', `${x}px`)
+    }
+
+    const handleMouseLeave = () => {
+      setHoverX(null)
+    }
+
+    el.addEventListener('mousemove', handleMouseMove)
+    el.addEventListener('mouseleave', handleMouseLeave)
+    return () => {
+      el.removeEventListener('mousemove', handleMouseMove)
+      el.removeEventListener('mouseleave', handleMouseLeave)
+    }
+  }, [])
+
+  return { ref, hoverX }
+}
+
+const CreepyLogo = ({ isDark }: { isDark: boolean }) => {
+  const [isHovered, setIsHovered] = useState(false)
+
+  return (
+    <div
+      className="relative cursor-default select-none"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Eyes behind the logo */}
+      <span
+        className="absolute flex items-center gap-[0.35em] right-[0.3em] bottom-[0.1em] h-[0.6em] z-0 pointer-events-none transition-opacity duration-200"
+        style={{ opacity: isHovered ? 1 : 0 }}
+      >
+        {[0, 1].map((i) => (
+          <motion.span
+            key={i}
+            className="block bg-black dark:bg-white rounded-full"
+            style={{ width: '0.4em', fontSize: '1rem' }}
+            animate={{
+              height: ['0.4em', '0.4em', '0em', '0.4em'],
+            }}
+            transition={{
+              duration: 2,
+              times: [0, 0.85, 0.92, 1],
+              repeat: Infinity,
+              delay: i * 0.08,
+            }}
+          />
+        ))}
+      </span>
+      {/* Logo cover that tilts on hover */}
+      <motion.div
+        className="relative z-10 flex flex-col items-center"
+        style={{ transformOrigin: 'left bottom' }}
+        animate={{ rotate: isHovered ? -10 : 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+      >
+        <span className="text-2xl font-light tracking-[0.2em] text-secondary font-Montserrat leading-tight">
+          TONaRi
+        </span>
+        <span className="text-[7px] text-gray-400 dark:text-gray-500 tracking-[0.08em] font-light font-Montserrat whitespace-nowrap">
+          An AI Agent Standing With You
+        </span>
+      </motion.div>
+    </div>
+  )
+}
+
 const TaskIconButton = () => {
   const urgentTaskCount = taskStore((s) => s.urgentTaskCount)
   return (
     <button
       onClick={() => taskStore.getState().toggle()}
-      className="bg-transparent hover:bg-white/10 active:bg-white/20 rounded-2xl text-sm p-2 text-center inline-flex items-center transition-all duration-200 text-theme relative"
+      className="bg-transparent rounded-2xl text-sm p-2 text-center inline-flex items-center transition-all duration-200 text-theme relative focus:outline-none focus:ring-0"
       aria-label="タスク一覧"
     >
       <Image
@@ -75,6 +156,8 @@ export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
 
   // モバイルデバイス検出
   const isMobile = useIsMobile()
+
+  const { ref: spotlightRef, hoverX } = useSpotlight()
 
   const { t } = useTranslation()
   const router = useRouter()
@@ -166,93 +249,133 @@ export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
         {!isMobile && !isPortrait && (
           <div className="flex-shrink-0 z-15 px-4 py-2">
             <div className="flex items-center gap-3">
-              <div className="flex flex-col items-center">
-                <span className="text-2xl font-light tracking-[0.2em] text-secondary font-Montserrat leading-tight">
-                  TONaRi
-                </span>
-                <span className="text-[7px] text-gray-400 dark:text-gray-500 tracking-[0.08em] font-light font-Montserrat">
-                  An AI Agent Standing With You
-                </span>
-              </div>
+              <CreepyLogo isDark={isDark} />
               <div
-                className="flex gap-[8px] rounded-3xl px-2 py-1 bg-white/25 dark:bg-[rgba(20,20,35,0.45)] border border-white/40 dark:border-white/10"
+                className="relative rounded-3xl"
                 style={{
-                  backdropFilter: 'blur(16px) saturate(1.6)',
-                  WebkitBackdropFilter: 'blur(16px) saturate(1.6)',
                   boxShadow: isDark
-                    ? '0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)'
-                    : '0 4px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5)',
+                    ? '0 4px 24px rgba(0,0,0,0.3)'
+                    : '0 4px 24px rgba(0,0,0,0.08)',
                 }}
               >
-                {showControlPanel ? (
-                  <>
-                    <IconButton
-                      iconName="24/Refresh"
-                      isProcessing={false}
-                      backgroundColor="bg-transparent hover:bg-white/10 active:bg-white/20"
-                      onClick={handleNewSession}
-                      aria-label="新しいセッション"
+                {/* Liquid Metal border frame (light mode only) */}
+                {!isDark && (
+                  <div
+                    className="absolute inset-0 z-20 pointer-events-none rounded-3xl"
+                    style={{
+                      padding: 1,
+                      WebkitMask:
+                        'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                      WebkitMaskComposite: 'xor',
+                      mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                      maskComposite: 'exclude',
+                    }}
+                  >
+                    <LiquidMetal
+                      colorBack="#aaaaac"
+                      colorTint="#ffffff"
+                      speed={0.3}
+                      repetition={6}
+                      distortion={0.08}
+                      scale={1.2}
+                      shiftRed={0.15}
+                      shiftBlue={0.15}
                     />
-                    <IconButton
-                      iconName="24/Swap"
-                      isProcessing={false}
-                      backgroundColor="bg-transparent hover:bg-white/10 active:bg-white/20"
-                      onClick={handleSwitchVrmModel}
-                      aria-label="モデル切り替え"
-                    />
-                    <IconButton
-                      iconName="24/Settings"
-                      isProcessing={false}
-                      backgroundColor="bg-transparent hover:bg-white/10 active:bg-white/20"
-                      onClick={() => setShowSettings(true)}
-                      aria-label={t('BasedSettings')}
-                    />
-                    <Link
-                      href="/admin"
-                      className="bg-transparent hover:bg-white/10 active:bg-white/20 rounded-2xl text-sm p-2 text-center inline-flex items-center transition-all duration-200 text-theme"
-                      aria-label="管理画面"
-                    >
-                      <Image
-                        src="/images/icons/admin.svg"
-                        alt="管理画面"
-                        width={24}
-                        height={24}
+                  </div>
+                )}
+                <div
+                  ref={spotlightRef}
+                  className="relative z-10 flex items-center gap-[8px] rounded-3xl px-2 py-1 bg-white/25 dark:bg-[rgba(20,20,35,0.45)] dark:border dark:border-white/10 overflow-hidden "
+                  style={{
+                    backdropFilter: 'blur(16px) saturate(1.6)',
+                    WebkitBackdropFilter: 'blur(16px) saturate(1.6)',
+                    boxShadow: isDark
+                      ? 'inset 0 1px 0 rgba(255,255,255,0.05)'
+                      : 'inset 0 1px 0 rgba(255,255,255,0.5)',
+                  }}
+                >
+                  {/* Spotlight overlay */}
+                  <div
+                    className="pointer-events-none absolute inset-0 z-0 transition-opacity duration-300"
+                    style={{
+                      opacity: hoverX !== null ? 1 : 0,
+                      background: `radial-gradient(
+                        100px circle at var(--spotlight-x, 50%) 50%,
+                        ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)'} 0%,
+                        transparent 70%
+                      )`,
+                    }}
+                  />
+                  {showControlPanel ? (
+                    <>
+                      <IconButton
+                        iconName="24/Refresh"
+                        isProcessing={false}
+                        backgroundColor="bg-transparent"
+                        onClick={handleNewSession}
+                        aria-label="新しいセッション"
                       />
-                    </Link>
+                      <IconButton
+                        iconName="24/Swap"
+                        isProcessing={false}
+                        backgroundColor="bg-transparent"
+                        onClick={handleSwitchVrmModel}
+                        aria-label="モデル切り替え"
+                      />
+                      <IconButton
+                        iconName="24/Settings"
+                        isProcessing={false}
+                        backgroundColor="bg-transparent"
+                        onClick={() => setShowSettings(true)}
+                        aria-label={t('BasedSettings')}
+                      />
+                      <Link
+                        href="/admin"
+                        className="relative z-10 bg-transparent rounded-2xl text-sm p-2 text-center inline-flex items-center transition-all duration-200 text-theme focus:outline-none focus:ring-0"
+                        aria-label="管理画面"
+                      >
+                        <Image
+                          src="/images/icons/admin.svg"
+                          alt="管理画面"
+                          width={24}
+                          height={24}
+                        />
+                      </Link>
+                      <IconButton
+                        iconName="24/Timer"
+                        isProcessing={false}
+                        backgroundColor="bg-transparent"
+                        onClick={() => pomodoroStore.getState().toggle()}
+                        aria-label="ポモドーロタイマー"
+                      />
+                      <TaskIconButton />
+                      <button
+                        onClick={async () => {
+                          await fetch('/api/admin/auth', { method: 'DELETE' })
+                          window.location.href = '/login'
+                        }}
+                        className="relative z-10 bg-transparent rounded-2xl text-sm p-2 text-center inline-flex items-center transition-all duration-200 text-theme focus:outline-none focus:ring-0"
+                        aria-label="ログアウト"
+                      >
+                        <Image
+                          src="/images/icons/logout.svg"
+                          alt="ログアウト"
+                          width={24}
+                          height={24}
+                        />
+                      </button>
+                      <NewsNotification />
+                    </>
+                  ) : (
                     <IconButton
                       iconName="24/Timer"
                       isProcessing={false}
-                      backgroundColor="bg-transparent hover:bg-white/10 active:bg-white/20"
+                      backgroundColor="bg-transparent"
                       onClick={() => pomodoroStore.getState().toggle()}
                       aria-label="ポモドーロタイマー"
                     />
-                    <TaskIconButton />
-                    <button
-                      onClick={async () => {
-                        await fetch('/api/admin/auth', { method: 'DELETE' })
-                        window.location.href = '/login'
-                      }}
-                      className="bg-transparent hover:bg-white/10 active:bg-white/20 rounded-2xl text-sm p-2 text-center inline-flex items-center transition-all duration-200 text-theme"
-                      aria-label="ログアウト"
-                    >
-                      <Image
-                        src="/images/icons/logout.svg"
-                        alt="ログアウト"
-                        width={24}
-                        height={24}
-                      />
-                    </button>
-                    <NewsNotification />
-                  </>
-                ) : (
-                  <IconButton
-                    iconName="24/Timer"
-                    isProcessing={false}
-                    backgroundColor="bg-transparent hover:bg-white/10 active:bg-white/20"
-                    onClick={() => pomodoroStore.getState().toggle()}
-                    aria-label="ポモドーロタイマー"
-                  />
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>
