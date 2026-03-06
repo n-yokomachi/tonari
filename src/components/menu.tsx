@@ -69,17 +69,44 @@ const useSpotlight = () => {
   return { ref, hoverX }
 }
 
-const CreepyLogo = ({ isDark }: { isDark: boolean }) => {
+export const CreepyLogo = ({ isDark }: { isDark: boolean }) => {
+  const eyesRef = useRef<HTMLSpanElement>(null)
   const [isHovered, setIsHovered] = useState(false)
+  const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 })
+
+  const updateEyes = (e: React.MouseEvent) => {
+    if (!eyesRef.current) return
+    const rect = eyesRef.current.getBoundingClientRect()
+    const center = {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    }
+    const dx = e.clientX - center.x
+    const dy = e.clientY - center.y
+    const dist = Math.hypot(dx, dy)
+    const maxDist = 6
+    const scale = Math.min(dist, 100) / 100
+    setEyeOffset({
+      x: (dx / (dist || 1)) * maxDist * scale,
+      y: (dy / (dist || 1)) * maxDist * scale,
+    })
+  }
 
   return (
     <div
       className="relative cursor-default select-none"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseMove={(e) => {
+        updateEyes(e)
+        if (!isHovered) setIsHovered(true)
+      }}
+      onMouseLeave={() => {
+        setIsHovered(false)
+        setEyeOffset({ x: 0, y: 0 })
+      }}
     >
       {/* Eyes behind the logo */}
       <span
+        ref={eyesRef}
         className="absolute flex items-center gap-[0.35em] right-[0.3em] bottom-[0.1em] h-[0.6em] z-0 pointer-events-none transition-opacity duration-200"
         style={{ opacity: isHovered ? 1 : 0 }}
       >
@@ -87,13 +114,34 @@ const CreepyLogo = ({ isDark }: { isDark: boolean }) => {
           <motion.span
             key={i}
             className="block bg-black dark:bg-white rounded-full"
-            style={{ width: '0.4em', fontSize: '1rem' }}
+            style={{
+              width: '0.4em',
+              fontSize: '1rem',
+              transform: `translate(${eyeOffset.x}px, ${eyeOffset.y}px)`,
+            }}
             animate={{
-              height: ['0.4em', '0.4em', '0em', '0.4em'],
+              height: [
+                // 2回まばたき
+                '0.4em',
+                '0em',
+                '0.4em',
+                '0.4em',
+                '0em',
+                '0.4em',
+                // 間
+                '0.4em',
+                // 1回まばたき
+                '0em',
+                '0.4em',
+                // 間
+                '0.4em',
+              ],
             }}
             transition={{
-              duration: 2,
-              times: [0, 0.85, 0.92, 1],
+              duration: 4,
+              times: [
+                0, 0.02, 0.06, 0.12, 0.14, 0.18, 0.5, 0.52, 0.56, 1,
+              ],
               repeat: Infinity,
               delay: 0,
             }}

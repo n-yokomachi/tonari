@@ -12,6 +12,7 @@ import taskStore from '@/features/stores/tasks'
 import { resetSessionId } from '@/features/chat/agentCoreChat'
 import { VRM_MODELS } from '@/features/constants/settings'
 import { LiquidMetal } from './liquidMetal'
+import { CreepyLogo } from './menu'
 
 const TaskIconButton = () => {
   const urgentTaskCount = taskStore((s) => s.urgentTaskCount)
@@ -62,13 +63,8 @@ export const MobileHeader = ({ showLogo }: { showLogo?: boolean }) => {
         role="banner"
       >
         {showLogo && (
-          <div className="flex flex-col items-center mr-3">
-            <span className="text-2xl font-light tracking-[0.2em] text-secondary font-Montserrat leading-tight">
-              TONaRi
-            </span>
-            <span className="text-[7px] text-gray-400 dark:text-gray-500 tracking-[0.08em] font-light font-Montserrat">
-              An AI Agent Standing With You
-            </span>
+          <div className="mr-3">
+            <CreepyLogo isDark={isDark} />
           </div>
         )}
         <div
