@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import Image from 'next/image'
-
 import homeStore from '@/features/stores/home'
 import settingsStore from '@/features/stores/settings'
 import { IconButton } from './iconButton'
 import { CameraPreview, CameraButton } from './cameraPreview'
+import { LiquidMetal } from './liquidMetal'
 
 // ファイルバリデーションの設定
 const FILE_VALIDATION = {
@@ -264,84 +264,104 @@ export const MessageInput = ({
 
   return (
     <div className="w-full flex-shrink-0">
-      <div
-        className="text-black dark:text-gray-200 bg-white/25 dark:bg-[rgba(20,20,35,0.45)] border-t border-white/40 dark:border-white/10"
-        style={{
-          backdropFilter: 'blur(16px) saturate(1.6)',
-          WebkitBackdropFilter: 'blur(16px) saturate(1.6)',
-          boxShadow: isDark
-            ? '0 -4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)'
-            : '0 -4px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5)',
-        }}
-      >
-        <div className="mx-auto max-w-4xl p-4 pb-3">
-          {/* エラーメッセージ表示 */}
-          {fileError && (
-            <div className="mb-2 p-2 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 rounded-lg text-sm">
-              {fileError}
-            </div>
-          )}
-          {/* カメラプレビュー */}
-          <CameraPreview />
-          {/* 画像プレビュー */}
-          {modalImage && (
-            <div
-              className="mb-2 p-2 bg-gray-100 dark:bg-gray-800 rounded-lg relative"
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-            >
-              <button
-                onClick={handleRemoveImage}
-                className="absolute top-1 right-1 text-red-500 hover:text-red-700 text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50"
-              >
-                ×
-              </button>
-              <Image
-                src={modalImage}
-                alt="Pasted image"
-                width={0}
-                height={0}
-                sizes="100vw"
-                className="max-w-full max-h-32 rounded object-contain w-auto h-auto"
-              />
-            </div>
-          )}
-
-          <div className="flex gap-2 items-end">
-            <div className="flex-1 relative">
-              <textarea
-                ref={textareaRef}
-                placeholder=""
-                onChange={handleTextChange}
-                onPaste={handlePaste}
-                onKeyDown={handleKeyPress}
+      <div className="relative">
+        {/* Liquid Metal top border only (light mode only) */}
+        {!isDark && (
+          <div
+            className="absolute top-0 left-0 right-0 h-[40px] z-20 pointer-events-none"
+            style={{ clipPath: 'inset(0 0 calc(100% - 1px) 0)' }}
+          >
+            <LiquidMetal
+              colorBack="#aaaaac"
+              colorTint="#ffffff"
+              speed={0.3}
+              repetition={6}
+              distortion={0.08}
+              scale={1.2}
+              shiftRed={0.15}
+              shiftBlue={0.15}
+            />
+          </div>
+        )}
+        <div
+          className="text-black dark:text-gray-200 bg-white/25 dark:bg-[rgba(20,20,35,0.45)]"
+          style={{
+            backdropFilter: 'blur(16px) saturate(1.6)',
+            WebkitBackdropFilter: 'blur(16px) saturate(1.6)',
+            boxShadow: isDark
+              ? '0 -4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)'
+              : '0 -4px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5)',
+          }}
+        >
+          <div className="mx-auto max-w-4xl p-4 pb-3">
+            {/* エラーメッセージ表示 */}
+            {fileError && (
+              <div className="mb-2 p-2 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 rounded-lg text-sm">
+                {fileError}
+              </div>
+            )}
+            {/* カメラプレビュー */}
+            <CameraPreview />
+            {/* 画像プレビュー */}
+            {modalImage && (
+              <div
+                className="mb-2 p-2 bg-gray-100 dark:bg-gray-800 rounded-lg relative"
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
-                disabled={chatProcessing}
-                className="bg-white/50 dark:bg-white/10 hover:bg-white/70 dark:hover:bg-white/15 focus:bg-white/70 dark:focus:bg-white/20 focus:ring-2 focus:ring-secondary focus:outline-none disabled:bg-gray-100/50 dark:disabled:bg-gray-800/50 disabled:text-primary-disabled disabled:cursor-not-allowed rounded-2xl w-full px-4 text-theme-default font-bold transition-all duration-200"
-                value={userMessage}
-                rows={rows}
-                aria-label={t('EnterYourQuestion')}
-                style={{
-                  lineHeight: '1.5',
-                  padding: '8px 16px',
-                  resize: 'none',
-                  whiteSpace: 'pre-wrap',
-                }}
-              ></textarea>
-            </div>
-            <div className="flex-shrink-0 pb-[0.3rem]">
-              <CameraButton />
-            </div>
-            <div className="flex-shrink-0 pb-[0.3rem]">
-              <IconButton
-                iconName="24/Send"
-                className="bg-secondary hover:bg-secondary-hover active:bg-secondary-press disabled:bg-secondary-disabled disabled:opacity-50 disabled:cursor-not-allowed"
-                isProcessing={chatProcessing}
-                disabled={chatProcessing || (!userMessage && !modalImage)}
-                onClick={onClickSendButton}
-                aria-label={t('SendMessage.directSendTitle')}
-              />
+              >
+                <button
+                  onClick={handleRemoveImage}
+                  className="absolute top-1 right-1 text-red-500 hover:text-red-700 text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50"
+                >
+                  ×
+                </button>
+                <Image
+                  src={modalImage}
+                  alt="Pasted image"
+                  width={0}
+                  height={0}
+                  sizes="100vw"
+                  className="max-w-full max-h-32 rounded object-contain w-auto h-auto"
+                />
+              </div>
+            )}
+
+            <div className="flex gap-2 items-end">
+              <div className="flex-1 relative">
+                <textarea
+                  ref={textareaRef}
+                  placeholder=""
+                  onChange={handleTextChange}
+                  onPaste={handlePaste}
+                  onKeyDown={handleKeyPress}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  disabled={chatProcessing}
+                  className="bg-white/50 dark:bg-white/10 hover:bg-white/70 dark:hover:bg-white/15 focus:bg-white/70 dark:focus:bg-white/20 focus:ring-2 focus:ring-secondary focus:outline-none disabled:bg-gray-100/50 dark:disabled:bg-gray-800/50 disabled:text-primary-disabled disabled:cursor-not-allowed rounded-2xl w-full px-4 text-theme-default font-bold transition-all duration-200"
+                  value={userMessage}
+                  rows={rows}
+                  aria-label={t('EnterYourQuestion')}
+                  style={{
+                    lineHeight: '1.5',
+                    padding: '8px 16px',
+                    resize: 'none',
+                    whiteSpace: 'pre-wrap',
+                  }}
+                ></textarea>
+              </div>
+              <div className="flex-shrink-0 pb-[0.3rem]">
+                <CameraButton />
+              </div>
+              <div className="flex-shrink-0 pb-[0.3rem]">
+                <IconButton
+                  iconName="24/Send"
+                  className="bg-secondary hover:bg-secondary-hover active:bg-secondary-press disabled:bg-secondary-disabled disabled:opacity-50 disabled:cursor-not-allowed"
+                  isProcessing={chatProcessing}
+                  disabled={chatProcessing || (!userMessage && !modalImage)}
+                  onClick={onClickSendButton}
+                  aria-label={t('SendMessage.directSendTitle')}
+                />
+              </div>
             </div>
           </div>
         </div>
