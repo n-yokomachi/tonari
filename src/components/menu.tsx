@@ -139,9 +139,7 @@ export const CreepyLogo = ({ isDark }: { isDark: boolean }) => {
             }}
             transition={{
               duration: 4,
-              times: [
-                0, 0.02, 0.06, 0.12, 0.14, 0.18, 0.5, 0.52, 0.56, 1,
-              ],
+              times: [0, 0.02, 0.06, 0.12, 0.14, 0.18, 0.5, 0.52, 0.56, 1],
               repeat: Infinity,
               delay: 0,
             }}
