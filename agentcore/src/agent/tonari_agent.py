@@ -13,7 +13,7 @@ from bedrock_agentcore.memory.integrations.strands.session_manager import (
 from mcp_proxy_for_aws.client import aws_iam_streamablehttp_client
 from strands import Agent
 from strands.agent.conversation_manager import SlidingWindowConversationManager
-from strands.models import BedrockModel
+from strands.models import BedrockModel, CacheConfig
 from strands.tools.mcp import MCPClient
 
 from .prompts import PIPELINE_SYSTEM_PROMPT, TONARI_SYSTEM_PROMPT
@@ -38,15 +38,23 @@ def create_mcp_client(gateway_url: str, region: str) -> MCPClient:
     return MCPClient(create_transport)
 
 
-def _create_bedrock_model() -> BedrockModel:
-    """共通のBedrockModelインスタンスを作成"""
-    return BedrockModel(
-        model_id=os.getenv(
+def _create_bedrock_model(cache_tools: bool = False) -> BedrockModel:
+    """共通のBedrockModelインスタンスを作成
+
+    Args:
+        cache_tools: ツール定義のプロンプトキャッシングを有効にするか
+    """
+    kwargs = {
+        "model_id": os.getenv(
             "BEDROCK_MODEL_ID", "jp.anthropic.claude-haiku-4-5-20251001-v1:0"
         ),
-        region_name=os.getenv("AWS_REGION", "ap-northeast-1"),
-        streaming=True,
-    )
+        "region_name": os.getenv("AWS_REGION", "ap-northeast-1"),
+        "streaming": True,
+        "cache_config": CacheConfig(strategy="auto"),
+    }
+    if cache_tools:
+        kwargs["cache_tools"] = "default"
+    return BedrockModel(**kwargs)
 
 
 def _create_memory_config(
@@ -103,8 +111,9 @@ def create_tonari_agent(
         region_name=os.getenv("AWS_REGION", "ap-northeast-1"),
     )
 
+    has_tools = bool(mcp_tools)
     agent = Agent(
-        model=_create_bedrock_model(),
+        model=_create_bedrock_model(cache_tools=has_tools),
         system_prompt=TONARI_SYSTEM_PROMPT,
         conversation_manager=SlidingWindowConversationManager(window_size=10),
         session_manager=session_manager,
@@ -155,8 +164,9 @@ def create_tonari_agent_pipeline(
         region_name=os.getenv("AWS_REGION", "ap-northeast-1"),
     )
 
+    has_tools = bool(mcp_tools)
     agent = Agent(
-        model=_create_bedrock_model(),
+        model=_create_bedrock_model(cache_tools=has_tools),
         system_prompt=PIPELINE_SYSTEM_PROMPT,
         conversation_manager=SlidingWindowConversationManager(window_size=4),
         session_manager=session_manager,
