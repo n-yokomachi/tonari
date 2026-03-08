@@ -352,8 +352,8 @@ export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
                   className={`relative z-10 flex items-center gap-[8px] rounded-3xl px-2 py-1 overflow-hidden ${
                     uiStyle === 'neumorphic'
                       ? isDark
-                        ? 'bg-[rgba(30,30,50,0.8)] border border-white/5'
-                        : 'bg-[rgba(240,237,232,0.85)] border border-white/60'
+                        ? 'bg-[rgba(20,20,35,0.3)] border border-white/5'
+                        : 'bg-white/10 border border-white/60'
                       : uiStyle === 'droplet'
                         ? isDark
                           ? 'bg-[rgba(20,20,35,0.4)] border border-white/[0.06]'
@@ -361,8 +361,14 @@ export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
                         : 'bg-white/25 dark:bg-[rgba(20,20,35,0.45)] dark:border dark:border-white/10'
                   }`}
                   style={{
-                    backdropFilter: 'blur(16px) saturate(1.6)',
-                    WebkitBackdropFilter: 'blur(16px) saturate(1.6)',
+                    backdropFilter:
+                      uiStyle === 'neumorphic'
+                        ? 'blur(8px) saturate(1.2)'
+                        : 'blur(16px) saturate(1.6)',
+                    WebkitBackdropFilter:
+                      uiStyle === 'neumorphic'
+                        ? 'blur(8px) saturate(1.2)'
+                        : 'blur(16px) saturate(1.6)',
                     boxShadow:
                       uiStyle === 'neumorphic'
                         ? isDark

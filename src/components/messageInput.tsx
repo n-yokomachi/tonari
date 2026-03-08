@@ -91,14 +91,14 @@ const SendButton = ({
       />
       {/* Button */}
       <button
-        className={`relative z-10 rounded-[10px] text-sm p-2 text-center inline-flex items-center focus:outline-none focus:ring-0 transition-all duration-300 ${
+        className={`relative z-10 rounded-[10px] text-sm p-2 text-center inline-flex items-center focus:outline-none focus:ring-0 transition-all duration-300 border ${
           isActive
             ? isDark
-              ? 'bg-white/40 hover:bg-white/50 active:bg-white/55'
-              : 'bg-black/5 hover:bg-black/10 active:bg-black/15'
+              ? 'bg-white/40 hover:bg-white/50 active:bg-white/55 border-transparent'
+              : 'bg-black/5 hover:bg-black/10 active:bg-black/15 border-transparent'
             : isDark
-              ? 'bg-white/5 border border-white/10'
-              : 'bg-white/30 border border-black/5'
+              ? 'bg-white/5 border-white/10'
+              : 'bg-white/30 border-black/5'
         } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
         disabled={disabled}
         onClick={onClick}
@@ -405,8 +405,8 @@ export const MessageInput = ({
           className={`text-black dark:text-gray-200 ${
             uiStyle === 'neumorphic'
               ? isDark
-                ? 'bg-[rgba(30,30,50,0.8)] border-t border-white/5'
-                : 'bg-[rgba(240,237,232,0.85)] border-t border-white/60'
+                ? 'bg-[rgba(20,20,35,0.3)] border-t border-white/5'
+                : 'bg-white/10 border-t border-white/60'
               : uiStyle === 'droplet'
                 ? isDark
                   ? 'bg-[rgba(20,20,35,0.4)] border-t border-white/[0.06]'
@@ -414,8 +414,14 @@ export const MessageInput = ({
                 : 'bg-white/25 dark:bg-[rgba(20,20,35,0.45)]'
           }`}
           style={{
-            backdropFilter: 'blur(16px) saturate(1.6)',
-            WebkitBackdropFilter: 'blur(16px) saturate(1.6)',
+            backdropFilter:
+              uiStyle === 'neumorphic'
+                ? 'blur(8px) saturate(1.2)'
+                : 'blur(16px) saturate(1.6)',
+            WebkitBackdropFilter:
+              uiStyle === 'neumorphic'
+                ? 'blur(8px) saturate(1.2)'
+                : 'blur(16px) saturate(1.6)',
             boxShadow:
               uiStyle === 'neumorphic'
                 ? isDark
@@ -430,7 +436,7 @@ export const MessageInput = ({
                     : '0 -4px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5)',
           }}
         >
-          <div className="mx-auto max-w-4xl p-4 pb-3">
+          <div className="mx-auto max-w-4xl px-4 pt-3 pb-2">
             {/* エラーメッセージ表示 */}
             {fileError && (
               <div className="mb-2 p-2 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 rounded-lg text-sm">
