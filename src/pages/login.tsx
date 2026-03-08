@@ -420,7 +420,7 @@ function Branding() {
           }}
         >
           <LiquidMetal
-            colorBack="#aaaaac"
+            colorBack="#c8c8cc"
             colorTint="#ffffff"
             speed={0.6}
             repetition={5}

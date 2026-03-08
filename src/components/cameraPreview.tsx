@@ -81,9 +81,36 @@ export const CameraButton = () => {
   const { t } = useTranslation()
   const chatProcessing = homeStore((s) => s.chatProcessing)
   const cameraOpen = homeStore((s) => s.cameraOpen)
+  const uiStyle = settingsStore((s) => s.uiStyle)
+  const isDark = settingsStore((s) => s.colorTheme === 'tonari-dark')
 
   if (!isCameraSupported() || cameraOpen) {
     return null
+  }
+
+  if (uiStyle === 'droplet') {
+    return (
+      <IconButton
+        iconName="24/Camera"
+        isProcessing={false}
+        disabled={chatProcessing}
+        onClick={() => homeStore.setState({ cameraOpen: true })}
+        className="!rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+        style={{
+          background: isDark
+            ? 'rgba(255,255,255,0.06)'
+            : 'rgba(255,255,255,0.15)',
+          border: isDark
+            ? '1px solid rgba(255,255,255,0.06)'
+            : '1px solid rgba(255,255,255,0.4)',
+          boxShadow: isDark
+            ? '0 1px 6px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(255,255,255,0.04)'
+            : '0 1px 6px rgba(0,0,0,0.04), inset 0 1px 1px rgba(255,255,255,0.6), inset 0 -1px 1px rgba(255,255,255,0.3)',
+        }}
+        iconColor="text-gray-700 dark:text-gray-300"
+        aria-label={t('OpenCamera')}
+      />
+    )
   }
 
   return (
@@ -92,7 +119,7 @@ export const CameraButton = () => {
       isProcessing={false}
       disabled={chatProcessing}
       onClick={() => homeStore.setState({ cameraOpen: true })}
-      className="bg-transparent hover:bg-white/10 active:bg-white/20 border border-white/40 dark:border-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+      className="!rounded-[10px] bg-transparent hover:bg-white/10 active:bg-white/20 border border-white/40 dark:border-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
       iconColor="text-gray-700 dark:text-gray-300"
       aria-label={t('OpenCamera')}
     />

@@ -88,6 +88,75 @@ body {
   }
 }
 
+@keyframes gold-ring-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.gold-ring-glow {
+  position: absolute;
+  inset: -4px;
+  border-radius: 12px;
+  background: #e8af48;
+  opacity: 0;
+  filter: blur(10px);
+  transition: opacity 0.3s ease;
+}
+
+.gold-ring-glow.active {
+  opacity: 0.25;
+}
+
+.gold-ring-clip {
+  position: absolute;
+  inset: -1px;
+  border-radius: 11px;
+  overflow: hidden;
+}
+
+.gold-ring-gradient {
+  position: absolute;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: conic-gradient(
+    from 0deg,
+    #533517 0%,
+    #c49746 12%,
+    #feeaa5 22%,
+    #ffffff 24%,
+    #ffc0cb 25.5%,
+    #feeaa5 27%,
+    #c49746 35%,
+    #533517 47%,
+    #c49746 62%,
+    #feeaa5 72%,
+    #ffffff 74%,
+    #93c5fd 75.5%,
+    #feeaa5 77%,
+    #c49746 85%,
+    #533517 100%
+  );
+  animation: gold-ring-spin 4.5s linear infinite;
+}
+
+.gold-ring-gradient.active {
+  opacity: 1;
+}
+
+.gold-ring-inner {
+  position: absolute;
+  inset: 1px;
+  border-radius: 10px;
+  z-index: 1;
+}
+
 @keyframes dialog-overlay-in {
   from { opacity: 0; }
   to { opacity: 1; }

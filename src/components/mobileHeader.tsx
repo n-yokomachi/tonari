@@ -80,7 +80,7 @@ export const MobileHeader = ({ showLogo }: { showLogo?: boolean }) => {
             <div
               className="absolute inset-0 z-20 pointer-events-none rounded-3xl"
               style={{
-                padding: 1,
+                padding: 2,
                 WebkitMask:
                   'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
                 WebkitMaskComposite: 'xor',
@@ -89,7 +89,7 @@ export const MobileHeader = ({ showLogo }: { showLogo?: boolean }) => {
               }}
             >
               <LiquidMetal
-                colorBack="#aaaaac"
+                colorBack="#c8c8cc"
                 colorTint="#ffffff"
                 speed={0.3}
                 repetition={6}

@@ -40,6 +40,7 @@ interface General {
   useVideoAsBackground: boolean
   showPresetQuestions: boolean
   colorTheme: 'tonari' | 'tonari-dark'
+  uiStyle: 'glass' | 'neumorphic' | 'droplet'
   enableAutoCapture: boolean
   voiceEnabled: boolean
   voiceModel: 'Tomoko' | 'Kazuha'
@@ -82,6 +83,7 @@ const getInitialValuesFromEnv = (): SettingsState => {
     useVideoAsBackground: config.general.useVideoAsBackground,
     showPresetQuestions: config.general.showPresetQuestions,
     colorTheme: 'tonari' as const,
+    uiStyle: 'glass' as const,
     enableAutoCapture: true,
     voiceEnabled: false,
     voiceModel: 'Tomoko',

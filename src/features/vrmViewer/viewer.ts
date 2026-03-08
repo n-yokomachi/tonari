@@ -97,7 +97,9 @@ export class Viewer {
               this.model.vrm.scene.visible = true
               const canvas = this._renderer?.domElement
               if (canvas) {
-                const types: EntranceAnimationType[] = ['softRise', 'glitch']
+                const types: EntranceAnimationType[] = [
+                  'softRise' /*, 'glitch' */,
+                ]
                 const pick = types[Math.floor(Math.random() * types.length)]
                 this.playEntranceAnimation(canvas, pick)
               }
