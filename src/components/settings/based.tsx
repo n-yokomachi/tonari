@@ -6,6 +6,7 @@ import { TextButton } from '../textButton'
 const Based = () => {
   const { t } = useTranslation()
   const colorTheme = settingsStore((s) => s.colorTheme)
+  const uiStyle = settingsStore((s) => s.uiStyle)
   const voiceEnabled = settingsStore((s) => s.voiceEnabled)
   const voiceModel = settingsStore((s) => s.voiceModel)
   const wakeWordEnabled = settingsStore((s) => s.wakeWordEnabled)
@@ -41,6 +42,26 @@ const Based = () => {
           >
             {isDark ? 'ON' : 'OFF'}
           </TextButton>
+        </div>
+      </div>
+
+      {/* UIスタイル設定 */}
+      <div className="my-6">
+        <div className="my-4 text-xl font-bold">UI Style</div>
+        <div className="my-2">
+          <select
+            value={uiStyle}
+            onChange={(e) =>
+              settingsStore.setState({
+                uiStyle: e.target.value as 'glass' | 'neumorphic' | 'droplet',
+              })
+            }
+            className="px-4 py-2 rounded-lg bg-white/50 dark:bg-white/10 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:border-secondary transition-colors"
+          >
+            <option value="glass">Glass</option>
+            <option value="neumorphic">Neumorphic</option>
+            <option value="droplet">Droplet</option>
+          </select>
         </div>
       </div>
 

@@ -30,7 +30,11 @@ export const LiquidMetal = memo(function LiquidMetal({
   return (
     <div
       className={`absolute inset-0 z-0 overflow-hidden ${className ?? ''}`}
-      style={style}
+      style={{
+        ...style,
+        opacity: 0.5,
+        filter: 'sepia(1) hue-rotate(220deg) saturate(1.5)',
+      }}
     >
       <LiquidMetalShader
         colorBack={colorBack}
@@ -38,7 +42,7 @@ export const LiquidMetal = memo(function LiquidMetal({
         speed={speed}
         repetition={repetition}
         distortion={distortion}
-        softness={0}
+        softness={0.4}
         shiftRed={shiftRed}
         shiftBlue={shiftBlue}
         angle={45}

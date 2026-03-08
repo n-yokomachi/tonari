@@ -7,6 +7,123 @@ import { IconButton } from './iconButton'
 import { CameraPreview, CameraButton } from './cameraPreview'
 import { LiquidMetal } from './liquidMetal'
 
+const SendButton = ({
+  isActive,
+  isProcessing,
+  disabled,
+  isDark,
+  uiStyle,
+  onClick,
+  ariaLabel,
+}: {
+  isActive: boolean
+  isProcessing: boolean
+  disabled: boolean
+  isDark: boolean
+  uiStyle: 'glass' | 'neumorphic' | 'droplet'
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void
+  ariaLabel: string
+}) => {
+  if (uiStyle === 'droplet') {
+    return (
+      <button
+        className={`rounded-full text-sm p-2.5 text-center inline-flex items-center focus:outline-none focus:ring-0 transition-all duration-300 ${
+          disabled ? 'opacity-40 cursor-not-allowed' : ''
+        }`}
+        style={{
+          background: isDark
+            ? 'rgba(255,255,255,0.06)'
+            : 'rgba(255,255,255,0.15)',
+          border: isDark
+            ? '1px solid rgba(255,255,255,0.06)'
+            : '1px solid rgba(255,255,255,0.4)',
+          boxShadow: isActive
+            ? isDark
+              ? '0 2px 12px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.15), inset 0 -1px 1px rgba(255,255,255,0.06)'
+              : '0 2px 12px rgba(0,0,0,0.08), inset 0 2px 2px rgba(255,255,255,0.7), inset 0 -2px 2px rgba(255,255,255,0.35)'
+            : isDark
+              ? '0 1px 6px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(255,255,255,0.04)'
+              : '0 1px 6px rgba(0,0,0,0.04), inset 0 1px 1px rgba(255,255,255,0.6), inset 0 -1px 1px rgba(255,255,255,0.3)',
+        }}
+        disabled={disabled}
+        onClick={onClick}
+        aria-label={ariaLabel}
+      >
+        <Image
+          src="/images/icons/send.svg"
+          alt={ariaLabel}
+          width={24}
+          height={24}
+          priority
+          unoptimized
+          className={`transition-all duration-300 ${isProcessing ? 'animate-pulse' : ''} ${
+            isActive
+              ? isDark
+                ? 'brightness-200'
+                : 'brightness-0'
+              : isDark
+                ? 'brightness-150 opacity-40'
+                : 'opacity-30'
+          }`}
+        />
+      </button>
+    )
+  }
+
+  return (
+    <div className="relative">
+      {/* Glow layer */}
+      <div className={`gold-ring-glow ${isActive ? 'active' : ''}`} />
+      {/* Clip container + rotating gradient */}
+      <div className="gold-ring-clip">
+        <div className={`gold-ring-gradient ${isActive ? 'active' : ''}`} />
+      </div>
+      {/* Inner plate - matches glass container when inactive */}
+      <div
+        className="gold-ring-inner transition-colors duration-300"
+        style={{
+          backgroundColor: isActive
+            ? isDark
+              ? 'rgba(20,20,35,0.95)'
+              : 'rgba(255,255,255,0.9)'
+            : 'transparent',
+        }}
+      />
+      {/* Button */}
+      <button
+        className={`relative z-10 rounded-[10px] text-sm p-2 text-center inline-flex items-center focus:outline-none focus:ring-0 transition-all duration-300 ${
+          isActive
+            ? isDark
+              ? 'bg-white/40 hover:bg-white/50 active:bg-white/55'
+              : 'bg-black/5 hover:bg-black/10 active:bg-black/15'
+            : isDark
+              ? 'bg-white/5 border border-white/10'
+              : 'bg-white/30 border border-black/5'
+        } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+        disabled={disabled}
+        onClick={onClick}
+        aria-label={ariaLabel}
+      >
+        <Image
+          src="/images/icons/send.svg"
+          alt={ariaLabel}
+          width={24}
+          height={24}
+          priority
+          unoptimized
+          className={`transition-all duration-300 ${isProcessing ? 'animate-pulse' : ''} ${
+            isActive
+              ? 'brightness-200'
+              : isDark
+                ? 'brightness-150 opacity-40'
+                : 'opacity-30'
+          }`}
+        />
+      </button>
+    </div>
+  )
+}
+
 // ファイルバリデーションの設定
 const FILE_VALIDATION = {
   maxSizeBytes: 10 * 1024 * 1024, // 10MB
@@ -36,6 +153,7 @@ export const MessageInput = ({
   const chatProcessing = homeStore((s) => s.chatProcessing)
   const modalImage = homeStore((s) => s.modalImage)
   const isDark = settingsStore((s) => s.colorTheme === 'tonari-dark')
+  const uiStyle = settingsStore((s) => s.uiStyle)
   const [rows, setRows] = useState(1)
   const [fileError, setFileError] = useState<string>('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -265,14 +383,14 @@ export const MessageInput = ({
   return (
     <div className="w-full flex-shrink-0">
       <div className="relative">
-        {/* Liquid Metal top border only (light mode only) */}
-        {!isDark && (
+        {/* Liquid Metal top border only (glass + light mode only) */}
+        {uiStyle === 'glass' && !isDark && (
           <div
             className="absolute top-0 left-0 right-0 h-[40px] z-20 pointer-events-none"
-            style={{ clipPath: 'inset(0 0 calc(100% - 1px) 0)' }}
+            style={{ clipPath: 'inset(0 0 calc(100% - 2px) 0)' }}
           >
             <LiquidMetal
-              colorBack="#aaaaac"
+              colorBack="#c8c8cc"
               colorTint="#ffffff"
               speed={0.3}
               repetition={6}
@@ -284,13 +402,32 @@ export const MessageInput = ({
           </div>
         )}
         <div
-          className="text-black dark:text-gray-200 bg-white/25 dark:bg-[rgba(20,20,35,0.45)]"
+          className={`text-black dark:text-gray-200 ${
+            uiStyle === 'neumorphic'
+              ? isDark
+                ? 'bg-[rgba(30,30,50,0.8)] border-t border-white/5'
+                : 'bg-[rgba(240,237,232,0.85)] border-t border-white/60'
+              : uiStyle === 'droplet'
+                ? isDark
+                  ? 'bg-[rgba(20,20,35,0.4)] border-t border-white/[0.06]'
+                  : 'bg-white/20 border-t border-white/40'
+                : 'bg-white/25 dark:bg-[rgba(20,20,35,0.45)]'
+          }`}
           style={{
             backdropFilter: 'blur(16px) saturate(1.6)',
             WebkitBackdropFilter: 'blur(16px) saturate(1.6)',
-            boxShadow: isDark
-              ? '0 -4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)'
-              : '0 -4px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5)',
+            boxShadow:
+              uiStyle === 'neumorphic'
+                ? isDark
+                  ? '0 -6px 16px rgba(0,0,0,0.5), inset 0 2px 4px rgba(0,0,0,0.2), inset 0 -1px 3px rgba(255,255,255,0.03)'
+                  : '0 -8px 20px rgba(0,0,0,0.08), inset 0 2px 5px rgba(0,0,0,0.04), inset 0 -2px 4px rgba(255,255,255,0.8)'
+                : uiStyle === 'droplet'
+                  ? isDark
+                    ? '0 -4px 20px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.12), inset 0 -1px 1px rgba(255,255,255,0.06)'
+                    : '0 -4px 20px rgba(0,0,0,0.06), inset 0 2px 2px rgba(255,255,255,0.7), inset 0 -2px 2px rgba(255,255,255,0.35)'
+                  : isDark
+                    ? '0 -4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)'
+                    : '0 -4px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5)',
           }}
         >
           <div className="mx-auto max-w-4xl p-4 pb-3">
@@ -353,13 +490,14 @@ export const MessageInput = ({
                 <CameraButton />
               </div>
               <div className="flex-shrink-0 pb-[0.3rem]">
-                <IconButton
-                  iconName="24/Send"
-                  className="bg-secondary hover:bg-secondary-hover active:bg-secondary-press disabled:bg-secondary-disabled disabled:opacity-50 disabled:cursor-not-allowed"
+                <SendButton
+                  isActive={!chatProcessing && !!(userMessage || modalImage)}
                   isProcessing={chatProcessing}
                   disabled={chatProcessing || (!userMessage && !modalImage)}
+                  isDark={isDark}
+                  uiStyle={uiStyle}
                   onClick={onClickSendButton}
-                  aria-label={t('SendMessage.directSendTitle')}
+                  ariaLabel={t('SendMessage.directSendTitle')}
                 />
               </div>
             </div>

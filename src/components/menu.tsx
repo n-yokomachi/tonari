@@ -190,6 +190,7 @@ const TaskIconButton = () => {
 export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
   const showControlPanel = settingsStore((s) => s.showControlPanel)
   const isDark = settingsStore((s) => s.colorTheme === 'tonari-dark')
+  const uiStyle = settingsStore((s) => s.uiStyle)
 
   const showSettings = menuStore((s) => s.showSettings)
   const setShowSettings = useCallback(
@@ -299,17 +300,34 @@ export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
               <div
                 className="relative rounded-3xl"
                 style={{
-                  boxShadow: isDark
-                    ? '0 4px 24px rgba(0,0,0,0.3)'
-                    : '0 4px 24px rgba(0,0,0,0.08)',
+                  boxShadow:
+                    uiStyle === 'neumorphic'
+                      ? isDark
+                        ? '6px 6px 16px rgba(0,0,0,0.6), -4px -4px 12px rgba(255,255,255,0.04)'
+                        : '8px 8px 20px rgba(0,0,0,0.12), -6px -6px 16px rgba(255,255,255,0.9)'
+                      : isDark
+                        ? '0 4px 24px rgba(0,0,0,0.3)'
+                        : '0 4px 24px rgba(0,0,0,0.08)',
                 }}
               >
-                {/* Liquid Metal border frame (light mode only) */}
-                {!isDark && (
+                {/* Neumorphic: top glow accent */}
+                {uiStyle === 'neumorphic' && (
+                  <div
+                    className="absolute -top-2 left-1/4 right-1/4 h-8 z-20 pointer-events-none rounded-full"
+                    style={{
+                      background: isDark
+                        ? 'radial-gradient(ellipse at center, rgba(139,122,171,0.2) 0%, transparent 70%)'
+                        : 'radial-gradient(ellipse at center, rgba(200,180,220,0.4) 0%, rgba(255,200,200,0.15) 40%, transparent 70%)',
+                      filter: 'blur(6px)',
+                    }}
+                  />
+                )}
+                {/* Liquid Metal border frame (glass + light mode only) */}
+                {uiStyle === 'glass' && !isDark && (
                   <div
                     className="absolute inset-0 z-20 pointer-events-none rounded-3xl"
                     style={{
-                      padding: 1,
+                      padding: 2,
                       WebkitMask:
                         'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
                       WebkitMaskComposite: 'xor',
@@ -318,7 +336,7 @@ export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
                     }}
                   >
                     <LiquidMetal
-                      colorBack="#aaaaac"
+                      colorBack="#c8c8cc"
                       colorTint="#ffffff"
                       speed={0.3}
                       repetition={6}
@@ -331,13 +349,32 @@ export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
                 )}
                 <div
                   ref={spotlightRef}
-                  className="relative z-10 flex items-center gap-[8px] rounded-3xl px-2 py-1 bg-white/25 dark:bg-[rgba(20,20,35,0.45)] dark:border dark:border-white/10 overflow-hidden "
+                  className={`relative z-10 flex items-center gap-[8px] rounded-3xl px-2 py-1 overflow-hidden ${
+                    uiStyle === 'neumorphic'
+                      ? isDark
+                        ? 'bg-[rgba(30,30,50,0.8)] border border-white/5'
+                        : 'bg-[rgba(240,237,232,0.85)] border border-white/60'
+                      : uiStyle === 'droplet'
+                        ? isDark
+                          ? 'bg-[rgba(20,20,35,0.4)] border border-white/[0.06]'
+                          : 'bg-white/20 border border-white/40'
+                        : 'bg-white/25 dark:bg-[rgba(20,20,35,0.45)] dark:border dark:border-white/10'
+                  }`}
                   style={{
                     backdropFilter: 'blur(16px) saturate(1.6)',
                     WebkitBackdropFilter: 'blur(16px) saturate(1.6)',
-                    boxShadow: isDark
-                      ? 'inset 0 1px 0 rgba(255,255,255,0.05)'
-                      : 'inset 0 1px 0 rgba(255,255,255,0.5)',
+                    boxShadow:
+                      uiStyle === 'neumorphic'
+                        ? isDark
+                          ? 'inset 2px 2px 4px rgba(0,0,0,0.3), inset -1px -1px 3px rgba(255,255,255,0.03)'
+                          : 'inset 2px 2px 5px rgba(0,0,0,0.06), inset -2px -2px 4px rgba(255,255,255,0.8)'
+                        : uiStyle === 'droplet'
+                          ? isDark
+                            ? '0 4px 20px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.12), inset 0 -1px 1px rgba(255,255,255,0.06)'
+                            : '0 4px 20px rgba(0,0,0,0.06), inset 0 2px 2px rgba(255,255,255,0.7), inset 0 -2px 2px rgba(255,255,255,0.35)'
+                          : isDark
+                            ? 'inset 0 1px 0 rgba(255,255,255,0.05)'
+                            : 'inset 0 1px 0 rgba(255,255,255,0.5)',
                   }}
                 >
                   {/* Spotlight overlay */}
