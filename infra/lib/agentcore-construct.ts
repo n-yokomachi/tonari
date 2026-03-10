@@ -1035,6 +1035,16 @@ export class AgentCoreConstruct extends Construct {
             }),
           ],
         }),
+        SsmAccess: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              actions: ['ssm:GetParameter'],
+              resources: [
+                `arn:aws:ssm:${region}:${account}:parameter/tonari/openrouter-api-key`,
+              ],
+            }),
+          ],
+        }),
         WorkloadIdentity: new iam.PolicyDocument({
           statements: [
             new iam.PolicyStatement({
@@ -1069,6 +1079,7 @@ export class AgentCoreConstruct extends Construct {
         AGENTCORE_GATEWAY_URL: gateway.gatewayUrl!,
         AWS_REGION: region,
         BEDROCK_MODEL_ID: 'jp.anthropic.claude-haiku-4-5-20251001-v1:0',
+        SSM_OPENROUTER_API_KEY: '/tonari/openrouter-api-key',
       },
     })
     this.runtimeArn = runtime.agentRuntimeArn

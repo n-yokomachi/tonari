@@ -1,12 +1,31 @@
 import { useTranslation } from 'react-i18next'
 import settingsStore from '@/features/stores/settings'
+import type { ModelProvider } from '@/features/stores/settings'
 import homeStore from '@/features/stores/home'
 import { TextButton } from '../textButton'
+
+const MODEL_OPTIONS: {
+  value: ModelProvider
+  label: string
+  description: string
+}[] = [
+  {
+    value: 'bedrock',
+    label: 'Claude Haiku 4.5',
+    description: 'Amazon Bedrock',
+  },
+  {
+    value: 'openrouter',
+    label: 'Grok 4.1 Fast',
+    description: 'OpenRouter',
+  },
+]
 
 const Based = () => {
   const { t } = useTranslation()
   const colorTheme = settingsStore((s) => s.colorTheme)
   const uiStyle = settingsStore((s) => s.uiStyle)
+  const modelProvider = settingsStore((s) => s.modelProvider)
   const voiceEnabled = settingsStore((s) => s.voiceEnabled)
   const voiceModel = settingsStore((s) => s.voiceModel)
   const wakeWordEnabled = settingsStore((s) => s.wakeWordEnabled)
@@ -26,6 +45,27 @@ const Based = () => {
             }}
           />
           <h2 className="text-2xl font-bold">{t('BasedSettings')}</h2>
+        </div>
+      </div>
+
+      {/* LLMモデル選択 */}
+      <div className="my-6">
+        <div className="my-4 text-xl font-bold">LLM Model</div>
+        <div className="my-2 flex gap-2">
+          {MODEL_OPTIONS.map((option) => (
+            <TextButton
+              key={option.value}
+              onClick={() =>
+                settingsStore.setState({ modelProvider: option.value })
+              }
+            >
+              {option.label}
+              {modelProvider === option.value ? ' ✓' : ''}
+            </TextButton>
+          ))}
+        </div>
+        <div className="mt-2 text-sm opacity-60">
+          {MODEL_OPTIONS.find((o) => o.value === modelProvider)?.description}
         </div>
       </div>
 

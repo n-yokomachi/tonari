@@ -79,7 +79,14 @@ export default async function handler(
   }
 
   try {
-    const { message, sessionId, actorId, imageBase64, imageFormat } = req.body
+    const {
+      message,
+      sessionId,
+      actorId,
+      modelProvider,
+      imageBase64,
+      imageFormat,
+    } = req.body
 
     if (!message && !imageBase64) {
       return res.status(400).json({ error: 'Message or image is required' })
@@ -122,6 +129,7 @@ export default async function handler(
         prompt: promptWithTimestamp,
         session_id: sessionId, // AgentCore Memory STM用（セッション単位）
         actor_id: actorId, // AgentCore Memory LTM用（ユーザー単位）
+        ...(modelProvider && { model_provider: modelProvider }),
         ...(imageBase64 && {
           image_base64: imageBase64,
           image_format: imageFormat || 'jpeg',

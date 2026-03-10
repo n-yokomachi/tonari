@@ -28,8 +28,11 @@ interface Character {
   lightingIntensity: number
 }
 
+export type ModelProvider = 'bedrock' | 'openrouter'
+
 interface General {
   selectAIService: AIService
+  modelProvider: ModelProvider
   selectLanguage: Language
   includeTimestampInUserMessage: boolean
   showControlPanel: boolean
@@ -73,6 +76,7 @@ const getInitialValuesFromEnv = (): SettingsState => {
 
     // General (from config)
     selectAIService: config.ai.service as AIService,
+    modelProvider: 'bedrock' as ModelProvider,
     selectLanguage: config.general.language as Language,
     includeTimestampInUserMessage: config.general.includeTimestampInUserMessage,
     showControlPanel: config.general.showControlPanel,
@@ -136,6 +140,7 @@ const settingsStore = create<SettingsState>()(
       characterRotation: state.characterRotation,
       lightingIntensity: state.lightingIntensity,
       selectAIService: state.selectAIService,
+      modelProvider: state.modelProvider,
       selectLanguage: state.selectLanguage,
       includeTimestampInUserMessage: state.includeTimestampInUserMessage,
       showControlPanel: state.showControlPanel,
