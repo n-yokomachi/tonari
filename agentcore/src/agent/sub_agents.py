@@ -9,8 +9,8 @@ import os
 from datetime import datetime, timedelta, timezone
 
 from strands import Agent, tool
-from strands.models import BedrockModel
 
+from .tonari_agent import _create_model
 from .sub_agent_prompts import (
     BRIEFING_AGENT_PROMPT,
     CALENDAR_AGENT_PROMPT,
@@ -54,15 +54,9 @@ def _current_datetime_str() -> str:
     return datetime.now(JST).strftime("%Y年%m月%d日 %H:%M")
 
 
-def _create_sub_agent_model() -> BedrockModel:
-    """サブエージェント用のBedrockModelを作成"""
-    return BedrockModel(
-        model_id=os.getenv(
-            "BEDROCK_MODEL_ID", "jp.anthropic.claude-haiku-4-5-20251001-v1:0"
-        ),
-        region_name=os.getenv("AWS_REGION", "ap-northeast-1"),
-        streaming=True,
-    )
+def _create_sub_agent_model():
+    """サブエージェント用のモデルを作成（環境変数MODEL_PROVIDERに従う）"""
+    return _create_model()
 
 
 def split_mcp_tools(all_tools: list) -> dict[str, list]:

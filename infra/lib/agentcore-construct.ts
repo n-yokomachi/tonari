@@ -1079,6 +1079,7 @@ export class AgentCoreConstruct extends Construct {
         AGENTCORE_GATEWAY_URL: gateway.gatewayUrl!,
         AWS_REGION: region,
         BEDROCK_MODEL_ID: 'jp.anthropic.claude-haiku-4-5-20251001-v1:0',
+        MODEL_PROVIDER: 'openrouter',
         SSM_OPENROUTER_API_KEY: '/tonari/openrouter-api-key',
       },
     })
