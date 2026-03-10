@@ -18,6 +18,7 @@ from src.agent.sub_agents import (
     twitter_agent,
 )
 from src.agent.tonari_agent import (
+    MODEL_PROVIDER_BEDROCK,
     create_mcp_client,
     create_tonari_agent,
     create_tonari_agent_pipeline,
@@ -33,16 +34,20 @@ _current_agent = None
 _current_mcp_client = None
 _current_session_id = None
 _current_actor_id = None
+_current_model_provider = None
 
 
-def _get_or_create_agent(session_id: str, actor_id: str):
-    """同じセッションならAgentを使い回し、変わったら作り直す"""
-    global _current_agent, _current_mcp_client, _current_session_id, _current_actor_id
+def _get_or_create_agent(
+    session_id: str, actor_id: str, model_provider: str = MODEL_PROVIDER_BEDROCK
+):
+    """同じセッション・同じモデルならAgentを使い回し、変わったら作り直す"""
+    global _current_agent, _current_mcp_client, _current_session_id, _current_actor_id, _current_model_provider
 
     if (
         _current_agent is not None
         and _current_session_id == session_id
         and _current_actor_id == actor_id
+        and _current_model_provider == model_provider
     ):
         return _current_agent
 
@@ -79,15 +84,19 @@ def _get_or_create_agent(session_id: str, actor_id: str):
             session_id=session_id,
             actor_id=actor_id,
             mcp_tools=main_tools,
+            model_provider=model_provider,
         )
         _current_mcp_client = mcp_client
     except Exception as e:
         logger.warning("Gateway connection failed, running without tools: %s", e, exc_info=True)
-        agent = create_tonari_agent(session_id=session_id, actor_id=actor_id)
+        agent = create_tonari_agent(
+            session_id=session_id, actor_id=actor_id, model_provider=model_provider
+        )
 
     _current_agent = agent
     _current_session_id = session_id
     _current_actor_id = actor_id
+    _current_model_provider = model_provider
     return agent
 
 
@@ -209,6 +218,11 @@ async def invoke(payload: dict):
     session_id = payload.get("session_id", "default-session")
     actor_id = payload.get("actor_id", "anonymous")
     mode = payload.get("mode") if isinstance(payload, dict) else None
+    model_provider = (
+        payload.get("model_provider", MODEL_PROVIDER_BEDROCK)
+        if isinstance(payload, dict)
+        else MODEL_PROVIDER_BEDROCK
+    )
     image_base64 = payload.get("image_base64") if isinstance(payload, dict) else None
     image_format = (
         payload.get("image_format", "jpeg") if isinstance(payload, dict) else "jpeg"
@@ -234,7 +248,7 @@ async def invoke(payload: dict):
         return
 
     # 通常モード: フルエージェント（キャッシュ付き）
-    agent = _get_or_create_agent(session_id, actor_id)
+    agent = _get_or_create_agent(session_id, actor_id, model_provider)
 
     async for chunk in _stream_response(agent, content):
         yield chunk

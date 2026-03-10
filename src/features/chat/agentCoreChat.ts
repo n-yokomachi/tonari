@@ -1,3 +1,5 @@
+import settingsStore from '@/features/stores/settings'
+
 export type ToolEvent = { type: 'tool_start' | 'tool_end'; tool?: string }
 export type StreamChunk = string | ToolEvent
 
@@ -53,6 +55,7 @@ export async function getAgentCoreChatResponseStream(
       message: userMessage,
       sessionId: getSessionId(),
       actorId: getActorId(),
+      modelProvider: settingsStore.getState().modelProvider,
       ...(imageBase64 && {
         imageBase64,
         imageFormat: 'jpeg',

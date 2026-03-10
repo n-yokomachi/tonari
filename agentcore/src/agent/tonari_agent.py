@@ -1,5 +1,6 @@
 """Tonari エージェント実装"""
 
+import logging
 import os
 from typing import Optional
 
@@ -17,6 +18,12 @@ from strands.models import BedrockModel, CacheConfig
 from strands.tools.mcp import MCPClient
 
 from .prompts import PIPELINE_SYSTEM_PROMPT, TONARI_SYSTEM_PROMPT
+
+logger = logging.getLogger(__name__)
+
+# モデルプロバイダー定数
+MODEL_PROVIDER_BEDROCK = "bedrock"
+MODEL_PROVIDER_OPENROUTER = "openrouter"
 
 # デフォルトのMemory ID（AgentCore CLIで作成済み）
 DEFAULT_MEMORY_ID = "tonari_memory-aky0rJC6wh"
@@ -57,6 +64,60 @@ def _create_bedrock_model(cache_tools: bool = False) -> BedrockModel:
     return BedrockModel(**kwargs)
 
 
+def _get_ssm_parameter(name: str) -> str:
+    """SSM Parameter Storeからパラメータを取得（SecureString対応）"""
+    import boto3
+
+    ssm = boto3.client("ssm", region_name=os.getenv("AWS_REGION", "ap-northeast-1"))
+    response = ssm.get_parameter(Name=name, WithDecryption=True)
+    return response["Parameter"]["Value"]
+
+
+def _create_openrouter_model():
+    """OpenRouter経由のLiteLLMModelインスタンスを作成"""
+    from strands.models.litellm import LiteLLMModel
+    import litellm
+
+    litellm.drop_params = True
+
+    model_id = os.getenv("OPENROUTER_MODEL_ID", "openrouter/x-ai/grok-4.1-fast")
+
+    # SSMパスから実行時にAPIキーを取得
+    ssm_path = os.getenv("SSM_OPENROUTER_API_KEY", "")
+    api_key = ""
+    if ssm_path:
+        try:
+            api_key = _get_ssm_parameter(ssm_path)
+        except Exception as e:
+            logger.warning("Failed to get OpenRouter API key from SSM: %s", e)
+
+    if not api_key:
+        logger.warning("OpenRouter API key not available, falling back to Bedrock")
+        return _create_bedrock_model()
+
+    return LiteLLMModel(
+        model_id=model_id,
+        params={
+            "api_key": api_key,
+            "extra_body": {"reasoning": {"enabled": False}},
+        },
+    )
+
+
+def _create_model(
+    model_provider: str = MODEL_PROVIDER_BEDROCK, cache_tools: bool = False
+):
+    """モデルプロバイダーに応じたモデルインスタンスを作成
+
+    Args:
+        model_provider: モデルプロバイダー ("bedrock" or "openrouter")
+        cache_tools: ツール定義のプロンプトキャッシングを有効にするか（Bedrockのみ）
+    """
+    if model_provider == MODEL_PROVIDER_OPENROUTER:
+        return _create_openrouter_model()
+    return _create_bedrock_model(cache_tools=cache_tools)
+
+
 def _create_memory_config(
     session_id: str,
     actor_id: str,
@@ -94,6 +155,7 @@ def create_tonari_agent(
     session_id: str = "default-session",
     actor_id: str = "anonymous",
     mcp_tools: Optional[list] = None,
+    model_provider: str = MODEL_PROVIDER_BEDROCK,
 ) -> Agent:
     """Tonariエージェントを作成（フルモード：LTM + ツール付き）
 
@@ -101,6 +163,7 @@ def create_tonari_agent(
         session_id: セッションID（タブ単位で管理）
         actor_id: ユーザーID（ブラウザ単位で永続化）
         mcp_tools: MCPから取得したツールリスト（オプション）
+        model_provider: モデルプロバイダー ("bedrock" or "openrouter")
 
     Returns:
         Agent: セッション管理機能付きのTonariエージェント
@@ -113,7 +176,7 @@ def create_tonari_agent(
 
     has_tools = bool(mcp_tools)
     agent = Agent(
-        model=_create_bedrock_model(cache_tools=has_tools),
+        model=_create_model(model_provider, cache_tools=has_tools),
         system_prompt=TONARI_SYSTEM_PROMPT,
         conversation_manager=SlidingWindowConversationManager(window_size=10),
         session_manager=session_manager,
@@ -125,6 +188,7 @@ def create_tonari_agent(
 def create_tonari_agent_light(
     session_id: str = "default-session",
     actor_id: str = "anonymous",
+    model_provider: str = MODEL_PROVIDER_BEDROCK,
 ) -> Agent:
     """Tonariエージェントを作成（軽量モード：STMのみ、ツールなし）
 
@@ -138,7 +202,7 @@ def create_tonari_agent_light(
     )
 
     agent = Agent(
-        model=_create_bedrock_model(),
+        model=_create_model(model_provider),
         system_prompt=TONARI_SYSTEM_PROMPT,
         conversation_manager=SlidingWindowConversationManager(window_size=10),
         session_manager=session_manager,
