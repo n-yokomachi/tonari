@@ -104,16 +104,22 @@ def _create_openrouter_model():
     )
 
 
+def _get_default_model_provider() -> str:
+    """環境変数からデフォルトのモデルプロバイダーを取得"""
+    return os.getenv("MODEL_PROVIDER", MODEL_PROVIDER_BEDROCK)
+
+
 def _create_model(
-    model_provider: str = MODEL_PROVIDER_BEDROCK, cache_tools: bool = False
+    model_provider: str | None = None, cache_tools: bool = False
 ):
     """モデルプロバイダーに応じたモデルインスタンスを作成
 
     Args:
-        model_provider: モデルプロバイダー ("bedrock" or "openrouter")
+        model_provider: モデルプロバイダー ("bedrock" or "openrouter")。Noneの場合は環境変数を参照
         cache_tools: ツール定義のプロンプトキャッシングを有効にするか（Bedrockのみ）
     """
-    if model_provider == MODEL_PROVIDER_OPENROUTER:
+    provider = model_provider or _get_default_model_provider()
+    if provider == MODEL_PROVIDER_OPENROUTER:
         return _create_openrouter_model()
     return _create_bedrock_model(cache_tools=cache_tools)
 
@@ -221,6 +227,7 @@ def create_tonari_agent_pipeline(
     ツイート・ニュースなどの自動パイプラインで使用。
     フルエージェントと比べてシステムプロンプトが短く、サブエージェントを含まないため
     入力トークンを大幅に削減できる。
+    モデルは環境変数MODEL_PROVIDERに従う。
     """
     memory_config = _create_memory_config(session_id, actor_id, use_ltm=True)
     session_manager = AgentCoreMemorySessionManager(
@@ -230,7 +237,7 @@ def create_tonari_agent_pipeline(
 
     has_tools = bool(mcp_tools)
     agent = Agent(
-        model=_create_bedrock_model(cache_tools=has_tools),
+        model=_create_model(cache_tools=has_tools),
         system_prompt=PIPELINE_SYSTEM_PROMPT,
         conversation_manager=SlidingWindowConversationManager(window_size=4),
         session_manager=session_manager,

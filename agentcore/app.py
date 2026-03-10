@@ -19,6 +19,7 @@ from src.agent.sub_agents import (
 )
 from src.agent.tonari_agent import (
     MODEL_PROVIDER_BEDROCK,
+    _get_default_model_provider,
     create_mcp_client,
     create_tonari_agent,
     create_tonari_agent_pipeline,
@@ -218,10 +219,11 @@ async def invoke(payload: dict):
     session_id = payload.get("session_id", "default-session")
     actor_id = payload.get("actor_id", "anonymous")
     mode = payload.get("mode") if isinstance(payload, dict) else None
+    default_provider = _get_default_model_provider()
     model_provider = (
-        payload.get("model_provider", MODEL_PROVIDER_BEDROCK)
+        payload.get("model_provider", default_provider)
         if isinstance(payload, dict)
-        else MODEL_PROVIDER_BEDROCK
+        else default_provider
     )
     image_base64 = payload.get("image_base64") if isinstance(payload, dict) else None
     image_format = (
