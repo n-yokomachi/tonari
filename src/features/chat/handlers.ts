@@ -511,11 +511,12 @@ export const processAIResponse = async (
           const toolEvent = value as ToolEvent
           if (toolEvent.type === 'tool_start') {
             // Finalize current message before tool execution (split bubble)
-            if (currentMessageId !== null && currentMessageContent.trim()) {
+            const toolSplitContent = currentMessageId !== null ? removeGestureTags(currentMessageContent.trim()) : ''
+            if (currentMessageId !== null && toolSplitContent) {
               homeStore.getState().upsertMessage({
                 id: currentMessageId,
                 role: 'assistant',
-                content: removeGestureTags(currentMessageContent.trim()),
+                content: toolSplitContent,
               })
               currentMessageId = null
               currentMessageContent = ''
@@ -555,30 +556,34 @@ export const processAIResponse = async (
           if (!isCodeBlock && currentMessageContent.includes('\n\n')) {
             const segments = currentMessageContent.split('\n\n')
             for (let i = 0; i < segments.length - 1; i++) {
-              const segment = segments[i].trimEnd()
-              if (segment) {
+              const cleanedSegment = removeGestureTags(segments[i].trimEnd())
+              if (cleanedSegment) {
                 homeStore.getState().upsertMessage({
                   id: currentMessageId!,
                   role: 'assistant',
-                  content: removeGestureTags(segment),
+                  content: cleanedSegment,
                 })
               }
               currentMessageId = generateMessageId()
             }
             currentMessageContent = segments[segments.length - 1].trimStart()
-            if (currentMessageContent) {
+            const cleanedLast = removeGestureTags(currentMessageContent)
+            if (cleanedLast) {
               homeStore.getState().upsertMessage({
                 id: currentMessageId!,
                 role: 'assistant',
-                content: removeGestureTags(currentMessageContent),
+                content: cleanedLast,
               })
             }
           } else if (!isCodeBlock && currentMessageContent && textToAdd) {
-            homeStore.getState().upsertMessage({
-              id: currentMessageId!,
-              role: 'assistant',
-              content: removeGestureTags(currentMessageContent),
-            })
+            const cleanedContent = removeGestureTags(currentMessageContent)
+            if (cleanedContent) {
+              homeStore.getState().upsertMessage({
+                id: currentMessageId!,
+                role: 'assistant',
+                content: cleanedContent,
+              })
+            }
           }
 
           receivedChunksForSpeech += textValue
@@ -836,11 +841,12 @@ export const processAIResponse = async (
   // ストリーミング完了後に表情をニュートラルに戻す
   resetExpressionAfterDelay()
 
-  if (currentMessageContent.trim()) {
+  const finalContent = removeGestureTags(currentMessageContent.trim())
+  if (finalContent) {
     homeStore.getState().upsertMessage({
       id: currentMessageId ?? generateMessageId(),
       role: 'assistant',
-      content: removeGestureTags(currentMessageContent.trim()),
+      content: finalContent,
     })
   }
   if (isCodeBlock && codeBlockContent.trim()) {
