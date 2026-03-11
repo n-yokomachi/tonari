@@ -48,6 +48,7 @@ interface General {
   voiceEnabled: boolean
   voiceModel: 'Tomoko' | 'Kazuha'
   wakeWordEnabled: boolean
+  reasoningEnabled: boolean
 }
 
 export type SettingsState = Character & General
@@ -92,6 +93,7 @@ const getInitialValuesFromEnv = (): SettingsState => {
     voiceEnabled: false,
     voiceModel: 'Tomoko',
     wakeWordEnabled: false,
+    reasoningEnabled: false,
   }
 }
 
@@ -155,6 +157,7 @@ const settingsStore = create<SettingsState>()(
       voiceEnabled: state.voiceEnabled,
       voiceModel: state.voiceModel,
       wakeWordEnabled: state.wakeWordEnabled,
+      reasoningEnabled: state.reasoningEnabled,
     }),
   })
 )

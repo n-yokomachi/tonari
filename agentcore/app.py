@@ -36,19 +36,22 @@ _current_mcp_client = None
 _current_session_id = None
 _current_actor_id = None
 _current_model_provider = None
+_current_reasoning_enabled = None
 
 
 def _get_or_create_agent(
-    session_id: str, actor_id: str, model_provider: str = MODEL_PROVIDER_BEDROCK
+    session_id: str, actor_id: str, model_provider: str = MODEL_PROVIDER_BEDROCK,
+    reasoning_enabled: bool = False,
 ):
     """同じセッション・同じモデルならAgentを使い回し、変わったら作り直す"""
-    global _current_agent, _current_mcp_client, _current_session_id, _current_actor_id, _current_model_provider
+    global _current_agent, _current_mcp_client, _current_session_id, _current_actor_id, _current_model_provider, _current_reasoning_enabled
 
     if (
         _current_agent is not None
         and _current_session_id == session_id
         and _current_actor_id == actor_id
         and _current_model_provider == model_provider
+        and _current_reasoning_enabled == reasoning_enabled
     ):
         return _current_agent
 
@@ -86,18 +89,21 @@ def _get_or_create_agent(
             actor_id=actor_id,
             mcp_tools=main_tools,
             model_provider=model_provider,
+            reasoning_enabled=reasoning_enabled,
         )
         _current_mcp_client = mcp_client
     except Exception as e:
         logger.warning("Gateway connection failed, running without tools: %s", e, exc_info=True)
         agent = create_tonari_agent(
-            session_id=session_id, actor_id=actor_id, model_provider=model_provider
+            session_id=session_id, actor_id=actor_id, model_provider=model_provider,
+            reasoning_enabled=reasoning_enabled,
         )
 
     _current_agent = agent
     _current_session_id = session_id
     _current_actor_id = actor_id
     _current_model_provider = model_provider
+    _current_reasoning_enabled = reasoning_enabled
     return agent
 
 
@@ -225,6 +231,12 @@ async def invoke(payload: dict):
         if isinstance(payload, dict)
         else default_provider
     )
+    reasoning_enabled = (
+        payload.get("reasoning_enabled", False)
+        if isinstance(payload, dict)
+        else False
+    )
+    logger.info("invoke: model_provider=%s, reasoning_enabled=%s", model_provider, reasoning_enabled)
     image_base64 = payload.get("image_base64") if isinstance(payload, dict) else None
     image_format = (
         payload.get("image_format", "jpeg") if isinstance(payload, dict) else "jpeg"
@@ -250,7 +262,7 @@ async def invoke(payload: dict):
         return
 
     # 通常モード: フルエージェント（キャッシュ付き）
-    agent = _get_or_create_agent(session_id, actor_id, model_provider)
+    agent = _get_or_create_agent(session_id, actor_id, model_provider, reasoning_enabled)
 
     async for chunk in _stream_response(agent, content):
         yield chunk

@@ -26,6 +26,7 @@ const Based = () => {
   const colorTheme = settingsStore((s) => s.colorTheme)
   const uiStyle = settingsStore((s) => s.uiStyle)
   const modelProvider = settingsStore((s) => s.modelProvider)
+  const reasoningEnabled = settingsStore((s) => s.reasoningEnabled)
   const voiceEnabled = settingsStore((s) => s.voiceEnabled)
   const voiceModel = settingsStore((s) => s.voiceModel)
   const wakeWordEnabled = settingsStore((s) => s.wakeWordEnabled)
@@ -68,6 +69,29 @@ const Based = () => {
           {MODEL_OPTIONS.find((o) => o.value === modelProvider)?.description}
         </div>
       </div>
+
+      {/* Reasoning設定（OpenRouterのみ） */}
+      {modelProvider === 'openrouter' && (
+        <div className="my-6">
+          <div className="my-4 text-xl font-bold">Reasoning</div>
+          <div className="my-2 flex gap-2">
+            <TextButton
+              onClick={() =>
+                settingsStore.setState({
+                  reasoningEnabled: !reasoningEnabled,
+                })
+              }
+            >
+              {reasoningEnabled ? 'ON ✓' : 'OFF ✓'}
+            </TextButton>
+          </div>
+          <div className="mt-2 text-sm opacity-60">
+            {reasoningEnabled
+              ? 'Reasoning ON: 推論精度が向上しますが、応答が遅くなります'
+              : 'Reasoning OFF: 高速応答（推奨）'}
+          </div>
+        </div>
+      )}
 
       {/* ダークモード設定 */}
       <div className="my-6">
