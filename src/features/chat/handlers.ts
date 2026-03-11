@@ -511,7 +511,10 @@ export const processAIResponse = async (
           const toolEvent = value as ToolEvent
           if (toolEvent.type === 'tool_start') {
             // Finalize current message before tool execution (split bubble)
-            const toolSplitContent = currentMessageId !== null ? removeGestureTags(currentMessageContent.trim()) : ''
+            const toolSplitContent =
+              currentMessageId !== null
+                ? removeGestureTags(currentMessageContent.trim())
+                : ''
             if (currentMessageId !== null && toolSplitContent) {
               homeStore.getState().upsertMessage({
                 id: currentMessageId,
