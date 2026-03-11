@@ -73,14 +73,15 @@ def _get_ssm_parameter(name: str) -> str:
     return response["Parameter"]["Value"]
 
 
-def _create_openrouter_model():
-    """OpenRouter経由のLiteLLMModelインスタンスを作成"""
-    from strands.models.litellm import LiteLLMModel
-    import litellm
+def _create_openrouter_model(reasoning_enabled: bool = False):
+    """OpenRouter経由のOpenAIModelインスタンスを作成
 
-    litellm.drop_params = True
+    Args:
+        reasoning_enabled: reasoningを有効にするか（Trueで精度向上、応答遅延）
+    """
+    from strands.models.openai import OpenAIModel
 
-    model_id = os.getenv("OPENROUTER_MODEL_ID", "openrouter/x-ai/grok-4.1-fast")
+    model_id = os.getenv("OPENROUTER_MODEL_ID", "x-ai/grok-4.1-fast")
 
     # SSMパスから実行時にAPIキーを取得
     ssm_path = os.getenv("SSM_OPENROUTER_API_KEY", "")
@@ -95,12 +96,16 @@ def _create_openrouter_model():
         logger.warning("OpenRouter API key not available, falling back to Bedrock")
         return _create_bedrock_model()
 
-    return LiteLLMModel(
-        model_id=model_id,
-        params={
+    params = {}
+    if not reasoning_enabled:
+        params["extra_body"] = {"reasoning": {"enabled": False}}
+    return OpenAIModel(
+        client_args={
             "api_key": api_key,
-            "extra_body": {"reasoning": {"enabled": False}},
+            "base_url": "https://openrouter.ai/api/v1",
         },
+        model_id=model_id,
+        params=params,
     )
 
 
@@ -110,17 +115,19 @@ def _get_default_model_provider() -> str:
 
 
 def _create_model(
-    model_provider: str | None = None, cache_tools: bool = False
+    model_provider: str | None = None, cache_tools: bool = False,
+    reasoning_enabled: bool = False,
 ):
     """モデルプロバイダーに応じたモデルインスタンスを作成
 
     Args:
         model_provider: モデルプロバイダー ("bedrock" or "openrouter")。Noneの場合は環境変数を参照
         cache_tools: ツール定義のプロンプトキャッシングを有効にするか（Bedrockのみ）
+        reasoning_enabled: reasoningを有効にするか（OpenRouterのみ）
     """
     provider = model_provider or _get_default_model_provider()
     if provider == MODEL_PROVIDER_OPENROUTER:
-        return _create_openrouter_model()
+        return _create_openrouter_model(reasoning_enabled=reasoning_enabled)
     return _create_bedrock_model(cache_tools=cache_tools)
 
 
@@ -162,6 +169,7 @@ def create_tonari_agent(
     actor_id: str = "anonymous",
     mcp_tools: Optional[list] = None,
     model_provider: str = MODEL_PROVIDER_BEDROCK,
+    reasoning_enabled: bool = False,
 ) -> Agent:
     """Tonariエージェントを作成（フルモード：LTM + ツール付き）
 
@@ -170,6 +178,7 @@ def create_tonari_agent(
         actor_id: ユーザーID（ブラウザ単位で永続化）
         mcp_tools: MCPから取得したツールリスト（オプション）
         model_provider: モデルプロバイダー ("bedrock" or "openrouter")
+        reasoning_enabled: reasoningを有効にするか（OpenRouterのみ）
 
     Returns:
         Agent: セッション管理機能付きのTonariエージェント
@@ -182,7 +191,7 @@ def create_tonari_agent(
 
     has_tools = bool(mcp_tools)
     agent = Agent(
-        model=_create_model(model_provider, cache_tools=has_tools),
+        model=_create_model(model_provider, cache_tools=has_tools, reasoning_enabled=reasoning_enabled),
         system_prompt=TONARI_SYSTEM_PROMPT,
         conversation_manager=SlidingWindowConversationManager(window_size=10),
         session_manager=session_manager,

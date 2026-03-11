@@ -56,6 +56,7 @@ export async function getAgentCoreChatResponseStream(
       sessionId: getSessionId(),
       actorId: getActorId(),
       modelProvider: settingsStore.getState().modelProvider,
+      reasoningEnabled: settingsStore.getState().reasoningEnabled,
       ...(imageBase64 && {
         imageBase64,
         imageFormat: 'jpeg',

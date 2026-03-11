@@ -84,6 +84,7 @@ export default async function handler(
       sessionId,
       actorId,
       modelProvider,
+      reasoningEnabled,
       imageBase64,
       imageFormat,
     } = req.body
@@ -130,6 +131,9 @@ export default async function handler(
         session_id: sessionId, // AgentCore Memory STM用（セッション単位）
         actor_id: actorId, // AgentCore Memory LTM用（ユーザー単位）
         ...(modelProvider && { model_provider: modelProvider }),
+        ...(reasoningEnabled !== undefined && {
+          reasoning_enabled: reasoningEnabled,
+        }),
         ...(imageBase64 && {
           image_base64: imageBase64,
           image_format: imageFormat || 'jpeg',
