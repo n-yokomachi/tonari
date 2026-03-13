@@ -4,10 +4,8 @@
  *
  * git-crypt 暗号化フォーマット:
  *   [10-byte header: \x00GITCRYPT\x00]
- *   [4-byte key_version (big-endian)]
- *   [12-byte nonce]
- *   [ciphertext]
- *   [10-byte HMAC-SHA1 truncated]
+ *   [12-byte nonce (HMAC-SHA1先頭12バイト)]
+ *   [ciphertext (AES-256-CTR)]
  *
  * キーファイルフォーマット:
  *   繰り返し: [4-byte field_id][4-byte field_len][field_data]
@@ -24,9 +22,7 @@ const projectRoot = resolve(__dirname, '..')
 
 const HEADER = Buffer.from('\x00GITCRYPT\x00')
 const HEADER_LEN = 10
-const KEY_VERSION_LEN = 4
 const NONCE_LEN = 12
-const HMAC_LEN = 10
 
 const KEY_FILE_HEADER = Buffer.from('\x00GITCRYPTKEY')
 
@@ -73,22 +69,15 @@ function parseKeyFile(keyBuf) {
 
 function decryptFile(encryptedBuf, aesKey, hmacKey) {
   // ヘッダー検証
-  if (
-    encryptedBuf.length < HEADER_LEN + KEY_VERSION_LEN + NONCE_LEN + HMAC_LEN
-  ) {
+  if (encryptedBuf.length < HEADER_LEN + NONCE_LEN) {
     return null // 暗号化されていない（短すぎる）
   }
   if (!encryptedBuf.subarray(0, HEADER_LEN).equals(HEADER)) {
     return null // git-crypt ヘッダーがない → 暗号化されていない
   }
 
-  const offset = HEADER_LEN + KEY_VERSION_LEN
-  const nonce = encryptedBuf.subarray(offset, offset + NONCE_LEN)
-  const ciphertext = encryptedBuf.subarray(
-    offset + NONCE_LEN,
-    encryptedBuf.length - HMAC_LEN
-  )
-  const storedHmac = encryptedBuf.subarray(encryptedBuf.length - HMAC_LEN)
+  const nonce = encryptedBuf.subarray(HEADER_LEN, HEADER_LEN + NONCE_LEN)
+  const ciphertext = encryptedBuf.subarray(HEADER_LEN + NONCE_LEN)
 
   // AES-256-CTR で復号（IV = 12-byte nonce + 4-byte zero counter）
   const iv = Buffer.alloc(16)
@@ -100,9 +89,9 @@ function decryptFile(encryptedBuf, aesKey, hmacKey) {
     decipher.final(),
   ])
 
-  // HMAC-SHA1 検証
+  // HMAC-SHA1 検証（nonceは平文のHMAC先頭12バイトと一致するはず）
   const computedHmac = createHmac('sha1', hmacKey).update(plaintext).digest()
-  if (!computedHmac.subarray(0, HMAC_LEN).equals(storedHmac)) {
+  if (!computedHmac.subarray(0, NONCE_LEN).equals(nonce)) {
     throw new Error('HMAC verification failed - key may be incorrect')
   }
 
