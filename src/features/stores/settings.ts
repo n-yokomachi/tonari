@@ -41,7 +41,6 @@ interface General {
   clientId: string
   maxPastMessages: number
   useVideoAsBackground: boolean
-  showPresetQuestions: boolean
   colorTheme: 'tonari' | 'tonari-dark'
   uiStyle: 'glass' | 'neumorphic' | 'droplet'
   enableAutoCapture: boolean
@@ -86,7 +85,6 @@ const getInitialValuesFromEnv = (): SettingsState => {
     clientId: process.env.NEXT_PUBLIC_CLIENT_ID || '',
     maxPastMessages: config.ai.maxPastMessages,
     useVideoAsBackground: config.general.useVideoAsBackground,
-    showPresetQuestions: config.general.showPresetQuestions,
     colorTheme: 'tonari' as const,
     uiStyle: 'glass' as const,
     enableAutoCapture: true,
@@ -124,11 +122,7 @@ const settingsStore = create<SettingsState>()(
 
       // Fallback to default VRM if saved path is not a known model
       if (state) {
-        if (
-          !VRM_MODELS.includes(
-            state.selectedVrmPath as (typeof VRM_MODELS)[number]
-          )
-        ) {
+        if (!VRM_MODELS.some((m) => m.path === state.selectedVrmPath)) {
           state.selectedVrmPath = DEFAULT_VRM
         }
       }
@@ -151,7 +145,6 @@ const settingsStore = create<SettingsState>()(
       clientId: state.clientId,
       maxPastMessages: state.maxPastMessages,
       useVideoAsBackground: state.useVideoAsBackground,
-      showPresetQuestions: state.showPresetQuestions,
       colorTheme: state.colorTheme,
       enableAutoCapture: state.enableAutoCapture,
       voiceEnabled: state.voiceEnabled,

@@ -21,8 +21,6 @@ export interface AppConfig {
     includeTimestampInUserMessage: boolean
     externalLinkageMode: boolean
     messageReceiverEnabled: boolean
-    showPresetQuestions: boolean
-    presetQuestions: string[]
   }
   character: {
     name: string
@@ -109,14 +107,6 @@ export const getAppConfig = (): AppConfig => ({
       appConfig.general.messageReceiverEnabled,
       parseBool
     ),
-    showPresetQuestions: getEnvOrConfig(
-      process.env.NEXT_PUBLIC_SHOW_PRESET_QUESTIONS,
-      appConfig.general.showPresetQuestions,
-      (val) => val !== 'false'
-    ),
-    presetQuestions: process.env.NEXT_PUBLIC_PRESET_QUESTIONS
-      ? process.env.NEXT_PUBLIC_PRESET_QUESTIONS.split(',').map((s) => s.trim())
-      : appConfig.general.presetQuestions,
   },
   character: {
     name: getEnvOrConfig(

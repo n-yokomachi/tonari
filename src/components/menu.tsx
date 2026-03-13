@@ -231,14 +231,43 @@ export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
     homeStore.setState({ chatLog: [] })
   }, [])
 
-  const handleSwitchVrmModel = useCallback(() => {
-    const currentPath = settingsStore.getState().selectedVrmPath
-    const nextPath =
-      currentPath === VRM_MODELS[0] ? VRM_MODELS[1] : VRM_MODELS[0]
-    settingsStore.setState({ selectedVrmPath: nextPath })
+  const [showVrmMenu, setShowVrmMenu] = useState(false)
+  const vrmBtnRef = useRef<HTMLDivElement>(null)
+  const vrmDropdownRef = useRef<HTMLDivElement>(null)
+  const [vrmMenuPos, setVrmMenuPos] = useState({ top: 0, left: 0 })
+
+  const handleSelectVrmModel = useCallback((path: string) => {
+    settingsStore.setState({ selectedVrmPath: path })
     const { viewer } = homeStore.getState()
-    viewer.loadVrm(nextPath)
+    viewer.loadVrm(path)
+    setShowVrmMenu(false)
   }, [])
+
+  const handleToggleVrmMenu = useCallback(() => {
+    setShowVrmMenu((prev) => {
+      if (!prev && vrmBtnRef.current) {
+        const rect = vrmBtnRef.current.getBoundingClientRect()
+        setVrmMenuPos({ top: rect.bottom + 4, left: rect.left })
+      }
+      return !prev
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!showVrmMenu) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        vrmBtnRef.current &&
+        !vrmBtnRef.current.contains(e.target as Node) &&
+        vrmDropdownRef.current &&
+        !vrmDropdownRef.current.contains(e.target as Node)
+      ) {
+        setShowVrmMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showVrmMenu])
 
   const handleChangeVrmFile = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -404,13 +433,15 @@ export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
                         onClick={handleNewSession}
                         aria-label="新しいセッション"
                       />
-                      <IconButton
-                        iconName="24/Swap"
-                        isProcessing={false}
-                        backgroundColor="bg-transparent"
-                        onClick={handleSwitchVrmModel}
-                        aria-label="モデル切り替え"
-                      />
+                      <div ref={vrmBtnRef}>
+                        <IconButton
+                          iconName="24/Swap"
+                          isProcessing={false}
+                          backgroundColor="bg-transparent"
+                          onClick={handleToggleVrmMenu}
+                          aria-label="モデル切り替え"
+                        />
+                      </div>
                       <IconButton
                         iconName="24/Settings"
                         isProcessing={false}
@@ -508,6 +539,27 @@ export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
           }
         }}
       />
+      {showVrmMenu && (
+        <div
+          ref={vrmDropdownRef}
+          className="fixed bg-white/90 dark:bg-[rgba(20,20,35,0.9)] backdrop-blur-md rounded-xl shadow-lg border border-white/20 dark:border-white/10 py-1 z-[100] min-w-[160px]"
+          style={{ top: vrmMenuPos.top, left: vrmMenuPos.left }}
+        >
+          {VRM_MODELS.map((model) => (
+            <button
+              key={model.label}
+              onClick={() => handleSelectVrmModel(model.path)}
+              className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                settingsStore.getState().selectedVrmPath === model.path
+                  ? 'bg-secondary/20 text-secondary font-bold'
+                  : 'hover:bg-white/20 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200'
+              }`}
+            >
+              {model.label}
+            </button>
+          ))}
+        </div>
+      )}
     </>
   )
 }

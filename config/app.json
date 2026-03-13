@@ -10,14 +10,12 @@
     "useVideoAsBackground": false,
     "includeTimestampInUserMessage": false,
     "externalLinkageMode": false,
-    "messageReceiverEnabled": false,
-    "showPresetQuestions": true,
-    "presetQuestions": []
+    "messageReceiverEnabled": false
   },
 
   "character": {
     "name": "TONaRi",
-    "vrmPath": "/vrm/Tonari_normal.vrm",
+    "vrmPath": "/vrm/tonari_a.vrm",
     "lightingIntensity": 1.0
   },
 

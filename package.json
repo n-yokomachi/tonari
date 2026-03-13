@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "dev-https": "next dev --experimental-https",
+    "prebuild": "bash scripts/decrypt-vrm.sh",
     "build": "next build",
     "start": "next build && next start",
     "export": "next export",

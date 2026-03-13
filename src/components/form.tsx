@@ -2,7 +2,6 @@ import { useCallback } from 'react'
 import homeStore from '@/features/stores/home'
 import { handleSendChatFn } from '../features/chat/handlers'
 import { MessageInputContainer } from './messageInputContainer'
-import { PresetQuestionButtons } from './presetQuestionButtons'
 
 export const Form = () => {
   const handleSendChat = handleSendChatFn()
@@ -22,7 +21,6 @@ export const Form = () => {
 
   return (
     <div className="flex flex-col flex-shrink-0">
-      <PresetQuestionButtons onSelectQuestion={hookSendChat} />
       <MessageInputContainer onChatProcessStart={hookSendChat} />
     </div>
   )
