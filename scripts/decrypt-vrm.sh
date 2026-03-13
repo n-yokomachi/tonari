@@ -9,18 +9,31 @@ if [ -z "$GIT_CRYPT_KEY" ]; then
   exit 0
 fi
 
-# git-crypt のインストール（Linux/Vercel 環境用）
+# git-crypt のインストール（Vercel = Amazon Linux 2023 環境用）
 if ! command -v git-crypt &> /dev/null; then
   echo "Installing git-crypt..."
-  curl -sL https://github.com/oholovko/git-crypt-windows/releases/download/1.0.35/git-crypt.exe -o /tmp/git-crypt 2>/dev/null || true
 
-  # Linux 用バイナリを取得（Vercel は Linux 環境）
-  apt-get update -qq && apt-get install -y -qq git-crypt 2>/dev/null || {
-    echo "apt-get failed, trying static binary..."
-    curl -sL "https://github.com/AGWA/git-crypt/releases/download/0.7.0/git-crypt-0.7.0-linux-x86_64" -o /tmp/git-crypt
-    chmod +x /tmp/git-crypt
-    export PATH="/tmp:$PATH"
-  }
+  # OpenSSL 1.1 互換ライブラリのインストール（git-crypt が必要とする）
+  if command -v dnf &> /dev/null; then
+    dnf install -y compat-openssl11 2>/dev/null || true
+  elif command -v yum &> /dev/null; then
+    yum install -y compat-openssl11 2>/dev/null || true
+  fi
+
+  # git-crypt バイナリを取得
+  curl -sL "https://github.com/AGWA/git-crypt/releases/download/0.7.0/git-crypt-0.7.0-linux-x86_64" -o /tmp/git-crypt
+  chmod +x /tmp/git-crypt
+
+  # libcrypto.so.1.1 の場所を LD_LIBRARY_PATH に追加
+  OPENSSL11_LIB=$(find /usr/lib64 /usr/lib /lib64 /lib -name "libcrypto.so.1.1" 2>/dev/null | head -1)
+  if [ -n "$OPENSSL11_LIB" ]; then
+    export LD_LIBRARY_PATH="$(dirname "$OPENSSL11_LIB"):${LD_LIBRARY_PATH:-}"
+    echo "Found OpenSSL 1.1 at: $OPENSSL11_LIB"
+  else
+    echo "Warning: libcrypto.so.1.1 not found, git-crypt may fail"
+  fi
+
+  export PATH="/tmp:$PATH"
 fi
 
 # キーを復元して unlock
