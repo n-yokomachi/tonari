@@ -28,10 +28,22 @@ const KEY_VERSION_LEN = 4
 const NONCE_LEN = 12
 const HMAC_LEN = 10
 
+const KEY_FILE_HEADER = Buffer.from('\x00GITCRYPTKEY')
+
 function parseKeyFile(keyBuf) {
   let offset = 0
   let aesKey = null
   let hmacKey = null
+
+  // ヘッダー: \x00GITCRYPTKEY\x00 (13 bytes) + format_version (4 bytes) + key_name_len (4 bytes)
+  if (keyBuf.subarray(0, KEY_FILE_HEADER.length).equals(KEY_FILE_HEADER)) {
+    offset = KEY_FILE_HEADER.length // 13
+    const formatVersion = keyBuf.readUInt32BE(offset)
+    offset += 4
+    const keyNameLen = keyBuf.readUInt32BE(offset)
+    offset += 4 + keyNameLen // skip key name bytes
+    console.log(`Key file: format=${formatVersion}, keyNameLen=${keyNameLen}, fields start at offset ${offset}`)
+  }
 
   while (offset < keyBuf.length) {
     if (offset + 4 > keyBuf.length) break
