@@ -15,16 +15,14 @@ export interface AgentCoreConstructProps {
   cognitoClientId: string
   /** perfume-search Lambda function (Gateway target) */
   searchLambda: lambda.IFunction
-  /** twitter-read Lambda function (Gateway target, optional) */
-  twitterReadLambda?: lambda.IFunction
-  /** twitter-write Lambda function (Gateway target, optional) */
-  twitterWriteLambda?: lambda.IFunction
   /** diary-tool Lambda function (Gateway target, optional) */
   diaryLambda?: lambda.IFunction
   /** task-tool Lambda function (Gateway target) */
   taskToolLambda: lambda.IFunction
   /** date-tool Lambda function (Gateway target) */
   dateToolLambda: lambda.IFunction
+  /** Twitter owner user ID (optional, for @tool-based tweet reading) */
+  ownerTwitterUserId?: string
 }
 
 export class AgentCoreConstruct extends Construct {
@@ -83,8 +81,6 @@ export class AgentCoreConstruct extends Construct {
       props.taskToolLambda,
       props.dateToolLambda,
     ]
-    if (props.twitterReadLambda) lambdaFunctions.push(props.twitterReadLambda)
-    if (props.twitterWriteLambda) lambdaFunctions.push(props.twitterWriteLambda)
     if (props.diaryLambda) lambdaFunctions.push(props.diaryLambda)
 
     const gatewayRole = new iam.Role(this, 'GatewayRole', {
@@ -178,63 +174,6 @@ export class AgentCoreConstruct extends Construct {
         },
       ]),
     })
-
-    // Gateway Target: twitter-read (conditional)
-    if (props.twitterReadLambda) {
-      gateway.addLambdaTarget('TwitterRead', {
-        gatewayTargetName: 'twitter-read',
-        lambdaFunction: props.twitterReadLambda,
-        credentialProviderConfigurations: iamCredential,
-        toolSchema: agentcore.ToolSchema.fromInline([
-          {
-            name: 'get_todays_tweets',
-            description:
-              "Fetch the owner's tweets posted today. Returns tweet text and timestamps.",
-            inputSchema: {
-              type: agentcore.SchemaDefinitionType.OBJECT,
-              properties: {
-                owner_user_id: {
-                  type: agentcore.SchemaDefinitionType.STRING,
-                  description: 'Twitter user ID of the account owner',
-                },
-                max_count: {
-                  type: agentcore.SchemaDefinitionType.NUMBER,
-                  description:
-                    'Maximum number of tweets to fetch (default: 3)',
-                },
-              },
-              required: ['owner_user_id'],
-            },
-          },
-        ]),
-      })
-    }
-
-    // Gateway Target: twitter-write (conditional)
-    if (props.twitterWriteLambda) {
-      gateway.addLambdaTarget('TwitterWrite', {
-        gatewayTargetName: 'twitter-write',
-        lambdaFunction: props.twitterWriteLambda,
-        credentialProviderConfigurations: iamCredential,
-        toolSchema: agentcore.ToolSchema.fromInline([
-          {
-            name: 'post_tweet',
-            description: 'Post a tweet on behalf of the Tonari account.',
-            inputSchema: {
-              type: agentcore.SchemaDefinitionType.OBJECT,
-              properties: {
-                text: {
-                  type: agentcore.SchemaDefinitionType.STRING,
-                  description:
-                    'The tweet text to post (max 280 characters)',
-                },
-              },
-              required: ['text'],
-            },
-          },
-        ]),
-      })
-    }
 
     // Gateway Target: diary-tool (conditional)
     if (props.diaryLambda) {
@@ -614,6 +553,9 @@ export class AgentCoreConstruct extends Construct {
         BEDROCK_MODEL_ID: 'jp.anthropic.claude-haiku-4-5-20251001-v1:0',
         MODEL_PROVIDER: 'openrouter',
         SSM_OPENROUTER_API_KEY: '/tonari/openrouter-api-key',
+        ...(props.ownerTwitterUserId && {
+          OWNER_TWITTER_USER_ID: props.ownerTwitterUserId,
+        }),
       },
     })
     this.runtimeArn = runtime.agentRuntimeArn

@@ -39,8 +39,6 @@ export class WorkloadConstruct extends Construct {
   public readonly perfumeTable: dynamodb.Table
   public readonly searchLambda: python.PythonFunction
   public readonly crudApi: apigateway.RestApi
-  public readonly twitterReadLambda?: python.PythonFunction
-  public readonly twitterWriteLambda?: python.PythonFunction
   public readonly tweetTriggerLambda?: python.PythonFunction
   public readonly diaryTable: dynamodb.Table
   public readonly diaryToolLambda: python.PythonFunction
@@ -328,53 +326,6 @@ export class WorkloadConstruct extends Construct {
     // ========== Twitter Gateway Tools ==========
     if (props.tweetScheduler) {
       const ts = props.tweetScheduler
-
-      // Twitter Read Lambda (AgentCore Gateway Target)
-      this.twitterReadLambda = new python.PythonFunction(
-        stack,
-        'TwitterReadLambda',
-        {
-          functionName: 'tonari-twitter-read',
-          entry: path.join(__dirname, '../lambda/twitter-read'),
-          runtime: lambda.Runtime.PYTHON_3_12,
-          handler: 'handler',
-          timeout: cdk.Duration.seconds(30),
-          memorySize: 128,
-        }
-      )
-
-      this.twitterReadLambda.addToRolePolicy(
-        new iam.PolicyStatement({
-          actions: ['ssm:GetParameter'],
-          resources: [
-            `arn:aws:ssm:${region}:${account}:parameter/tonari/twitter/bearer_token`,
-          ],
-        })
-      )
-
-      // Twitter Write Lambda (AgentCore Gateway Target)
-      this.twitterWriteLambda = new python.PythonFunction(
-        stack,
-        'TwitterWriteLambda',
-        {
-          functionName: 'tonari-twitter-write',
-          entry: path.join(__dirname, '../lambda/twitter-write'),
-          runtime: lambda.Runtime.PYTHON_3_12,
-          handler: 'handler',
-          timeout: cdk.Duration.seconds(30),
-          memorySize: 128,
-        }
-      )
-
-      this.twitterWriteLambda.addToRolePolicy(
-        new iam.PolicyStatement({
-          actions: ['ssm:GetParametersByPath'],
-          resources: [
-            `arn:aws:ssm:${region}:${account}:parameter/tonari/twitter`,
-            `arn:aws:ssm:${region}:${account}:parameter/tonari/twitter/*`,
-          ],
-        })
-      )
 
       // Tweet Trigger Lambda
       // AGENTCORE_RUNTIME_ARN is set by the stack after AgentCoreConstruct creation

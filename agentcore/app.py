@@ -2,6 +2,7 @@
 
 import base64
 import logging
+import os
 
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 
@@ -17,6 +18,8 @@ from src.agent.sub_agents import (
     task_agent,
     twitter_agent,
 )
+from strands_tools.tavily import tavily_search
+from src.agent.twitter_tools import TWITTER_TOOLS
 from src.agent.tonari_agent import (
     MODEL_PROVIDER_BEDROCK,
     _get_default_model_provider,
@@ -27,6 +30,36 @@ from src.agent.tonari_agent import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _init_tavily_api_key():
+    """Fetch Tavily API key from AgentCore Identity and set as env var."""
+    if os.getenv("TAVILY_API_KEY"):
+        return
+    try:
+        from src.agent.notion_auth import _run_async, AWS_REGION
+        from bedrock_agentcore.runtime import BedrockAgentCoreContext
+        from bedrock_agentcore.services.identity import IdentityClient
+
+        workload_token = BedrockAgentCoreContext.get_workload_access_token()
+        if not workload_token:
+            return
+        client = IdentityClient(region=AWS_REGION)
+
+        async def _fetch():
+            return await client.get_api_key(
+                provider_name="tavily-api-key",
+                agent_identity_token=workload_token,
+            )
+
+        api_key = _run_async(_fetch())
+        os.environ["TAVILY_API_KEY"] = api_key
+        logger.info("TAVILY_API_KEY set from AgentCore Identity")
+    except Exception as e:
+        logger.warning("Failed to fetch Tavily API key from Identity: %s", e)
+
+
+_init_tavily_api_key()
 
 app = BedrockAgentCoreApp()
 
@@ -107,10 +140,14 @@ def _get_or_create_agent(
     return agent
 
 
-# パイプラインモード別のツールフィルタ（プレフィックスで絞り込み）
+# パイプラインモード別のGateway MCPツールフィルタ
 PIPELINE_TOOL_FILTERS = {
-    "tweet": {"twitter-read", "twitter-write", "TavilySearch"},
     "news": {"TavilySearch"},
+}
+
+# パイプラインモード別の直接ツール（@tool関数、Gateway不要）
+PIPELINE_DIRECT_TOOLS = {
+    "tweet": TWITTER_TOOLS + [tavily_search],
 }
 
 
@@ -124,34 +161,36 @@ def _create_pipeline_agent(session_id: str, actor_id: str, mode: str):
     region = os.getenv("AWS_REGION", "ap-northeast-1")
 
     allowed_prefixes = PIPELINE_TOOL_FILTERS.get(mode, set())
-    mcp_client = create_mcp_client(gateway_url, region)
+    direct_tools = PIPELINE_DIRECT_TOOLS.get(mode, [])
+    mcp_client = None
+    gateway_tools = []
 
-    try:
-        mcp_client.start()
-        all_tools = mcp_client.list_tools_sync()
-        tools = [
-            t for t in (all_tools or [])
-            if t.tool_name.split("___")[0] in allowed_prefixes
-        ]
-        tool_names = [t.tool_name for t in tools]
-        logger.info("Pipeline[%s] tools: %s", mode, tool_names)
-
-        agent = create_tonari_agent_pipeline(
-            session_id=session_id,
-            actor_id=actor_id,
-            mcp_tools=tools,
-        )
-        return agent, mcp_client
-    except Exception as e:
-        logger.warning("Pipeline gateway failed, running without tools: %s", e)
+    # Gateway MCP ツールの取得（MCPフィルタがある場合のみ）
+    if allowed_prefixes:
+        mcp_client = create_mcp_client(gateway_url, region)
         try:
-            mcp_client.stop()
-        except Exception:
-            pass
-        agent = create_tonari_agent_pipeline(
-            session_id=session_id, actor_id=actor_id
-        )
-        return agent, None
+            mcp_client.start()
+            all_tools = mcp_client.list_tools_sync()
+            gateway_tools = [
+                t for t in (all_tools or [])
+                if t.tool_name.split("___")[0] in allowed_prefixes
+            ]
+        except Exception as e:
+            logger.warning("Pipeline gateway failed: %s", e)
+            try:
+                mcp_client.stop()
+            except Exception:
+                pass
+            mcp_client = None
+
+    # MCPツールと@toolは混在不可のため、分けて渡す
+    agent = create_tonari_agent_pipeline(
+        session_id=session_id,
+        actor_id=actor_id,
+        mcp_tools=gateway_tools or None,
+        extra_tools=direct_tools or None,
+    )
+    return agent, mcp_client
 
 
 def build_content_blocks(
@@ -245,7 +284,7 @@ async def invoke(payload: dict):
     content = build_content_blocks(prompt, image_base64, image_format)
 
     # パイプラインモード: 軽量エージェントを毎回作成
-    if mode in PIPELINE_TOOL_FILTERS:
+    if mode in PIPELINE_TOOL_FILTERS or mode in PIPELINE_DIRECT_TOOLS:
         pipeline_mcp_client = None
         try:
             agent, pipeline_mcp_client = _create_pipeline_agent(

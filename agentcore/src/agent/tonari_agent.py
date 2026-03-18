@@ -230,6 +230,7 @@ def create_tonari_agent_pipeline(
     session_id: str = "default-session",
     actor_id: str = "anonymous",
     mcp_tools: Optional[list] = None,
+    extra_tools: Optional[list] = None,
 ) -> Agent:
     """パイプライン用軽量エージェント（LTM有効、サブエージェントなし、最小プロンプト）
 
@@ -237,6 +238,10 @@ def create_tonari_agent_pipeline(
     フルエージェントと比べてシステムプロンプトが短く、サブエージェントを含まないため
     入力トークンを大幅に削減できる。
     モデルは環境変数MODEL_PROVIDERに従う。
+
+    Args:
+        mcp_tools: MCP Gateway tools (MCPTool objects)
+        extra_tools: Additional @tool decorated functions
     """
     memory_config = _create_memory_config(session_id, actor_id, use_ltm=True)
     session_manager = AgentCoreMemorySessionManager(
@@ -244,13 +249,23 @@ def create_tonari_agent_pipeline(
         region_name=os.getenv("AWS_REGION", "ap-northeast-1"),
     )
 
-    has_tools = bool(mcp_tools)
+    all_tools = list(mcp_tools or []) + list(extra_tools or [])
+    has_tools = bool(all_tools)
+    tool_info = []
+    for t in all_tools:
+        if hasattr(t, 'tool_name'):
+            tool_info.append(f"mcp:{t.tool_name}")
+        elif hasattr(t, '__name__'):
+            tool_info.append(f"func:{t.__name__}")
+        else:
+            tool_info.append(f"unknown:{type(t).__name__}")
+    logger.info("Pipeline agent tools (%d): %s", len(all_tools), tool_info)
     agent = Agent(
         model=_create_model(cache_tools=has_tools),
         system_prompt=PIPELINE_SYSTEM_PROMPT,
         conversation_manager=SlidingWindowConversationManager(window_size=4),
         session_manager=session_manager,
-        tools=mcp_tools or [],
+        tools=all_tools,
     )
     return agent
 

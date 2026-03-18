@@ -13,6 +13,7 @@ from strands import Agent, tool
 from .google_calendar_tools import CALENDAR_TOOLS
 from .google_gmail_tools import GMAIL_TOOLS
 from .notion_tools import NOTION_TOOLS
+from .twitter_tools import TWITTER_TOOLS
 from .tonari_agent import _create_model
 from .sub_agent_prompts import (
     BRIEFING_AGENT_PROMPT,
@@ -29,7 +30,6 @@ logger = logging.getLogger(__name__)
 
 # サブエージェント用ツール（init_sub_agent_toolsで設定）
 _task_tools: list = []
-_twitter_tools: list = []
 _diary_tools: list = []
 _main_tools: list = []
 _actor_id: str = ""
@@ -37,8 +37,6 @@ _actor_id: str = ""
 # ツール名プレフィックス → サブエージェントバケット
 SUB_AGENT_PREFIXES = {
     "task-tool": "task",
-    "twitter-read": "twitter",
-    "twitter-write": "twitter",
     "diary-tool": "diary",
 }
 
@@ -63,12 +61,11 @@ def split_mcp_tools(all_tools: list) -> dict[str, list]:
         all_tools: MCPから取得した全ツールリスト
 
     Returns:
-        {"main": [...], "task": [...], "twitter": [...], "diary": [...]}
+        {"main": [...], "task": [...], "diary": [...]}
     """
     result: dict[str, list] = {
         "main": [],
         "task": [],
-        "twitter": [],
         "diary": [],
     }
 
@@ -95,9 +92,8 @@ def split_mcp_tools(all_tools: list) -> dict[str, list]:
 def init_sub_agent_tools(tool_map: dict[str, list], actor_id: str = "") -> None:
     """split_mcp_toolsの結果とactor_idをモジュール変数にセットする（起動時1回）"""
     global _task_tools
-    global _twitter_tools, _diary_tools, _main_tools, _actor_id
+    global _diary_tools, _main_tools, _actor_id
     _task_tools = tool_map.get("task", [])
-    _twitter_tools = tool_map.get("twitter", [])
     _diary_tools = tool_map.get("diary", [])
     _main_tools = tool_map.get("main", [])
     _actor_id = actor_id
@@ -269,10 +265,11 @@ def twitter_agent(request: str) -> str:
         request: Twitterに関するリクエスト（例: 「最近のツイートを見せて」「ツイートして」）
     """
     try:
+        prompt = f"現在日時: {_current_datetime_str()}（JST）\n\n{TWITTER_AGENT_PROMPT}"
         agent = Agent(
             model=_create_sub_agent_model(),
-            system_prompt=TWITTER_AGENT_PROMPT,
-            tools=_twitter_tools,
+            system_prompt=prompt,
+            tools=TWITTER_TOOLS,
             callback_handler=None,
         )
         result = agent(request)

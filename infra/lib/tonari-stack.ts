@@ -54,9 +54,8 @@ export class TonariStack extends cdk.Stack {
       cognitoDiscoveryUrl: cognito.discoveryUrl,
       cognitoClientId: cognito.clientId,
       searchLambda: workload.searchLambda,
-      twitterReadLambda: workload.twitterReadLambda,
-      twitterWriteLambda: workload.twitterWriteLambda,
       diaryLambda: workload.diaryToolLambda,
+      ownerTwitterUserId: props.tweetScheduler?.ownerTwitterUserId,
       taskToolLambda: workload.taskToolLambda,
       dateToolLambda: workload.dateToolLambda,
     })
