@@ -39,19 +39,13 @@ export class WorkloadConstruct extends Construct {
   public readonly perfumeTable: dynamodb.Table
   public readonly searchLambda: python.PythonFunction
   public readonly crudApi: apigateway.RestApi
-  public readonly twitterReadLambda?: python.PythonFunction
-  public readonly twitterWriteLambda?: python.PythonFunction
   public readonly tweetTriggerLambda?: python.PythonFunction
   public readonly diaryTable: dynamodb.Table
   public readonly diaryToolLambda: python.PythonFunction
   public readonly tasksTable: dynamodb.Table
   public readonly taskCrudLambda: python.PythonFunction
   public readonly taskToolLambda: python.PythonFunction
-  public readonly calendarToolLambda: python.PythonFunction
-  public readonly gmailToolLambda: python.PythonFunction
-  public readonly notionToolLambda: python.PythonFunction
   public readonly dateToolLambda: lambda.Function
-  public readonly googleOAuthLambda: lambda.Function
   public readonly newsNotificationTopic?: sns.Topic
   public readonly newsTable?: dynamodb.Table
   public readonly newsTriggerLambda?: python.PythonFunction
@@ -319,75 +313,6 @@ export class WorkloadConstruct extends Construct {
 
     this.tasksTable.grantReadWriteData(this.taskToolLambda)
 
-    // ========== Calendar (Google Calendar Gateway Tool) ==========
-    this.calendarToolLambda = new python.PythonFunction(
-      stack,
-      'CalendarToolLambda',
-      {
-        functionName: 'tonari-calendar-tool',
-        entry: path.join(__dirname, '../lambda/calendar-tool'),
-        runtime: lambda.Runtime.PYTHON_3_12,
-        handler: 'handler',
-        timeout: cdk.Duration.seconds(30),
-        memorySize: 128,
-      }
-    )
-
-    this.calendarToolLambda.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['ssm:GetParameter'],
-        resources: [
-          `arn:aws:ssm:${region}:${account}:parameter/tonari/google/*`,
-        ],
-      })
-    )
-
-    // ========== Gmail (Gateway Tool) ==========
-    this.gmailToolLambda = new python.PythonFunction(
-      stack,
-      'GmailToolLambda',
-      {
-        functionName: 'tonari-gmail-tool',
-        entry: path.join(__dirname, '../lambda/gmail-tool'),
-        runtime: lambda.Runtime.PYTHON_3_12,
-        handler: 'handler',
-        timeout: cdk.Duration.seconds(30),
-        memorySize: 128,
-      }
-    )
-
-    this.gmailToolLambda.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['ssm:GetParameter'],
-        resources: [
-          `arn:aws:ssm:${region}:${account}:parameter/tonari/google/*`,
-        ],
-      })
-    )
-
-    // ========== Notion (Gateway Tool) ==========
-    this.notionToolLambda = new python.PythonFunction(
-      stack,
-      'NotionToolLambda',
-      {
-        functionName: 'tonari-notion-tool',
-        entry: path.join(__dirname, '../lambda/notion-tool'),
-        runtime: lambda.Runtime.PYTHON_3_12,
-        handler: 'handler',
-        timeout: cdk.Duration.seconds(30),
-        memorySize: 128,
-      }
-    )
-
-    this.notionToolLambda.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['ssm:GetParameter'],
-        resources: [
-          `arn:aws:ssm:${region}:${account}:parameter/tonari/notion/*`,
-        ],
-      })
-    )
-
     // ========== Date Utility (Gateway Tool) ==========
     this.dateToolLambda = new lambda.Function(stack, 'DateToolLambda', {
       functionName: 'tonari-date-tool',
@@ -398,85 +323,9 @@ export class WorkloadConstruct extends Construct {
       memorySize: 128,
     })
 
-    // ========== Google OAuth (SSM credential management) ==========
-    this.googleOAuthLambda = new lambda.Function(stack, 'GoogleOAuthLambda', {
-      functionName: 'tonari-google-oauth',
-      code: lambda.Code.fromAsset(
-        path.join(__dirname, '../lambda/google-oauth')
-      ),
-      runtime: lambda.Runtime.PYTHON_3_12,
-      handler: 'index.handler',
-      timeout: cdk.Duration.seconds(30),
-      memorySize: 128,
-    })
-
-    this.googleOAuthLambda.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['ssm:GetParameter', 'ssm:PutParameter'],
-        resources: [
-          `arn:aws:ssm:${region}:${account}:parameter/tonari/google/*`,
-        ],
-      })
-    )
-
-    // API Route: POST /google-oauth (M2M auth)
-    const googleOAuth = this.crudApi.root.addResource('google-oauth')
-    googleOAuth.addMethod(
-      'POST',
-      new apigateway.LambdaIntegration(this.googleOAuthLambda),
-      authorizedMethodOptions
-    )
-
     // ========== Twitter Gateway Tools ==========
     if (props.tweetScheduler) {
       const ts = props.tweetScheduler
-
-      // Twitter Read Lambda (AgentCore Gateway Target)
-      this.twitterReadLambda = new python.PythonFunction(
-        stack,
-        'TwitterReadLambda',
-        {
-          functionName: 'tonari-twitter-read',
-          entry: path.join(__dirname, '../lambda/twitter-read'),
-          runtime: lambda.Runtime.PYTHON_3_12,
-          handler: 'handler',
-          timeout: cdk.Duration.seconds(30),
-          memorySize: 128,
-        }
-      )
-
-      this.twitterReadLambda.addToRolePolicy(
-        new iam.PolicyStatement({
-          actions: ['ssm:GetParameter'],
-          resources: [
-            `arn:aws:ssm:${region}:${account}:parameter/tonari/twitter/bearer_token`,
-          ],
-        })
-      )
-
-      // Twitter Write Lambda (AgentCore Gateway Target)
-      this.twitterWriteLambda = new python.PythonFunction(
-        stack,
-        'TwitterWriteLambda',
-        {
-          functionName: 'tonari-twitter-write',
-          entry: path.join(__dirname, '../lambda/twitter-write'),
-          runtime: lambda.Runtime.PYTHON_3_12,
-          handler: 'handler',
-          timeout: cdk.Duration.seconds(30),
-          memorySize: 128,
-        }
-      )
-
-      this.twitterWriteLambda.addToRolePolicy(
-        new iam.PolicyStatement({
-          actions: ['ssm:GetParametersByPath'],
-          resources: [
-            `arn:aws:ssm:${region}:${account}:parameter/tonari/twitter`,
-            `arn:aws:ssm:${region}:${account}:parameter/tonari/twitter/*`,
-          ],
-        })
-      )
 
       // Tweet Trigger Lambda
       // AGENTCORE_RUNTIME_ARN is set by the stack after AgentCoreConstruct creation
