@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import { EMOTIONS } from '@/features/messages/messages'
 
 import homeStore from '@/features/stores/home'
 import settingsStore from '@/features/stores/settings'
@@ -278,8 +277,11 @@ const Chat = ({
   characterName: string
   isPortrait?: boolean
 }) => {
-  const emotionPattern = new RegExp(`\\[(${EMOTIONS.join('|')})\\]\\s*`, 'gi')
-  const processedMessage = message.replace(emotionPattern, '')
+  const processedMessage = message
+    .replace(/\[[^\]]*\]/g, '')
+    .replace(/\{[^}]*\}/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
 
   const roleColor =
     role !== 'user'

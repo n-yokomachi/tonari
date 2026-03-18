@@ -201,10 +201,11 @@ export const speakMessageHandler = async (receivedMessage: string) => {
   let isCodeBlock: boolean = false
   let codeBlockContent: string = ''
   let accumulatedAssistantText: string = ''
-  // ジェスチャータグとリンクタグを発話テキストから除去
+  // 感情タグ以外の角括弧タグ・波括弧タグを除去（感情タグはextractEmotionで処理）
   let remainingMessage = receivedMessage
-    .replace(/\[(bow|present|camera)\]/g, '')
     .replace(/\[link:[^\]]*\](.*?)\[\/link\]/g, '$1')
+    .replace(/\[(?!neutral|happy|angry|sad|relaxed|surprised\])[^\]]*\]/g, '')
+    .replace(/\{[^}]*\}/g, '')
   let currentMessageId: string = generateMessageId()
   let persistentEmotion: EmotionType = 'neutral' // レスポンス全体で保持する感情
 

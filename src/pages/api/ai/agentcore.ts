@@ -2,10 +2,13 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { randomUUID } from 'crypto'
 import agentcoreConfig from '@/../config/agentcore.json'
 
-// Next.js APIルートの設定（ストリーミング用）
+// Next.js APIルートの設定（ストリーミング用 + 画像添付対応）
 export const config = {
   api: {
     responseLimit: false,
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
   },
 }
 

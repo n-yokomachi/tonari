@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useRouter } from 'next/router'
 import settingsStore from '@/features/stores/settings'
-import type { ModelProvider } from '@/features/stores/settings'
+import type { ModelProvider, TtsEngine } from '@/features/stores/settings'
 import homeStore from '@/features/stores/home'
 import { TextButton } from '../textButton'
 
@@ -23,14 +25,35 @@ const MODEL_OPTIONS: {
 
 const Based = () => {
   const { t } = useTranslation()
+  const router = useRouter()
   const colorTheme = settingsStore((s) => s.colorTheme)
   const uiStyle = settingsStore((s) => s.uiStyle)
   const modelProvider = settingsStore((s) => s.modelProvider)
   const reasoningEnabled = settingsStore((s) => s.reasoningEnabled)
   const voiceEnabled = settingsStore((s) => s.voiceEnabled)
+  const ttsEngine = settingsStore((s) => s.ttsEngine)
+  const aivisSpeechUrl = settingsStore((s) => s.aivisSpeechUrl)
+  const aivisSpeechSpeakerId = settingsStore((s) => s.aivisSpeechSpeakerId)
   const voiceModel = settingsStore((s) => s.voiceModel)
   const wakeWordEnabled = settingsStore((s) => s.wakeWordEnabled)
   const isDark = colorTheme === 'tonari-dark'
+
+  // Google OAuth status
+  const [googleOAuthStatus, setGoogleOAuthStatus] = useState<
+    'idle' | 'success' | 'error'
+  >('idle')
+
+  useEffect(() => {
+    const status = router.query.google_oauth as string | undefined
+    if (status === 'success') {
+      setGoogleOAuthStatus('success')
+      // Clean up URL query params
+      router.replace('/', undefined, { shallow: true })
+    } else if (status === 'error') {
+      setGoogleOAuthStatus('error')
+      router.replace('/', undefined, { shallow: true })
+    }
+  }, [router.query.google_oauth]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>
@@ -161,21 +184,73 @@ const Based = () => {
           </TextButton>
         </div>
         {voiceEnabled && (
-          <div className="my-4">
-            <div className="my-2 font-bold">{t('VoiceModel')}</div>
-            <div className="my-2 flex gap-2">
-              <TextButton
-                onClick={() => settingsStore.setState({ voiceModel: 'Tomoko' })}
-              >
-                Tomoko{voiceModel === 'Tomoko' ? ' ✓' : ''}
-              </TextButton>
-              <TextButton
-                onClick={() => settingsStore.setState({ voiceModel: 'Kazuha' })}
-              >
-                Kazuha{voiceModel === 'Kazuha' ? ' ✓' : ''}
-              </TextButton>
+          <>
+            <div className="my-4">
+              <div className="my-2 font-bold">TTS Engine</div>
+              <div className="my-2 flex gap-2">
+                <TextButton
+                  onClick={() =>
+                    settingsStore.setState({ ttsEngine: 'aivisspeech' })
+                  }
+                >
+                  AivisSpeech{ttsEngine === 'aivisspeech' ? ' ✓' : ''}
+                </TextButton>
+                <TextButton
+                  onClick={() => settingsStore.setState({ ttsEngine: 'polly' })}
+                >
+                  Polly{ttsEngine === 'polly' ? ' ✓' : ''}
+                </TextButton>
+              </div>
             </div>
-          </div>
+
+            {ttsEngine === 'aivisspeech' && (
+              <div className="my-4">
+                <div className="my-2 font-bold">Engine URL</div>
+                <input
+                  type="text"
+                  value={aivisSpeechUrl}
+                  onChange={(e) =>
+                    settingsStore.setState({ aivisSpeechUrl: e.target.value })
+                  }
+                  className="w-full px-4 py-2 rounded-lg bg-white/50 dark:bg-white/10 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:border-secondary transition-colors"
+                  placeholder="http://localhost:10101"
+                />
+                <div className="my-2 font-bold mt-4">Speaker ID</div>
+                <input
+                  type="number"
+                  value={aivisSpeechSpeakerId}
+                  onChange={(e) =>
+                    settingsStore.setState({
+                      aivisSpeechSpeakerId: Number(e.target.value),
+                    })
+                  }
+                  className="w-full px-4 py-2 rounded-lg bg-white/50 dark:bg-white/10 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:border-secondary transition-colors"
+                />
+              </div>
+            )}
+
+            {ttsEngine === 'polly' && (
+              <div className="my-4">
+                <div className="my-2 font-bold">{t('VoiceModel')}</div>
+                <div className="my-2 flex gap-2">
+                  <TextButton
+                    onClick={() =>
+                      settingsStore.setState({ voiceModel: 'Tomoko' })
+                    }
+                  >
+                    Tomoko{voiceModel === 'Tomoko' ? ' ✓' : ''}
+                  </TextButton>
+                  <TextButton
+                    onClick={() =>
+                      settingsStore.setState({ voiceModel: 'Kazuha' })
+                    }
+                  >
+                    Kazuha{voiceModel === 'Kazuha' ? ' ✓' : ''}
+                  </TextButton>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
       {/* ウェイクワード検知設定 */}
@@ -197,6 +272,35 @@ const Based = () => {
             {wakeWordEnabled ? 'ON' : 'OFF'}
           </TextButton>
         </div>
+      </div>
+
+      {/* Google連携 */}
+      <div className="my-6">
+        <div className="my-4 text-xl font-bold">Google Integration</div>
+        <div className="my-4 whitespace-pre-wrap text-sm opacity-70">
+          Google Calendar / Gmail
+          との連携認証を行います。認証情報が期限切れの場合は再認証してください。
+        </div>
+        <div className="my-2">
+          <TextButton
+            onClick={() => {
+              setGoogleOAuthStatus('idle')
+              window.location.href = '/api/auth/google'
+            }}
+          >
+            Google連携を認証する
+          </TextButton>
+        </div>
+        {googleOAuthStatus === 'success' && (
+          <div className="mt-2 text-sm text-green-600 dark:text-green-400 font-bold">
+            Google連携が完了しました
+          </div>
+        )}
+        {googleOAuthStatus === 'error' && (
+          <div className="mt-2 text-sm text-red-600 dark:text-red-400 font-bold">
+            Google連携に失敗しました。再度お試しください。
+          </div>
+        )}
       </div>
     </>
   )

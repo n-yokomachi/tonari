@@ -1,5 +1,6 @@
 import { Talk } from './messages'
 import { SpeakQueue } from './speakQueue'
+import { fetchAivisSpeechAudio } from './aivisSpeech'
 import homeStore from '@/features/stores/home'
 import settingsStore from '@/features/stores/settings'
 import { VRMExpressionPresetName } from '@pixiv/three-vrm'
@@ -218,6 +219,17 @@ const textToVowelSequence = (text: string): LipSyncType[] => {
 }
 
 /**
+ * TTS用にテキストを前処理する
+ * 感情タグ・ジェスチャータグ等の [...] を除去し、余分な空白を整理する
+ */
+const sanitizeForTts = (text: string): string =>
+  text
+    .replace(/\[[^\]]*\]/g, '')
+    .replace(/\{[^}]*\}/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+/**
  * キャラクターの表情を設定し、リップシンクアニメーションを実行する
  * voiceEnabled=ON: TTS APIで音声合成→SpeakQueueで再生→音声波形リップシンク
  * voiceEnabled=OFF: テキストベースの母音リップシンク（従来動作）
@@ -258,23 +270,51 @@ const speakWithAudio = (
 
   viewer.model?.initLipSync()
 
-  const { voiceModel } = settingsStore.getState()
+  const { ttsEngine, aivisSpeechUrl, aivisSpeechSpeakerId, voiceModel } =
+    settingsStore.getState()
 
-  // TTS fetchを即座に開始（Promiseとして保持）
-  const audioPromise = fetch('/api/tts', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      text: talk.message,
-      emotion: talk.emotion,
-      voice: voiceModel,
-    }),
-  }).then((response) => {
-    if (!response.ok) {
-      throw new Error(`TTS API error: ${response.status}`)
-    }
-    return response.arrayBuffer()
-  })
+  const ttsText = sanitizeForTts(talk.message)
+  if (!ttsText) {
+    onComplete?.()
+    return
+  }
+
+  let audioPromise: Promise<ArrayBuffer>
+  let isNeedDecode: boolean
+
+  if (ttsEngine === 'aivisspeech') {
+    // AivisSpeech: browser → localhost direct, returns WAV
+    audioPromise = fetchAivisSpeechAudio(
+      ttsText,
+      aivisSpeechSpeakerId,
+      aivisSpeechUrl
+    ).catch((error) => {
+      console.error(
+        'AivisSpeech fetch failed, falling back to text lip sync:',
+        error
+      )
+      speakWithTextLipSync(talk, undefined, onComplete)
+      throw error
+    })
+    isNeedDecode = true
+  } else {
+    // Polly: via Vercel API route, returns PCM16
+    audioPromise = fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: ttsText,
+        emotion: talk.emotion,
+        voice: voiceModel,
+      }),
+    }).then((response) => {
+      if (!response.ok) {
+        throw new Error(`TTS API error: ${response.status}`)
+      }
+      return response.arrayBuffer()
+    })
+    isNeedDecode = false
+  }
 
   // タスクを即座にキューに追加（順序を保証）
   // audioBufferはPromiseのまま渡し、キュー処理時に解決される
@@ -284,7 +324,7 @@ const speakWithAudio = (
     sessionId,
     audioBuffer: audioPromise,
     talk,
-    isNeedDecode: false,
+    isNeedDecode,
     onComplete,
   })
 }

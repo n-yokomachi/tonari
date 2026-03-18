@@ -7,6 +7,8 @@ import { IconButton } from './iconButton'
 import { CameraPreview, CameraButton } from './cameraPreview'
 import { LiquidMetal } from './liquidMetal'
 
+const FILE_INPUT_ACCEPT = 'image/png,image/jpeg,image/gif,image/webp'
+
 const SendButton = ({
   isActive,
   isProcessing,
@@ -136,6 +138,69 @@ const FILE_VALIDATION = {
   ],
   maxImageDimensions: { width: 4096, height: 4096 },
 } as const
+
+const AttachButton = ({
+  onFileSelected,
+}: {
+  onFileSelected: (file: File) => Promise<void>
+}) => {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const chatProcessing = homeStore((s) => s.chatProcessing)
+  const uiStyle = settingsStore((s) => s.uiStyle)
+  const isDark = settingsStore((s) => s.colorTheme === 'tonari-dark')
+
+  const handleClick = () => fileInputRef.current?.click()
+
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      await onFileSelected(file)
+    }
+    e.target.value = ''
+  }
+
+  return (
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={FILE_INPUT_ACCEPT}
+        onChange={handleChange}
+        className="hidden"
+      />
+      {uiStyle === 'droplet' ? (
+        <IconButton
+          iconName="24/Attach"
+          isProcessing={false}
+          disabled={chatProcessing}
+          onClick={handleClick}
+          className="!rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            background: isDark
+              ? 'rgba(255,255,255,0.06)'
+              : 'rgba(255,255,255,0.15)',
+            border: isDark
+              ? '1px solid rgba(255,255,255,0.06)'
+              : '1px solid rgba(255,255,255,0.4)',
+            boxShadow: isDark
+              ? '0 1px 6px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(255,255,255,0.04)'
+              : '0 1px 6px rgba(0,0,0,0.04), inset 0 1px 1px rgba(255,255,255,0.6), inset 0 -1px 1px rgba(255,255,255,0.3)',
+          }}
+          iconColor="text-gray-700 dark:text-gray-300"
+        />
+      ) : (
+        <IconButton
+          iconName="24/Attach"
+          isProcessing={false}
+          disabled={chatProcessing}
+          onClick={handleClick}
+          className="!rounded-[10px] bg-transparent hover:bg-white/10 active:bg-white/20 border border-white/40 dark:border-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+          iconColor="text-gray-700 dark:text-gray-300"
+        />
+      )}
+    </>
+  )
+}
 
 type Props = {
   userMessage: string
@@ -470,6 +535,9 @@ export const MessageInput = ({
             )}
 
             <div className="flex gap-2 items-end">
+              <div className="flex-shrink-0 pb-[0.3rem]">
+                <AttachButton onFileSelected={processImageFile} />
+              </div>
               <div className="flex-1 relative">
                 <textarea
                   ref={textareaRef}
