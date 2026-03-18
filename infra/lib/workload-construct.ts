@@ -51,6 +51,7 @@ export class WorkloadConstruct extends Construct {
   public readonly gmailToolLambda: python.PythonFunction
   public readonly notionToolLambda: python.PythonFunction
   public readonly dateToolLambda: lambda.Function
+  public readonly googleOAuthLambda: lambda.Function
   public readonly newsNotificationTopic?: sns.Topic
   public readonly newsTable?: dynamodb.Table
   public readonly newsTriggerLambda?: python.PythonFunction
@@ -396,6 +397,35 @@ export class WorkloadConstruct extends Construct {
       timeout: cdk.Duration.seconds(10),
       memorySize: 128,
     })
+
+    // ========== Google OAuth (SSM credential management) ==========
+    this.googleOAuthLambda = new lambda.Function(stack, 'GoogleOAuthLambda', {
+      functionName: 'tonari-google-oauth',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../lambda/google-oauth')
+      ),
+      runtime: lambda.Runtime.PYTHON_3_12,
+      handler: 'index.handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 128,
+    })
+
+    this.googleOAuthLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['ssm:GetParameter', 'ssm:PutParameter'],
+        resources: [
+          `arn:aws:ssm:${region}:${account}:parameter/tonari/google/*`,
+        ],
+      })
+    )
+
+    // API Route: POST /google-oauth (M2M auth)
+    const googleOAuth = this.crudApi.root.addResource('google-oauth')
+    googleOAuth.addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(this.googleOAuthLambda),
+      authorizedMethodOptions
+    )
 
     // ========== Twitter Gateway Tools ==========
     if (props.tweetScheduler) {

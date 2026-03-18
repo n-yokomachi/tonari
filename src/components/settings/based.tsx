@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useRouter } from 'next/router'
 import settingsStore from '@/features/stores/settings'
 import type { ModelProvider, TtsEngine } from '@/features/stores/settings'
 import homeStore from '@/features/stores/home'
@@ -23,6 +25,7 @@ const MODEL_OPTIONS: {
 
 const Based = () => {
   const { t } = useTranslation()
+  const router = useRouter()
   const colorTheme = settingsStore((s) => s.colorTheme)
   const uiStyle = settingsStore((s) => s.uiStyle)
   const modelProvider = settingsStore((s) => s.modelProvider)
@@ -34,6 +37,23 @@ const Based = () => {
   const voiceModel = settingsStore((s) => s.voiceModel)
   const wakeWordEnabled = settingsStore((s) => s.wakeWordEnabled)
   const isDark = colorTheme === 'tonari-dark'
+
+  // Google OAuth status
+  const [googleOAuthStatus, setGoogleOAuthStatus] = useState<
+    'idle' | 'success' | 'error'
+  >('idle')
+
+  useEffect(() => {
+    const status = router.query.google_oauth as string | undefined
+    if (status === 'success') {
+      setGoogleOAuthStatus('success')
+      // Clean up URL query params
+      router.replace('/', undefined, { shallow: true })
+    } else if (status === 'error') {
+      setGoogleOAuthStatus('error')
+      router.replace('/', undefined, { shallow: true })
+    }
+  }, [router.query.google_oauth]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>
@@ -252,6 +272,35 @@ const Based = () => {
             {wakeWordEnabled ? 'ON' : 'OFF'}
           </TextButton>
         </div>
+      </div>
+
+      {/* Google連携 */}
+      <div className="my-6">
+        <div className="my-4 text-xl font-bold">Google Integration</div>
+        <div className="my-4 whitespace-pre-wrap text-sm opacity-70">
+          Google Calendar / Gmail
+          との連携認証を行います。認証情報が期限切れの場合は再認証してください。
+        </div>
+        <div className="my-2">
+          <TextButton
+            onClick={() => {
+              setGoogleOAuthStatus('idle')
+              window.location.href = '/api/auth/google'
+            }}
+          >
+            Google連携を認証する
+          </TextButton>
+        </div>
+        {googleOAuthStatus === 'success' && (
+          <div className="mt-2 text-sm text-green-600 dark:text-green-400 font-bold">
+            Google連携が完了しました
+          </div>
+        )}
+        {googleOAuthStatus === 'error' && (
+          <div className="mt-2 text-sm text-red-600 dark:text-red-400 font-bold">
+            Google連携に失敗しました。再度お試しください。
+          </div>
+        )}
       </div>
     </>
   )
