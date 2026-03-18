@@ -60,9 +60,11 @@ public/scripts/*
 
 # VRM files
 /public/vrm/*
-!/public/vrm/Tonari_normal.vrm
-!/public/vrm/Tonari_glasses.vrm
+!/public/vrm/tonari_a.vrm
+!/public/vrm/tonari_b.vrm
 !/public/vrm/tonari.vroid
+!/public/vrm/tonari_c.vrm
+!/public/vrm/tonari_d.vrm
 
 # Background files
 /public/backgrounds/*

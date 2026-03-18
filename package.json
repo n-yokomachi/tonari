@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "dev-https": "next dev --experimental-https",
+    "prebuild": "node scripts/decrypt-vrm.mjs",
     "build": "next build",
     "start": "next build && next start",
     "export": "next export",

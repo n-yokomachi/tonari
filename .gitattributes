@@ -1,0 +1,4 @@
+# git-crypt: VRM/VRoid model files
+public/vrm/tonari_c.vrm filter=git-crypt diff=git-crypt
+public/vrm/tonari_d.vrm filter=git-crypt diff=git-crypt
+public/vrm/tonari.vroid filter=git-crypt diff=git-crypt
