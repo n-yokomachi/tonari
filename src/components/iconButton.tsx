@@ -24,6 +24,7 @@ const iconNameToPath: Record<string, string> = {
   '24/Dot': '/images/icons/dot.svg',
   '24/Camera': '/images/icons/camera.svg',
   '24/AddImage': '/images/icons/add.svg',
+  '24/Attach': '/images/icons/attach.svg',
   // カスタムアイコン
   'screen-share': '/images/icons/screen-share.svg',
   stop: '/images/icons/stop.svg',

@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import settingsStore from '@/features/stores/settings'
-import type { ModelProvider } from '@/features/stores/settings'
+import type { ModelProvider, TtsEngine } from '@/features/stores/settings'
 import homeStore from '@/features/stores/home'
 import { TextButton } from '../textButton'
 
@@ -28,6 +28,9 @@ const Based = () => {
   const modelProvider = settingsStore((s) => s.modelProvider)
   const reasoningEnabled = settingsStore((s) => s.reasoningEnabled)
   const voiceEnabled = settingsStore((s) => s.voiceEnabled)
+  const ttsEngine = settingsStore((s) => s.ttsEngine)
+  const aivisSpeechUrl = settingsStore((s) => s.aivisSpeechUrl)
+  const aivisSpeechSpeakerId = settingsStore((s) => s.aivisSpeechSpeakerId)
   const voiceModel = settingsStore((s) => s.voiceModel)
   const wakeWordEnabled = settingsStore((s) => s.wakeWordEnabled)
   const isDark = colorTheme === 'tonari-dark'
@@ -161,21 +164,73 @@ const Based = () => {
           </TextButton>
         </div>
         {voiceEnabled && (
-          <div className="my-4">
-            <div className="my-2 font-bold">{t('VoiceModel')}</div>
-            <div className="my-2 flex gap-2">
-              <TextButton
-                onClick={() => settingsStore.setState({ voiceModel: 'Tomoko' })}
-              >
-                Tomoko{voiceModel === 'Tomoko' ? ' ✓' : ''}
-              </TextButton>
-              <TextButton
-                onClick={() => settingsStore.setState({ voiceModel: 'Kazuha' })}
-              >
-                Kazuha{voiceModel === 'Kazuha' ? ' ✓' : ''}
-              </TextButton>
+          <>
+            <div className="my-4">
+              <div className="my-2 font-bold">TTS Engine</div>
+              <div className="my-2 flex gap-2">
+                <TextButton
+                  onClick={() =>
+                    settingsStore.setState({ ttsEngine: 'aivisspeech' })
+                  }
+                >
+                  AivisSpeech{ttsEngine === 'aivisspeech' ? ' ✓' : ''}
+                </TextButton>
+                <TextButton
+                  onClick={() => settingsStore.setState({ ttsEngine: 'polly' })}
+                >
+                  Polly{ttsEngine === 'polly' ? ' ✓' : ''}
+                </TextButton>
+              </div>
             </div>
-          </div>
+
+            {ttsEngine === 'aivisspeech' && (
+              <div className="my-4">
+                <div className="my-2 font-bold">Engine URL</div>
+                <input
+                  type="text"
+                  value={aivisSpeechUrl}
+                  onChange={(e) =>
+                    settingsStore.setState({ aivisSpeechUrl: e.target.value })
+                  }
+                  className="w-full px-4 py-2 rounded-lg bg-white/50 dark:bg-white/10 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:border-secondary transition-colors"
+                  placeholder="http://localhost:10101"
+                />
+                <div className="my-2 font-bold mt-4">Speaker ID</div>
+                <input
+                  type="number"
+                  value={aivisSpeechSpeakerId}
+                  onChange={(e) =>
+                    settingsStore.setState({
+                      aivisSpeechSpeakerId: Number(e.target.value),
+                    })
+                  }
+                  className="w-full px-4 py-2 rounded-lg bg-white/50 dark:bg-white/10 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:border-secondary transition-colors"
+                />
+              </div>
+            )}
+
+            {ttsEngine === 'polly' && (
+              <div className="my-4">
+                <div className="my-2 font-bold">{t('VoiceModel')}</div>
+                <div className="my-2 flex gap-2">
+                  <TextButton
+                    onClick={() =>
+                      settingsStore.setState({ voiceModel: 'Tomoko' })
+                    }
+                  >
+                    Tomoko{voiceModel === 'Tomoko' ? ' ✓' : ''}
+                  </TextButton>
+                  <TextButton
+                    onClick={() =>
+                      settingsStore.setState({ voiceModel: 'Kazuha' })
+                    }
+                  >
+                    Kazuha{voiceModel === 'Kazuha' ? ' ✓' : ''}
+                  </TextButton>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
       {/* ウェイクワード検知設定 */}

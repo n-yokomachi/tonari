@@ -29,6 +29,7 @@ interface Character {
 }
 
 export type ModelProvider = 'bedrock' | 'openrouter'
+export type TtsEngine = 'aivisspeech' | 'polly'
 
 interface General {
   selectAIService: AIService
@@ -45,6 +46,9 @@ interface General {
   uiStyle: 'glass' | 'neumorphic' | 'droplet'
   enableAutoCapture: boolean
   voiceEnabled: boolean
+  ttsEngine: TtsEngine
+  aivisSpeechUrl: string
+  aivisSpeechSpeakerId: number
   voiceModel: 'Tomoko' | 'Kazuha'
   wakeWordEnabled: boolean
   reasoningEnabled: boolean
@@ -89,6 +93,9 @@ const getInitialValuesFromEnv = (): SettingsState => {
     uiStyle: 'glass' as const,
     enableAutoCapture: true,
     voiceEnabled: false,
+    ttsEngine: 'aivisspeech' as TtsEngine,
+    aivisSpeechUrl: 'http://localhost:10101',
+    aivisSpeechSpeakerId: 888753760,
     voiceModel: 'Tomoko',
     wakeWordEnabled: false,
     reasoningEnabled: false,
@@ -148,6 +155,9 @@ const settingsStore = create<SettingsState>()(
       colorTheme: state.colorTheme,
       enableAutoCapture: state.enableAutoCapture,
       voiceEnabled: state.voiceEnabled,
+      ttsEngine: state.ttsEngine,
+      aivisSpeechUrl: state.aivisSpeechUrl,
+      aivisSpeechSpeakerId: state.aivisSpeechSpeakerId,
       voiceModel: state.voiceModel,
       wakeWordEnabled: state.wakeWordEnabled,
       reasoningEnabled: state.reasoningEnabled,
