@@ -25,8 +25,6 @@ export interface AgentCoreConstructProps {
   taskToolLambda: lambda.IFunction
   /** date-tool Lambda function (Gateway target) */
   dateToolLambda: lambda.IFunction
-  /** notion-tool Lambda function (Gateway target) */
-  notionToolLambda: lambda.IFunction
 }
 
 export class AgentCoreConstruct extends Construct {
@@ -84,7 +82,6 @@ export class AgentCoreConstruct extends Construct {
       props.searchLambda,
       props.taskToolLambda,
       props.dateToolLambda,
-      props.notionToolLambda,
     ]
     if (props.twitterReadLambda) lambdaFunctions.push(props.twitterReadLambda)
     if (props.twitterWriteLambda) lambdaFunctions.push(props.twitterWriteLambda)
@@ -473,189 +470,6 @@ export class AgentCoreConstruct extends Construct {
       ]),
     })
 
-    // Gateway Target: notion-tool
-    gateway.addLambdaTarget('NotionTool', {
-      gatewayTargetName: 'notion-tool',
-      lambdaFunction: props.notionToolLambda,
-      credentialProviderConfigurations: iamCredential,
-      toolSchema: agentcore.ToolSchema.fromInline([
-        {
-          name: 'search_pages',
-          description:
-            'Search Notion workspace pages by keyword. Returns matching pages with titles, URLs, and last edited times sorted by recency.',
-          inputSchema: {
-            type: agentcore.SchemaDefinitionType.OBJECT,
-            properties: {
-              action: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Must be "search_pages"',
-              },
-              query: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Search keyword',
-              },
-              max_results: {
-                type: agentcore.SchemaDefinitionType.NUMBER,
-                description:
-                  'Maximum number of results to return (default: 10)',
-              },
-            },
-            required: ['action', 'query'],
-          },
-        },
-        {
-          name: 'get_page',
-          description:
-            'Get a Notion page by ID. Returns page properties and optionally block content (headings, paragraphs, lists, code blocks, etc.).',
-          inputSchema: {
-            type: agentcore.SchemaDefinitionType.OBJECT,
-            properties: {
-              action: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Must be "get_page"',
-              },
-              page_id: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Notion page ID',
-              },
-              include_blocks: {
-                type: agentcore.SchemaDefinitionType.BOOLEAN,
-                description:
-                  'Whether to include page block content (default: true)',
-              },
-            },
-            required: ['action', 'page_id'],
-          },
-        },
-        {
-          name: 'create_page',
-          description:
-            'Create a new Notion page under a database or parent page. Supports title shorthand or full property specification, and optional body content.',
-          inputSchema: {
-            type: agentcore.SchemaDefinitionType.OBJECT,
-            properties: {
-              action: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Must be "create_page"',
-              },
-              database_id: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'Target database ID (either database_id or parent_page_id required)',
-              },
-              parent_page_id: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'Parent page ID (either database_id or parent_page_id required)',
-              },
-              title: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'Page title (shorthand, sets Name/title property)',
-              },
-              properties: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'Full Notion properties object as JSON string (overrides title if both provided)',
-              },
-              content: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'Page body text (each line becomes a paragraph block)',
-              },
-            },
-            required: ['action'],
-          },
-        },
-        {
-          name: 'update_page',
-          description:
-            'Update a Notion page: modify properties, append content blocks, or archive (move to trash).',
-          inputSchema: {
-            type: agentcore.SchemaDefinitionType.OBJECT,
-            properties: {
-              action: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Must be "update_page"',
-              },
-              page_id: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Notion page ID to update',
-              },
-              properties: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'Notion properties object as JSON string to update',
-              },
-              content: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'Text to append as paragraph blocks at end of page',
-              },
-              archived: {
-                type: agentcore.SchemaDefinitionType.BOOLEAN,
-                description: 'Set true to archive (move to trash)',
-              },
-            },
-            required: ['action', 'page_id'],
-          },
-        },
-        {
-          name: 'query_database',
-          description:
-            'Query a Notion database with optional filter and sort. Returns pages with property summaries.',
-          inputSchema: {
-            type: agentcore.SchemaDefinitionType.OBJECT,
-            properties: {
-              action: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Must be "query_database"',
-              },
-              database_id: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Notion database ID to query',
-              },
-              filter: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'Notion filter object as JSON string (optional)',
-              },
-              sorts: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'Notion sorts array as JSON string (optional)',
-              },
-              max_results: {
-                type: agentcore.SchemaDefinitionType.NUMBER,
-                description:
-                  'Maximum number of results to return (default: 20)',
-              },
-            },
-            required: ['action', 'database_id'],
-          },
-        },
-        {
-          name: 'get_database',
-          description:
-            'Get a Notion database schema: property names, types, and available options for select/multi_select/status properties. Use before creating or updating pages to know available properties and valid option values.',
-          inputSchema: {
-            type: agentcore.SchemaDefinitionType.OBJECT,
-            properties: {
-              action: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Must be "get_database"',
-              },
-              database_id: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Notion database ID',
-              },
-            },
-            required: ['action', 'database_id'],
-          },
-        },
-      ]),
-    })
-
     // ========== Runtime (L2) ==========
     const artifact = agentcore.AgentRuntimeArtifact.fromAsset(
       path.join(__dirname, '../../agentcore'),
@@ -763,9 +577,12 @@ export class AgentCoreConstruct extends Construct {
                 'bedrock-agentcore:GetCredentialProvider',
                 'bedrock-agentcore:GetResourceOAuth2Token',
                 'bedrock-agentcore:GetResourceApiKey',
+                'bedrock-agentcore:GetApiKeyCredentialProvider',
+                'bedrock-agentcore:GetWorkloadAccessToken',
               ],
               resources: [
                 `arn:aws:bedrock-agentcore:${region}:${account}:token-vault/*`,
+                `arn:aws:bedrock-agentcore:${region}:${account}:workload-identity-directory/*`,
               ],
             }),
             new iam.PolicyStatement({

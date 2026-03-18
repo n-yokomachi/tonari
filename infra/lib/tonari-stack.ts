@@ -59,7 +59,6 @@ export class TonariStack extends cdk.Stack {
       diaryLambda: workload.diaryToolLambda,
       taskToolLambda: workload.taskToolLambda,
       dateToolLambda: workload.dateToolLambda,
-      notionToolLambda: workload.notionToolLambda,
     })
 
     // ========== Cross-Construct Wiring ==========
