@@ -47,11 +47,8 @@ export class WorkloadConstruct extends Construct {
   public readonly tasksTable: dynamodb.Table
   public readonly taskCrudLambda: python.PythonFunction
   public readonly taskToolLambda: python.PythonFunction
-  public readonly calendarToolLambda: python.PythonFunction
-  public readonly gmailToolLambda: python.PythonFunction
   public readonly notionToolLambda: python.PythonFunction
   public readonly dateToolLambda: lambda.Function
-  public readonly googleOAuthLambda: lambda.Function
   public readonly newsNotificationTopic?: sns.Topic
   public readonly newsTable?: dynamodb.Table
   public readonly newsTriggerLambda?: python.PythonFunction
@@ -319,52 +316,6 @@ export class WorkloadConstruct extends Construct {
 
     this.tasksTable.grantReadWriteData(this.taskToolLambda)
 
-    // ========== Calendar (Google Calendar Gateway Tool) ==========
-    this.calendarToolLambda = new python.PythonFunction(
-      stack,
-      'CalendarToolLambda',
-      {
-        functionName: 'tonari-calendar-tool',
-        entry: path.join(__dirname, '../lambda/calendar-tool'),
-        runtime: lambda.Runtime.PYTHON_3_12,
-        handler: 'handler',
-        timeout: cdk.Duration.seconds(30),
-        memorySize: 128,
-      }
-    )
-
-    this.calendarToolLambda.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['ssm:GetParameter'],
-        resources: [
-          `arn:aws:ssm:${region}:${account}:parameter/tonari/google/*`,
-        ],
-      })
-    )
-
-    // ========== Gmail (Gateway Tool) ==========
-    this.gmailToolLambda = new python.PythonFunction(
-      stack,
-      'GmailToolLambda',
-      {
-        functionName: 'tonari-gmail-tool',
-        entry: path.join(__dirname, '../lambda/gmail-tool'),
-        runtime: lambda.Runtime.PYTHON_3_12,
-        handler: 'handler',
-        timeout: cdk.Duration.seconds(30),
-        memorySize: 128,
-      }
-    )
-
-    this.gmailToolLambda.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['ssm:GetParameter'],
-        resources: [
-          `arn:aws:ssm:${region}:${account}:parameter/tonari/google/*`,
-        ],
-      })
-    )
-
     // ========== Notion (Gateway Tool) ==========
     this.notionToolLambda = new python.PythonFunction(
       stack,
@@ -397,35 +348,6 @@ export class WorkloadConstruct extends Construct {
       timeout: cdk.Duration.seconds(10),
       memorySize: 128,
     })
-
-    // ========== Google OAuth (SSM credential management) ==========
-    this.googleOAuthLambda = new lambda.Function(stack, 'GoogleOAuthLambda', {
-      functionName: 'tonari-google-oauth',
-      code: lambda.Code.fromAsset(
-        path.join(__dirname, '../lambda/google-oauth')
-      ),
-      runtime: lambda.Runtime.PYTHON_3_12,
-      handler: 'index.handler',
-      timeout: cdk.Duration.seconds(30),
-      memorySize: 128,
-    })
-
-    this.googleOAuthLambda.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['ssm:GetParameter', 'ssm:PutParameter'],
-        resources: [
-          `arn:aws:ssm:${region}:${account}:parameter/tonari/google/*`,
-        ],
-      })
-    )
-
-    // API Route: POST /google-oauth (M2M auth)
-    const googleOAuth = this.crudApi.root.addResource('google-oauth')
-    googleOAuth.addMethod(
-      'POST',
-      new apigateway.LambdaIntegration(this.googleOAuthLambda),
-      authorizedMethodOptions
-    )
 
     // ========== Twitter Gateway Tools ==========
     if (props.tweetScheduler) {

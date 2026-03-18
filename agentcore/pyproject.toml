@@ -12,6 +12,8 @@ dependencies = [
     "mcp>=1.0.0",
     "mcp-proxy-for-aws>=1.1.6",
     "openai>=1.0.0",
+    "google-api-python-client>=2.100.0",
+    "google-auth>=2.23.0",
 ]
 
 [dependency-groups]

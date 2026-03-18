@@ -10,6 +10,8 @@ from datetime import datetime, timedelta, timezone
 
 from strands import Agent, tool
 
+from .google_calendar_tools import CALENDAR_TOOLS
+from .google_gmail_tools import GMAIL_TOOLS
 from .tonari_agent import _create_model
 from .sub_agent_prompts import (
     BRIEFING_AGENT_PROMPT,
@@ -26,8 +28,6 @@ logger = logging.getLogger(__name__)
 
 # サブエージェント用ツール（init_sub_agent_toolsで設定）
 _task_tools: list = []
-_calendar_tools: list = []
-_gmail_tools: list = []
 _notion_tools: list = []
 _twitter_tools: list = []
 _diary_tools: list = []
@@ -37,8 +37,6 @@ _actor_id: str = ""
 # ツール名プレフィックス → サブエージェントバケット
 SUB_AGENT_PREFIXES = {
     "task-tool": "task",
-    "calendar-tool": "calendar",
-    "gmail-tool": "gmail",
     "notion-tool": "notion",
     "twitter-read": "twitter",
     "twitter-write": "twitter",
@@ -66,13 +64,11 @@ def split_mcp_tools(all_tools: list) -> dict[str, list]:
         all_tools: MCPから取得した全ツールリスト
 
     Returns:
-        {"main": [...], "task": [...], "calendar": [...], "gmail": [...], "notion": [...]}
+        {"main": [...], "task": [...], "notion": [...], "twitter": [...], "diary": [...]}
     """
     result: dict[str, list] = {
         "main": [],
         "task": [],
-        "calendar": [],
-        "gmail": [],
         "notion": [],
         "twitter": [],
         "diary": [],
@@ -100,11 +96,9 @@ def split_mcp_tools(all_tools: list) -> dict[str, list]:
 
 def init_sub_agent_tools(tool_map: dict[str, list], actor_id: str = "") -> None:
     """split_mcp_toolsの結果とactor_idをモジュール変数にセットする（起動時1回）"""
-    global _task_tools, _calendar_tools, _gmail_tools, _notion_tools
+    global _task_tools, _notion_tools
     global _twitter_tools, _diary_tools, _main_tools, _actor_id
     _task_tools = tool_map.get("task", [])
-    _calendar_tools = tool_map.get("calendar", [])
-    _gmail_tools = tool_map.get("gmail", [])
     _notion_tools = tool_map.get("notion", [])
     _twitter_tools = tool_map.get("twitter", [])
     _diary_tools = tool_map.get("diary", [])
@@ -146,7 +140,7 @@ def calendar_agent(request: str) -> str:
         agent = Agent(
             model=_create_sub_agent_model(),
             system_prompt=prompt,
-            tools=_calendar_tools,
+            tools=CALENDAR_TOOLS,
             callback_handler=None,
         )
         result = agent(request)
@@ -168,7 +162,7 @@ def gmail_agent(request: str) -> str:
         agent = Agent(
             model=_create_sub_agent_model(),
             system_prompt=prompt,
-            tools=_gmail_tools,
+            tools=GMAIL_TOOLS,
             callback_handler=None,
         )
         result = agent(request)
@@ -209,7 +203,7 @@ def briefing_agent(request: str) -> str:
     try:
         # ブリーフィングはcalendar/gmail/taskサブエージェント + DateTool + TavilySearchが必要
         briefing_tools = (
-            _calendar_tools + _gmail_tools + _task_tools
+            CALENDAR_TOOLS + GMAIL_TOOLS + _task_tools
             + [t for t in _main_tools if t.tool_name.startswith(("DateTool", "TavilySearch"))]
             + [task_agent, calendar_agent, gmail_agent]
         )

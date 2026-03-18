@@ -23,12 +23,8 @@ export interface AgentCoreConstructProps {
   diaryLambda?: lambda.IFunction
   /** task-tool Lambda function (Gateway target) */
   taskToolLambda: lambda.IFunction
-  /** calendar-tool Lambda function (Gateway target) */
-  calendarToolLambda: lambda.IFunction
   /** date-tool Lambda function (Gateway target) */
   dateToolLambda: lambda.IFunction
-  /** gmail-tool Lambda function (Gateway target) */
-  gmailToolLambda: lambda.IFunction
   /** notion-tool Lambda function (Gateway target) */
   notionToolLambda: lambda.IFunction
 }
@@ -87,9 +83,7 @@ export class AgentCoreConstruct extends Construct {
     const lambdaFunctions = [
       props.searchLambda,
       props.taskToolLambda,
-      props.calendarToolLambda,
       props.dateToolLambda,
-      props.gmailToolLambda,
       props.notionToolLambda,
     ]
     if (props.twitterReadLambda) lambdaFunctions.push(props.twitterReadLambda)
@@ -405,201 +399,6 @@ export class AgentCoreConstruct extends Construct {
       ]),
     })
 
-    // Gateway Target: calendar-tool
-    gateway.addLambdaTarget('CalendarTool', {
-      gatewayTargetName: 'calendar-tool',
-      lambdaFunction: props.calendarToolLambda,
-      credentialProviderConfigurations: iamCredential,
-      toolSchema: agentcore.ToolSchema.fromInline([
-        {
-          name: 'list_events',
-          description:
-            'List Google Calendar events for a specific date or date range. Returns event titles, times, locations, and IDs.',
-          inputSchema: {
-            type: agentcore.SchemaDefinitionType.OBJECT,
-            properties: {
-              date: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'Date in YYYY-MM-DD format (for single day lookup). Defaults to today if neither date nor date_from/date_to is provided.',
-              },
-              date_from: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'Start date in YYYY-MM-DD format (for date range lookup)',
-              },
-              date_to: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'End date in YYYY-MM-DD format (for date range lookup)',
-              },
-            },
-            required: [],
-          },
-        },
-        {
-          name: 'check_availability',
-          description:
-            'Check calendar availability. Supports three modes: "day" (single day), "time_slot" (specific time range on a day), "range" (find free days in a period).',
-          inputSchema: {
-            type: agentcore.SchemaDefinitionType.OBJECT,
-            properties: {
-              check_type: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'Type of availability check: "day" (default), "time_slot", or "range"',
-              },
-              date: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'Date in YYYY-MM-DD format (for "day" and "time_slot" modes)',
-              },
-              date_from: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'Start date in YYYY-MM-DD format (for "range" mode)',
-              },
-              date_to: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'End date in YYYY-MM-DD format (for "range" mode)',
-              },
-              time_from: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'Start time in HH:MM format (for "time_slot" mode, default: 09:00)',
-              },
-              time_to: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'End time in HH:MM format (for "time_slot" mode, default: 18:00)',
-              },
-            },
-            required: ['check_type'],
-          },
-        },
-        {
-          name: 'create_event',
-          description:
-            'Create a new Google Calendar event. Supports both timed events (ISO 8601 datetime) and all-day events (YYYY-MM-DD date only).',
-          inputSchema: {
-            type: agentcore.SchemaDefinitionType.OBJECT,
-            properties: {
-              title: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Event title',
-              },
-              start: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'Start date/time. Use YYYY-MM-DD for all-day events, or ISO 8601 datetime (e.g. 2025-03-01T14:00:00) for timed events.',
-              },
-              end: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'End date/time. Same format as start. If omitted, defaults to 1 hour after start for timed events, or single day for all-day events.',
-              },
-              location: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Event location (optional)',
-              },
-              description: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Event description (optional)',
-              },
-            },
-            required: ['title', 'start'],
-          },
-        },
-        {
-          name: 'update_event',
-          description:
-            'Update an existing Google Calendar event. Only specified fields will be updated.',
-          inputSchema: {
-            type: agentcore.SchemaDefinitionType.OBJECT,
-            properties: {
-              event_id: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'ID of the event to update',
-              },
-              title: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'New event title',
-              },
-              start: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'New start date/time',
-              },
-              end: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'New end date/time',
-              },
-              location: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'New event location',
-              },
-              description: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'New event description',
-              },
-            },
-            required: ['event_id'],
-          },
-        },
-        {
-          name: 'delete_event',
-          description:
-            'Delete a Google Calendar event by its ID.',
-          inputSchema: {
-            type: agentcore.SchemaDefinitionType.OBJECT,
-            properties: {
-              event_id: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'ID of the event to delete',
-              },
-            },
-            required: ['event_id'],
-          },
-        },
-        {
-          name: 'suggest_schedule',
-          description:
-            'Suggest available time slots within a date range. Analyzes calendar to find up to 5 free slots that match the specified duration and preferred time range.',
-          inputSchema: {
-            type: agentcore.SchemaDefinitionType.OBJECT,
-            properties: {
-              date_from: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'Start date of search range in YYYY-MM-DD format',
-              },
-              date_to: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'End date of search range in YYYY-MM-DD format',
-              },
-              duration_minutes: {
-                type: agentcore.SchemaDefinitionType.NUMBER,
-                description:
-                  'Required duration in minutes (default: 60)',
-              },
-              preferred_time_from: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'Preferred start time in HH:MM format (default: 09:00)',
-              },
-              preferred_time_to: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'Preferred end time in HH:MM format (default: 18:00)',
-              },
-            },
-            required: ['date_from', 'date_to', 'duration_minutes'],
-          },
-        },
-      ]),
-    })
-
     // Gateway Target: date-tool
     gateway.addLambdaTarget('DateTool', {
       gatewayTargetName: 'date-tool',
@@ -669,110 +468,6 @@ export class AgentCoreConstruct extends Construct {
               },
             },
             required: ['start_date', 'end_date', 'weekday'],
-          },
-        },
-      ]),
-    })
-
-    // Gateway Target: gmail-tool
-    gateway.addLambdaTarget('GmailTool', {
-      gatewayTargetName: 'gmail-tool',
-      lambdaFunction: props.gmailToolLambda,
-      credentialProviderConfigurations: iamCredential,
-      toolSchema: agentcore.ToolSchema.fromInline([
-        {
-          name: 'search_emails',
-          description:
-            'Search emails using Gmail query syntax (e.g. is:unread, newer_than:1d, from:xxx). Returns email metadata list with IDs, subjects, senders, dates, and snippets.',
-          inputSchema: {
-            type: agentcore.SchemaDefinitionType.OBJECT,
-            properties: {
-              action: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Must be "search_emails"',
-              },
-              query: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'Gmail search query (e.g. "is:unread newer_than:1d", "from:example@gmail.com", "subject:invoice")',
-              },
-              max_results: {
-                type: agentcore.SchemaDefinitionType.NUMBER,
-                description:
-                  'Maximum number of results to return (default: 20)',
-              },
-            },
-            required: ['action', 'query'],
-          },
-        },
-        {
-          name: 'get_email',
-          description:
-            'Get full email content by message ID. Returns subject, from, to, date, body text, and labels.',
-          inputSchema: {
-            type: agentcore.SchemaDefinitionType.OBJECT,
-            properties: {
-              action: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Must be "get_email"',
-              },
-              message_id: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Gmail message ID to retrieve',
-              },
-            },
-            required: ['action', 'message_id'],
-          },
-        },
-        {
-          name: 'create_draft',
-          description:
-            'Create a Gmail draft email. Does NOT send the email. Use thread_id for reply drafts.',
-          inputSchema: {
-            type: agentcore.SchemaDefinitionType.OBJECT,
-            properties: {
-              action: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Must be "create_draft"',
-              },
-              to: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Recipient email address',
-              },
-              subject: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Email subject line',
-              },
-              body: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Email body text',
-              },
-              thread_id: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description:
-                  'Thread ID for reply drafts (optional)',
-              },
-            },
-            required: ['action', 'to', 'subject', 'body'],
-          },
-        },
-        {
-          name: 'archive_email',
-          description:
-            'Mark an email as read and archive it (removes UNREAD and INBOX labels).',
-          inputSchema: {
-            type: agentcore.SchemaDefinitionType.OBJECT,
-            properties: {
-              action: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Must be "archive_email"',
-              },
-              message_id: {
-                type: agentcore.SchemaDefinitionType.STRING,
-                description: 'Gmail message ID to archive',
-              },
-            },
-            required: ['action', 'message_id'],
           },
         },
       ]),
@@ -1056,6 +751,27 @@ export class AgentCoreConstruct extends Construct {
               resources: [
                 `arn:aws:bedrock-agentcore:${region}:${account}:workload-identity-directory/default`,
                 `arn:aws:bedrock-agentcore:${region}:${account}:workload-identity-directory/default/workload-identity/*`,
+              ],
+            }),
+          ],
+        }),
+        TokenVaultAccess: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              actions: [
+                'bedrock-agentcore:GetOAuth2CredentialProvider',
+                'bedrock-agentcore:GetCredentialProvider',
+                'bedrock-agentcore:GetResourceOAuth2Token',
+                'bedrock-agentcore:GetResourceApiKey',
+              ],
+              resources: [
+                `arn:aws:bedrock-agentcore:${region}:${account}:token-vault/*`,
+              ],
+            }),
+            new iam.PolicyStatement({
+              actions: ['secretsmanager:GetSecretValue'],
+              resources: [
+                `arn:aws:secretsmanager:${region}:${account}:secret:bedrock-agentcore-identity*`,
               ],
             }),
           ],
