@@ -195,16 +195,14 @@ export class WorkloadConstruct extends Construct {
     )
 
     // ========== Google OAuth Callback (AgentCore Identity) ==========
-    const googleOAuthCallbackLambda = new lambda.Function(
+    const googleOAuthCallbackLambda = new python.PythonFunction(
       stack,
       'GoogleOAuthCallbackLambda',
       {
         functionName: 'tonari-google-oauth-callback',
-        code: lambda.Code.fromAsset(
-          path.join(__dirname, '../lambda/google-oauth-callback')
-        ),
+        entry: path.join(__dirname, '../lambda/google-oauth-callback'),
         runtime: lambda.Runtime.PYTHON_3_12,
-        handler: 'index.handler',
+        handler: 'handler',
         timeout: cdk.Duration.seconds(30),
         memorySize: 128,
       }
