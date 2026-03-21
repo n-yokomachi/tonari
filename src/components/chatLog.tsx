@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 import homeStore from '@/features/stores/home'
 import settingsStore from '@/features/stores/settings'
@@ -402,20 +403,22 @@ const ExpandableImage = ({
         style={{ maxWidth: '100%', maxHeight: 400 }}
         onClick={() => setIsExpanded(true)}
       />
-      {isExpanded && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
-          onClick={() => setIsExpanded(false)}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={src}
-            alt={alt}
-            className="max-w-[90vw] max-h-[90vh] rounded-lg shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-      )}
+      {isExpanded &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+            onClick={() => setIsExpanded(false)}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={src}
+              alt={alt}
+              className="max-w-[90vw] max-h-[90vh] rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>,
+          document.body
+        )}
     </>
   )
 }
@@ -435,7 +438,7 @@ const ChatImage = ({
   return (
     <div
       className={
-        isPortrait ? 'my-1' : `mx-auto ml-0 md:ml-10 lg:ml-20 my-1 ${offsetX}`
+        isPortrait ? 'my-2' : `mx-auto ml-0 md:ml-10 lg:ml-20 my-4 ${offsetX}`
       }
     >
       <ExpandableImage src={imageUrl} alt="Sent image" />
