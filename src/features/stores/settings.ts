@@ -50,6 +50,7 @@ interface General {
   aivisSpeechUrl: string
   aivisSpeechSpeakerId: number
   voiceModel: 'Tomoko' | 'Kazuha'
+  ttsVolume: number
   wakeWordEnabled: boolean
   reasoningEnabled: boolean
 }
@@ -97,6 +98,7 @@ const getInitialValuesFromEnv = (): SettingsState => {
     aivisSpeechUrl: 'http://localhost:10101',
     aivisSpeechSpeakerId: 888753760,
     voiceModel: 'Tomoko',
+    ttsVolume: 50,
     wakeWordEnabled: false,
     reasoningEnabled: false,
   }
@@ -159,6 +161,7 @@ const settingsStore = create<SettingsState>()(
       aivisSpeechUrl: state.aivisSpeechUrl,
       aivisSpeechSpeakerId: state.aivisSpeechSpeakerId,
       voiceModel: state.voiceModel,
+      ttsVolume: state.ttsVolume,
       wakeWordEnabled: state.wakeWordEnabled,
       reasoningEnabled: state.reasoningEnabled,
     }),

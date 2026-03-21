@@ -14,6 +14,7 @@ import { GestureType } from '../emoteController/gestures'
 import { GesturePlayOptions } from '../emoteController/gestureController'
 import { Talk } from '../messages/messages'
 import { LipSync } from '../lipSync/lipSync'
+import settingsStore from '../stores/settings'
 import { buildUrl } from '@/utils/buildUrl'
 
 /**
@@ -185,6 +186,10 @@ export class Model {
     if (this._lipSync) return
     const audioContext = new AudioContext()
     this._lipSync = new LipSync(audioContext)
+    this._lipSync.setVolume(settingsStore.getState().ttsVolume / 100)
+    settingsStore.subscribe((state) => {
+      this._lipSync?.setVolume(state.ttsVolume / 100)
+    })
   }
 
   /**

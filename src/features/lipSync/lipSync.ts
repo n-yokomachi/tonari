@@ -6,6 +6,7 @@ export class LipSync {
   public readonly audio: AudioContext
   public readonly analyser: AnalyserNode
   public readonly timeDomainData: Float32Array
+  private gainNode: GainNode
   private userInteracted: boolean = false
   private waitingForInteraction: boolean = false
   private pendingPlaybacks: Array<() => void> = []
@@ -15,6 +16,8 @@ export class LipSync {
   public constructor(audio: AudioContext, options?: { forceStart?: boolean }) {
     this.audio = audio
     this.analyser = audio.createAnalyser()
+    this.gainNode = audio.createGain()
+    this.gainNode.connect(audio.destination)
     this.timeDomainData = new Float32Array(TIME_DOMAIN_DATA_LENGTH)
     this.forceStart = options?.forceStart || false
 
@@ -117,6 +120,10 @@ export class LipSync {
     return false
   }
 
+  public setVolume(value: number): void {
+    this.gainNode.gain.value = Math.max(0, Math.min(1, value))
+  }
+
   // forceStart設定を動的に変更するメソッドを追加
   public setForceStart(enable: boolean): void {
     this.forceStart = enable
@@ -205,7 +212,7 @@ export class LipSync {
       this.currentSource = bufferSource
       bufferSource.buffer = audioBuffer
 
-      bufferSource.connect(this.audio.destination)
+      bufferSource.connect(this.gainNode)
       bufferSource.connect(this.analyser)
       bufferSource.start()
       if (onEnded) {

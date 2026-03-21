@@ -68,6 +68,7 @@ const Based = () => {
   const aivisSpeechUrl = settingsStore((s) => s.aivisSpeechUrl)
   const aivisSpeechSpeakerId = settingsStore((s) => s.aivisSpeechSpeakerId)
   const voiceModel = settingsStore((s) => s.voiceModel)
+  const ttsVolume = settingsStore((s) => s.ttsVolume)
   const wakeWordEnabled = settingsStore((s) => s.wakeWordEnabled)
   const isDark = colorTheme === 'tonari-dark'
 
@@ -244,6 +245,25 @@ const Based = () => {
                 />
               </div>
             )}
+
+            <div className="my-4">
+              <div className="my-2 font-bold">Volume</div>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={ttsVolume}
+                  onChange={(e) =>
+                    settingsStore.setState({ ttsVolume: Number(e.target.value) })
+                  }
+                  className="flex-1 accent-secondary"
+                />
+                <span className="text-sm w-10 text-right opacity-70">
+                  {ttsVolume}%
+                </span>
+              </div>
+            </div>
 
             {ttsEngine === 'polly' && (
               <div className="my-4">
