@@ -1,132 +1,90 @@
-"""Google API authentication via AgentCore Identity.
+"""Google API authentication via SSM-stored refresh tokens.
 
 Provides access token retrieval and Google API service builders
-using AgentCore Identity's OAuth2 Credential Provider.
+using refresh tokens stored in AWS SSM Parameter Store.
 """
 
-import asyncio
+import json
 import logging
 import os
-import threading
+import urllib.parse
+import urllib.request
 
+import boto3
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
 logger = logging.getLogger(__name__)
 
-CREDENTIAL_PROVIDER_NAME = os.getenv(
-    "GOOGLE_CREDENTIAL_PROVIDER",
-    "google-oauth-client-mk86i",
-)
-GOOGLE_SCOPES = [
-    "https://www.googleapis.com/auth/calendar",
-    "https://www.googleapis.com/auth/gmail.modify",
-    "https://www.googleapis.com/auth/gmail.compose",
-]
 AWS_REGION = os.getenv("AWS_REGION", "ap-northeast-1")
-OAUTH_CALLBACK_URL = os.getenv("GOOGLE_OAUTH_CALLBACK_URL", "")
+SSM_PREFIX = "/tonari/google"
+GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token"
 
-# Auth URL event sink: SSEストリームにOAuth認可URLを流すための仕組み
-_auth_event_queue: asyncio.Queue | None = None
-_auth_event_loop: asyncio.AbstractEventLoop | None = None
-
-
-def set_auth_event_sink(queue: asyncio.Queue, loop: asyncio.AbstractEventLoop):
-    """SSEイベントキューを設定する（invoke開始時に呼ぶ）"""
-    global _auth_event_queue, _auth_event_loop
-    _auth_event_queue = queue
-    _auth_event_loop = loop
+_ssm_client = None
 
 
-def clear_auth_event_sink():
-    """SSEイベントキューをクリアする（invoke終了時に呼ぶ）"""
-    global _auth_event_queue, _auth_event_loop
-    _auth_event_queue = None
-    _auth_event_loop = None
+def _get_ssm():
+    global _ssm_client
+    if _ssm_client is None:
+        _ssm_client = boto3.client("ssm", region_name=AWS_REGION)
+    return _ssm_client
 
 
-def _run_async(coro):
-    """Run an async coroutine from sync context, handling existing event loops."""
-    try:
-        asyncio.get_running_loop()
-        # Already inside an event loop — run in a separate thread
-        result = [None]
-        exc = [None]
-
-        def _run():
-            try:
-                result[0] = asyncio.run(coro)
-            except Exception as e:
-                exc[0] = e
-
-        t = threading.Thread(target=_run)
-        t.start()
-        t.join()
-        if exc[0]:
-            raise exc[0]
-        return result[0]
-    except RuntimeError:
-        # No running event loop
-        return asyncio.run(coro)
+def _get_ssm_param(name: str) -> str:
+    resp = _get_ssm().get_parameter(
+        Name=f"{SSM_PREFIX}/{name}", WithDecryption=True
+    )
+    return resp["Parameter"]["Value"]
 
 
 def get_access_token() -> str:
-    """Get a Google access token via AgentCore Identity OAuth2 Credential Provider."""
-    from bedrock_agentcore.runtime import BedrockAgentCoreContext
-    from bedrock_agentcore.services.identity import IdentityClient
-
-    workload_token = BedrockAgentCoreContext.get_workload_access_token()
-    if not workload_token:
+    """Get a Google access token using refresh token from SSM."""
+    try:
+        client_id = _get_ssm_param("client_id")
+        client_secret = _get_ssm_param("client_secret")
+        refresh_token = _get_ssm_param("refresh_token")
+    except Exception as e:
         raise RuntimeError(
-            "No workload access token available. "
-            "Ensure the agent is running inside AgentCore Runtime."
-        )
+            "Google認証情報がSSMに設定されていません。"
+            "設定画面から「Google認証を更新」を実行してください。"
+        ) from e
 
-    client = IdentityClient(region=AWS_REGION)
+    data = urllib.parse.urlencode({
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "refresh_token": refresh_token,
+        "grant_type": "refresh_token",
+    }).encode("utf-8")
 
-    def _on_auth_url(url: str):
-        logger.warning(
-            "Google OAuth consent required. Visit this URL to authorize: %s", url
-        )
-        # SSEストリーム経由でフロントエンドにauth URLを送る
-        if _auth_event_queue is not None and _auth_event_loop is not None:
-            _auth_event_loop.call_soon_threadsafe(
-                _auth_event_queue.put_nowait,
-                {"type": "auth_url", "url": url},
-            )
-
-    async def _fetch():
-        kwargs = dict(
-            provider_name=CREDENTIAL_PROVIDER_NAME,
-            scopes=GOOGLE_SCOPES,
-            agent_identity_token=workload_token,
-            auth_flow="USER_FEDERATION",
-            on_auth_url=_on_auth_url,
-        )
-        if OAUTH_CALLBACK_URL:
-            kwargs["callback_url"] = OAUTH_CALLBACK_URL
-        return await client.get_token(**kwargs)
+    req = urllib.request.Request(
+        GOOGLE_TOKEN_ENDPOINT,
+        data=data,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
 
     try:
-        token = _run_async(_fetch())
-        return token
-    except Exception as e:
-        error_detail = f"{type(e).__name__}: {e}"
+        with urllib.request.urlopen(req) as resp:
+            token_data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8")
         raise RuntimeError(
-            f"Google認証エラー: {error_detail}. "
-            f"provider={CREDENTIAL_PROVIDER_NAME}, region={AWS_REGION}"
+            f"Google認証エラー: トークンの更新に失敗しました。"
+            f"設定画面から「Google認証を更新」を実行してください。"
+            f" ({error_body})"
         ) from e
+
+    return token_data["access_token"]
 
 
 def get_calendar_service():
-    """Build a Google Calendar API service using AgentCore Identity token."""
+    """Build a Google Calendar API service."""
     token = get_access_token()
     credentials = Credentials(token=token)
     return build("calendar", "v3", credentials=credentials)
 
 
 def get_gmail_service():
-    """Build a Gmail API service using AgentCore Identity token."""
+    """Build a Gmail API service."""
     token = get_access_token()
     credentials = Credentials(token=token)
     return build("gmail", "v1", credentials=credentials)

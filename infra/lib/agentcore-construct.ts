@@ -23,8 +23,6 @@ export interface AgentCoreConstructProps {
   dateToolLambda: lambda.IFunction
   /** Twitter owner user ID (optional, for @tool-based tweet reading) */
   ownerTwitterUserId?: string
-  /** Google OAuth callback URL (e.g. https://tonari-with.vercel.app/api/ai/google-auth-callback) */
-  googleOAuthCallbackUrl?: string
 }
 
 export class AgentCoreConstruct extends Construct {
@@ -491,6 +489,7 @@ export class AgentCoreConstruct extends Construct {
               actions: ['ssm:GetParameter'],
               resources: [
                 `arn:aws:ssm:${region}:${account}:parameter/tonari/openrouter-api-key`,
+                `arn:aws:ssm:${region}:${account}:parameter/tonari/google/*`,
               ],
             }),
           ],
@@ -558,7 +557,6 @@ export class AgentCoreConstruct extends Construct {
         ...(props.ownerTwitterUserId && {
           OWNER_TWITTER_USER_ID: props.ownerTwitterUserId,
         }),
-        GOOGLE_OAUTH_CALLBACK_URL: props.googleOAuthCallbackUrl ?? '',
       },
     })
     this.runtimeArn = runtime.agentRuntimeArn

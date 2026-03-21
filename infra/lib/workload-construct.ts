@@ -194,13 +194,13 @@ export class WorkloadConstruct extends Construct {
       authorizedMethodOptions
     )
 
-    // ========== Google OAuth Callback (AgentCore Identity) ==========
-    const googleOAuthCallbackLambda = new python.PythonFunction(
+    // ========== Google OAuth (SSM-based token management) ==========
+    const googleOAuthLambda = new python.PythonFunction(
       stack,
-      'GoogleOAuthCallbackLambda',
+      'GoogleOAuthLambda',
       {
-        functionName: 'tonari-google-oauth-callback',
-        entry: path.join(__dirname, '../lambda/google-oauth-callback'),
+        functionName: 'tonari-google-oauth',
+        entry: path.join(__dirname, '../lambda/google-oauth'),
         runtime: lambda.Runtime.PYTHON_3_12,
         handler: 'handler',
         timeout: cdk.Duration.seconds(30),
@@ -208,18 +208,19 @@ export class WorkloadConstruct extends Construct {
       }
     )
 
-    googleOAuthCallbackLambda.addToRolePolicy(
+    googleOAuthLambda.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ['bedrock-agentcore:CompleteResourceTokenAuth'],
-        resources: ['*'],
+        actions: ['ssm:GetParameter', 'ssm:PutParameter'],
+        resources: [
+          `arn:aws:ssm:${region}:${account}:parameter/tonari/google/*`,
+        ],
       })
     )
 
-    const googleOAuthCallback =
-      this.crudApi.root.addResource('google-oauth-callback')
-    googleOAuthCallback.addMethod(
+    const googleOAuth = this.crudApi.root.addResource('google-oauth')
+    googleOAuth.addMethod(
       'POST',
-      new apigateway.LambdaIntegration(googleOAuthCallbackLambda),
+      new apigateway.LambdaIntegration(googleOAuthLambda),
       authorizedMethodOptions
     )
 

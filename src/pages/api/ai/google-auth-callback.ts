@@ -1,7 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import agentcoreConfig from '@/../config/agentcore.json'
 
-// Cognito M2M token (same as agentcore.ts)
 async function getAccessToken(): Promise<string> {
   const { tokenEndpoint, clientId, scope } = agentcoreConfig.cognito
   const clientSecret = process.env.COGNITO_CLIENT_SECRET || ''
@@ -30,7 +29,8 @@ async function getAccessToken(): Promise<string> {
   return data.access_token
 }
 
-// Google OAuth callback: AgentCore Identity OAuth flow completion
+// Google OAuth callback: Google からリダイレクトされて code を受け取り、
+// Lambda で refresh_token に交換して SSM に保存する
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -39,28 +39,37 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const sessionId = req.query.session_id as string | undefined
-  if (!sessionId) {
+  const code = req.query.code as string | undefined
+  if (!code) {
     return res
       .status(400)
       .setHeader('Content-Type', 'text/html; charset=utf-8')
       .send(
         '<html><body style="text-align:center;padding:60px;font-family:sans-serif">' +
-          '<p>session_id が不足しています</p></body></html>'
+          '<p>認証コードが不足しています</p></body></html>'
       )
   }
 
+  // redirect_uri はこのエンドポイント自身（Google に渡したものと一致させる）
+  const host = req.headers.host || 'localhost:3000'
+  const protocol = host.startsWith('localhost') ? 'http' : 'https'
+  const redirectUri = `${protocol}://${host}/api/ai/google-auth-callback`
+
   try {
     const accessToken = await getAccessToken()
-
     const apiUrl = agentcoreConfig.apiUrl
-    const response = await fetch(`${apiUrl}/google-oauth-callback`, {
+
+    const response = await fetch(`${apiUrl}/google-oauth`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${accessToken}`,
       },
-      body: JSON.stringify({ session_uri: sessionId }),
+      body: JSON.stringify({
+        action: 'exchange_code',
+        code,
+        redirect_uri: redirectUri,
+      }),
     })
 
     const result = await response.json()
@@ -77,7 +86,7 @@ export default async function handler(
           '<p>Google連携が完了しました！このタブを閉じてOKです。</p></body></html>'
       )
   } catch (err) {
-    console.error('CompleteResourceTokenAuth error:', err)
+    console.error('Google OAuth callback error:', err)
     return res
       .status(500)
       .setHeader('Content-Type', 'text/html; charset=utf-8')

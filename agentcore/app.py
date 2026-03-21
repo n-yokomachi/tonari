@@ -229,19 +229,14 @@ def build_content_blocks(
 async def _stream_response(agent, content):
     """エージェントのストリーミングレスポンスを生成
 
-    エージェント実行をバックグラウンドタスクで走らせ、ストリームイベントと
-    Google OAuth認可URLイベントを1つのキューに合流させてyieldする。
+    エージェント実行をバックグラウンドタスクで走らせ、ストリームイベントを
+    キュー経由でyieldする。
 
     Yields:
         str: テキストチャンク
         dict: ツールイベント ({"type": "tool_start", "tool": name} or {"type": "tool_end"})
-        dict: 認可URLイベント ({"type": "auth_url", "url": str})
     """
-    from src.agent.google_auth import set_auth_event_sink, clear_auth_event_sink
-
     event_queue = asyncio.Queue()
-    loop = asyncio.get_running_loop()
-    set_auth_event_sink(event_queue, loop)
 
     async def _run_agent():
         active_tool = None
@@ -281,7 +276,6 @@ async def _stream_response(agent, content):
             yield item
     finally:
         await task
-        clear_auth_event_sink()
 
 
 @app.entrypoint

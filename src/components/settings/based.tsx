@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import settingsStore from '@/features/stores/settings'
 import type { ModelProvider, TtsEngine } from '@/features/stores/settings'
@@ -23,6 +24,41 @@ const MODEL_OPTIONS: {
 
 const Based = () => {
   const { t } = useTranslation()
+  const [googleAuthStatus, setGoogleAuthStatus] = useState<
+    'idle' | 'loading' | 'success' | 'error'
+  >('idle')
+  const [googleAuthMessage, setGoogleAuthMessage] = useState('')
+
+  const handleGoogleAuth = useCallback(async () => {
+    setGoogleAuthStatus('loading')
+    try {
+      const redirectUri = `${window.location.origin}/api/ai/google-auth-callback`
+      const res = await fetch('/api/ai/google-oauth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'get_auth_url',
+          redirect_uri: redirectUri,
+        }),
+      })
+      const data = await res.json()
+      if (data.success && data.auth_url) {
+        window.open(data.auth_url, '_blank')
+        setGoogleAuthStatus('success')
+        setGoogleAuthMessage(
+          '認証画面を開きました。完了後にこのメッセージは消えます。'
+        )
+      } else {
+        throw new Error(data.message || 'Failed to get auth URL')
+      }
+    } catch (err) {
+      setGoogleAuthStatus('error')
+      setGoogleAuthMessage(
+        err instanceof Error ? err.message : 'エラーが発生しました'
+      )
+    }
+  }, [])
+
   const colorTheme = settingsStore((s) => s.colorTheme)
   const uiStyle = settingsStore((s) => s.uiStyle)
   const modelProvider = settingsStore((s) => s.modelProvider)
@@ -252,6 +288,33 @@ const Based = () => {
             {wakeWordEnabled ? 'ON' : 'OFF'}
           </TextButton>
         </div>
+      </div>
+
+      {/* Google認証 */}
+      <div className="my-6">
+        <div className="my-4 text-xl font-bold">Google連携</div>
+        <div className="my-4 whitespace-pre-wrap text-sm opacity-70">
+          Googleカレンダー・Gmailと連携します。7日ごとに再認証が必要です。
+        </div>
+        <div className="my-2">
+          <TextButton
+            onClick={handleGoogleAuth}
+            disabled={googleAuthStatus === 'loading'}
+          >
+            {googleAuthStatus === 'loading'
+              ? '認証画面を準備中...'
+              : 'Google認証を更新'}
+          </TextButton>
+        </div>
+        {googleAuthMessage && (
+          <div
+            className={`mt-2 text-sm ${
+              googleAuthStatus === 'error' ? 'text-red-500' : 'opacity-60'
+            }`}
+          >
+            {googleAuthMessage}
+          </div>
+        )}
       </div>
     </>
   )
