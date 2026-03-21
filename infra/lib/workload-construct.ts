@@ -194,6 +194,37 @@ export class WorkloadConstruct extends Construct {
       authorizedMethodOptions
     )
 
+    // ========== Google OAuth Callback (AgentCore Identity) ==========
+    const googleOAuthCallbackLambda = new lambda.Function(
+      stack,
+      'GoogleOAuthCallbackLambda',
+      {
+        functionName: 'tonari-google-oauth-callback',
+        code: lambda.Code.fromAsset(
+          path.join(__dirname, '../lambda/google-oauth-callback')
+        ),
+        runtime: lambda.Runtime.PYTHON_3_12,
+        handler: 'index.handler',
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 128,
+      }
+    )
+
+    googleOAuthCallbackLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['bedrock-agentcore:CompleteResourceTokenAuth'],
+        resources: ['*'],
+      })
+    )
+
+    const googleOAuthCallback =
+      this.crudApi.root.addResource('google-oauth-callback')
+    googleOAuthCallback.addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(googleOAuthCallbackLambda),
+      authorizedMethodOptions
+    )
+
     // ========== Diary ==========
     this.diaryTable = new dynamodb.Table(stack, 'DiaryTable', {
       tableName: 'tonari-diary',

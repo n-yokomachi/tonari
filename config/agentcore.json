@@ -1,6 +1,7 @@
 {
   "region": "ap-northeast-1",
   "runtimeArn": "arn:aws:bedrock-agentcore:ap-northeast-1:765653276628:runtime/tonari-3f5caSEoyK",
+  "apiUrl": "https://fa16o13bq1.execute-api.ap-northeast-1.amazonaws.com/prod",
   "cognito": {
     "tokenEndpoint": "https://tonari-m2m.auth.ap-northeast-1.amazoncognito.com/oauth2/token",
     "clientId": "5khi9mkgb4f457a18ga5mu1t8l",
