@@ -1,5 +1,6 @@
 """AgentCore Runtime エントリポイント（ストリーミング対応）"""
 
+import asyncio
 import base64
 import logging
 import os
@@ -228,33 +229,59 @@ def build_content_blocks(
 async def _stream_response(agent, content):
     """エージェントのストリーミングレスポンスを生成
 
+    エージェント実行をバックグラウンドタスクで走らせ、ストリームイベントと
+    Google OAuth認可URLイベントを1つのキューに合流させてyieldする。
+
     Yields:
         str: テキストチャンク
         dict: ツールイベント ({"type": "tool_start", "tool": name} or {"type": "tool_end"})
+        dict: 認可URLイベント ({"type": "auth_url", "url": str})
     """
-    stream = agent.stream_async(content)
-    active_tool = None
+    from src.agent.google_auth import set_auth_event_sink, clear_auth_event_sink
 
-    async for event in stream:
-        if isinstance(event, dict):
-            if "data" in event:
-                text = event["data"]
-                if isinstance(text, str):
-                    if active_tool is not None:
-                        yield {"type": "tool_end"}
-                        active_tool = None
-                    yield text
-            elif "current_tool_use" in event:
-                tool_info = event["current_tool_use"]
-                tool_name = tool_info.get("name", "unknown")
-                if tool_name != active_tool:
-                    if active_tool is not None:
-                        yield {"type": "tool_end"}
-                    active_tool = tool_name
-                    yield {"type": "tool_start", "tool": tool_name}
+    event_queue = asyncio.Queue()
+    loop = asyncio.get_running_loop()
+    set_auth_event_sink(event_queue, loop)
 
-    if active_tool is not None:
-        yield {"type": "tool_end"}
+    async def _run_agent():
+        active_tool = None
+        try:
+            async for event in agent.stream_async(content):
+                if isinstance(event, dict):
+                    if "data" in event:
+                        text = event["data"]
+                        if isinstance(text, str):
+                            if active_tool is not None:
+                                await event_queue.put({"type": "tool_end"})
+                                active_tool = None
+                            await event_queue.put(text)
+                    elif "current_tool_use" in event:
+                        tool_info = event["current_tool_use"]
+                        tool_name = tool_info.get("name", "unknown")
+                        if tool_name != active_tool:
+                            if active_tool is not None:
+                                await event_queue.put({"type": "tool_end"})
+                            active_tool = tool_name
+                            await event_queue.put({"type": "tool_start", "tool": tool_name})
+            if active_tool is not None:
+                await event_queue.put({"type": "tool_end"})
+        except Exception as e:
+            logger.error("Agent stream error: %s", e, exc_info=True)
+            await event_queue.put({"type": "error", "message": str(e)})
+        finally:
+            await event_queue.put(None)  # 終了シグナル
+
+    task = asyncio.create_task(_run_agent())
+
+    try:
+        while True:
+            item = await event_queue.get()
+            if item is None:
+                break
+            yield item
+    finally:
+        await task
+        clear_auth_event_sink()
 
 
 @app.entrypoint

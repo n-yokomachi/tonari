@@ -27,4 +27,7 @@ new TonariStack(app, 'TonariStack', {
           '/tonari/cognito/client_secret',
       }
     : undefined,
+  googleOAuthCallbackUrl:
+    app.node.tryGetContext('googleOAuthCallbackUrl') ??
+    'https://tonari-with.vercel.app/api/ai/google-auth-callback',
 })

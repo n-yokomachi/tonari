@@ -24,6 +24,25 @@ GOOGLE_SCOPES = [
     "https://www.googleapis.com/auth/gmail.compose",
 ]
 AWS_REGION = os.getenv("AWS_REGION", "ap-northeast-1")
+OAUTH_CALLBACK_URL = os.getenv("GOOGLE_OAUTH_CALLBACK_URL", "")
+
+# Auth URL event sink: SSEストリームにOAuth認可URLを流すための仕組み
+_auth_event_queue: asyncio.Queue | None = None
+_auth_event_loop: asyncio.AbstractEventLoop | None = None
+
+
+def set_auth_event_sink(queue: asyncio.Queue, loop: asyncio.AbstractEventLoop):
+    """SSEイベントキューを設定する（invoke開始時に呼ぶ）"""
+    global _auth_event_queue, _auth_event_loop
+    _auth_event_queue = queue
+    _auth_event_loop = loop
+
+
+def clear_auth_event_sink():
+    """SSEイベントキューをクリアする（invoke終了時に呼ぶ）"""
+    global _auth_event_queue, _auth_event_loop
+    _auth_event_queue = None
+    _auth_event_loop = None
 
 
 def _run_async(coro):
@@ -69,15 +88,24 @@ def get_access_token() -> str:
         logger.warning(
             "Google OAuth consent required. Visit this URL to authorize: %s", url
         )
+        # SSEストリーム経由でフロントエンドにauth URLを送る
+        if _auth_event_queue is not None and _auth_event_loop is not None:
+            _auth_event_loop.call_soon_threadsafe(
+                _auth_event_queue.put_nowait,
+                {"type": "auth_url", "url": url},
+            )
 
     async def _fetch():
-        return await client.get_token(
+        kwargs = dict(
             provider_name=CREDENTIAL_PROVIDER_NAME,
             scopes=GOOGLE_SCOPES,
             agent_identity_token=workload_token,
             auth_flow="USER_FEDERATION",
             on_auth_url=_on_auth_url,
         )
+        if OAUTH_CALLBACK_URL:
+            kwargs["callback_url"] = OAUTH_CALLBACK_URL
+        return await client.get_token(**kwargs)
 
     try:
         token = _run_async(_fetch())

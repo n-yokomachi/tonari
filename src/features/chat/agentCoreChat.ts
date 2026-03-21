@@ -1,7 +1,9 @@
 import settingsStore from '@/features/stores/settings'
 
 export type ToolEvent = { type: 'tool_start' | 'tool_end'; tool?: string }
-export type StreamChunk = string | ToolEvent
+export type AuthUrlEvent = { type: 'auth_url'; url: string }
+export type StreamEvent = ToolEvent | AuthUrlEvent
+export type StreamChunk = string | StreamEvent
 
 /**
  * セッションIDを取得（localStorage: ブラウザ単位で永続化）
@@ -108,7 +110,7 @@ export async function getAgentCoreChatResponseStream(
                   typeof parsed === 'object' &&
                   parsed.type
                 ) {
-                  controller.enqueue(parsed as ToolEvent)
+                  controller.enqueue(parsed as StreamEvent)
                 }
               } catch {
                 // パース失敗時はそのまま

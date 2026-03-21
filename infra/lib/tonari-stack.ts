@@ -16,6 +16,8 @@ export interface TonariStackProps extends cdk.StackProps {
     /** Cognito client secret SSM path (shared with tweetScheduler) */
     ssmCognitoClientSecret: string
   }
+  /** Google OAuth callback URL (e.g. https://tonari-with.vercel.app/api/ai/google-auth-callback) */
+  googleOAuthCallbackUrl?: string
 }
 
 export class TonariStack extends cdk.Stack {
@@ -58,6 +60,7 @@ export class TonariStack extends cdk.Stack {
       ownerTwitterUserId: props.tweetScheduler?.ownerTwitterUserId,
       taskToolLambda: workload.taskToolLambda,
       dateToolLambda: workload.dateToolLambda,
+      googleOAuthCallbackUrl: props.googleOAuthCallbackUrl,
     })
 
     // ========== Cross-Construct Wiring ==========

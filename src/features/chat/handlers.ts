@@ -1,5 +1,8 @@
 import { getAIChatResponseStream } from '@/features/chat/aiChatFactory'
-import { type ToolEvent } from '@/features/chat/agentCoreChat'
+import {
+  type ToolEvent,
+  type AuthUrlEvent,
+} from '@/features/chat/agentCoreChat'
 import { EmotionType } from '@/features/messages/messages'
 import { speakCharacter } from '@/features/messages/speakCharacter'
 import homeStore from '@/features/stores/home'
@@ -507,8 +510,20 @@ export const processAIResponse = async (
       const { done, value } = await reader.read()
 
       if (value) {
-        // ツールイベントの処理
+        // イベントの処理
         if (typeof value === 'object' && 'type' in value) {
+          // Google OAuth認可URLイベント
+          if (value.type === 'auth_url') {
+            const authEvent = value as AuthUrlEvent
+            window.open(authEvent.url, '_blank')
+            toastStore.getState().addToast({
+              message: 'Googleの認証画面を開きました。認証を完了してください。',
+              type: 'info',
+              tag: 'google-reauth',
+            })
+          }
+
+          // ツールイベントの処理
           const toolEvent = value as ToolEvent
           if (toolEvent.type === 'tool_start') {
             // Finalize current message before tool execution (split bubble)
