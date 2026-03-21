@@ -144,11 +144,12 @@ def _get_or_create_agent(
 # パイプラインモード別のGateway MCPツールフィルタ
 PIPELINE_TOOL_FILTERS = {
     "news": {"TavilySearch"},
+    "tweet": {"TavilySearch"},
 }
 
 # パイプラインモード別の直接ツール（@tool関数、Gateway不要）
 PIPELINE_DIRECT_TOOLS = {
-    "tweet": TWITTER_TOOLS + [tavily_search],
+    "tweet": TWITTER_TOOLS,
 }
 
 

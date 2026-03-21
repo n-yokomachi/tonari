@@ -517,12 +517,14 @@ export const processAIResponse = async (
               currentMessageId !== null
                 ? removeGestureTags(currentMessageContent.trim())
                 : ''
-            if (currentMessageId !== null && toolSplitContent) {
-              homeStore.getState().upsertMessage({
-                id: currentMessageId,
-                role: 'assistant',
-                content: toolSplitContent,
-              })
+            if (currentMessageId !== null) {
+              if (toolSplitContent) {
+                homeStore.getState().upsertMessage({
+                  id: currentMessageId,
+                  role: 'assistant',
+                  content: toolSplitContent,
+                })
+              }
               currentMessageId = null
               currentMessageContent = ''
             }
