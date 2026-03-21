@@ -18,7 +18,7 @@ import { useIsMobile, useIsPortrait } from '@/hooks/useMediaQuery'
 import { useIdleMotion } from '@/hooks/useIdleMotion'
 import { useSleepMode } from '@/hooks/useSleepMode'
 import { usePomodoroTimer } from '@/hooks/usePomodoroTimer'
-import { usePomodoroMotion } from '@/hooks/usePomodoroMotion'
+// import { usePomodoroMotion } from '@/hooks/usePomodoroMotion'
 import { useWakeWordDetection } from '@/features/voiceInput/useWakeWordDetection'
 import { VoiceInputIndicator } from '@/components/voiceInputIndicator'
 import { MobileHeader } from '@/components/mobileHeader'
@@ -95,7 +95,7 @@ const Home = () => {
   useIdleMotion()
   useSleepMode()
   usePomodoroTimer()
-  usePomodoroMotion()
+  // usePomodoroMotion() // ポモドーロ中の待機モーション変更を無効化
   useWakeWordDetection()
 
   const webcamStatus = homeStore((s) => s.webcamStatus)
