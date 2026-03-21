@@ -170,6 +170,7 @@ def create_tonari_agent(
     mcp_tools: Optional[list] = None,
     model_provider: str = MODEL_PROVIDER_BEDROCK,
     reasoning_enabled: bool = False,
+    plugins: Optional[list] = None,
 ) -> Agent:
     """Tonariエージェントを作成（フルモード：LTM + ツール付き）
 
@@ -179,6 +180,7 @@ def create_tonari_agent(
         mcp_tools: MCPから取得したツールリスト（オプション）
         model_provider: モデルプロバイダー ("bedrock" or "openrouter")
         reasoning_enabled: reasoningを有効にするか（OpenRouterのみ）
+        plugins: Strands Agent プラグインリスト（AgentSkills等）
 
     Returns:
         Agent: セッション管理機能付きのTonariエージェント
@@ -190,13 +192,16 @@ def create_tonari_agent(
     )
 
     has_tools = bool(mcp_tools)
-    agent = Agent(
-        model=_create_model(model_provider, cache_tools=has_tools, reasoning_enabled=reasoning_enabled),
-        system_prompt=TONARI_SYSTEM_PROMPT,
-        conversation_manager=SlidingWindowConversationManager(window_size=10),
-        session_manager=session_manager,
-        tools=mcp_tools or [],
-    )
+    kwargs = {
+        "model": _create_model(model_provider, cache_tools=has_tools, reasoning_enabled=reasoning_enabled),
+        "system_prompt": TONARI_SYSTEM_PROMPT,
+        "conversation_manager": SlidingWindowConversationManager(window_size=10),
+        "session_manager": session_manager,
+        "tools": mcp_tools or [],
+    }
+    if plugins:
+        kwargs["plugins"] = plugins
+    agent = Agent(**kwargs)
     return agent
 
 

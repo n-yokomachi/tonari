@@ -93,6 +93,9 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
   diary_agent: '日記を作成中',
   intro_agent: '自己紹介を準備中',
   twitter_agent: 'Twitterを操作中',
+  execute_python: 'コードを実行中',
+  get_aws_cost: 'AWSコストを取得中',
+  skills: 'スキルを読み込み中',
 }
 
 const TOOL_STATUS_ID = 'tool-status'
@@ -538,6 +541,15 @@ export const processAIResponse = async (
             })
           } else if (toolEvent.type === 'tool_end') {
             removeToolStatus()
+          } else if (toolEvent.type === 'image' && 'url' in toolEvent) {
+            // Code Interpreter からのグラフ画像イベント（S3署名付きURL）
+            const imgEvent = toolEvent as ToolEvent & { url: string }
+            const imageId = generateMessageId()
+            homeStore.getState().upsertMessage({
+              id: imageId,
+              role: 'assistant',
+              content: [{ type: 'image', image: imgEvent.url }],
+            })
           }
         } else {
           // テキストチャンクの処理（既存ロジック）

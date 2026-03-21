@@ -47,25 +47,18 @@ function modifyAnthropicMessages(messages: Message[]): Message[] {
 export function consolidateMessages(messages: Message[]) {
   const consolidated: Message[] = []
   let lastRole: string | null = null
-  let combinedContent:
-    | string
-    | [
-        {
-          type: 'text'
-          text: string
-        },
-        {
-          type: 'image'
-          image: string
-        },
-      ]
+  let combinedContent: Message['content']
 
   messages.forEach((message, index) => {
     if (message.role === lastRole) {
       if (typeof combinedContent === 'string') {
         combinedContent += '\n' + message.content
-      } else {
-        combinedContent[0].text += '\n' + message.content
+      } else if (Array.isArray(combinedContent)) {
+        const textBlock = combinedContent.find((b) => b.type === 'text')
+        if (textBlock && textBlock.type === 'text') {
+          textBlock.text +=
+            '\n' + (typeof message.content === 'string' ? message.content : '')
+        }
       }
     } else {
       if (lastRole !== null) {
