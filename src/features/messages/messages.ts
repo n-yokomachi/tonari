@@ -1,9 +1,11 @@
+export type ContentBlock =
+  | { type: 'text'; text: string }
+  | { type: 'image'; image: string }
+
 export type Message = {
   id?: string
   role: string // "assistant" | "system" | "user";
-  content?:
-    | string
-    | [{ type: 'text'; text: string }, { type: 'image'; image: string }] // マルチモーダル拡張
+  content?: string | ContentBlock[]
   audio?: { id: string }
   timestamp?: string
 }

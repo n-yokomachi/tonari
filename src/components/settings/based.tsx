@@ -255,7 +255,9 @@ const Based = () => {
                   max={100}
                   value={ttsVolume}
                   onChange={(e) =>
-                    settingsStore.setState({ ttsVolume: Number(e.target.value) })
+                    settingsStore.setState({
+                      ttsVolume: Number(e.target.value),
+                    })
                   }
                   className="flex-1 accent-secondary"
                 />

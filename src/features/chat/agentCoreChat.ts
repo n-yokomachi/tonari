@@ -1,6 +1,8 @@
 import settingsStore from '@/features/stores/settings'
 
-export type ToolEvent = { type: 'tool_start' | 'tool_end'; tool?: string }
+export type ToolEvent =
+  | { type: 'tool_start' | 'tool_end'; tool?: string }
+  | { type: 'image'; url: string }
 export type StreamChunk = string | ToolEvent
 
 /**

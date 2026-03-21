@@ -5,6 +5,7 @@ import { Platform } from 'aws-cdk-lib/aws-ecr-assets'
 import * as iam from 'aws-cdk-lib/aws-iam'
 import * as lambda from 'aws-cdk-lib/aws-lambda'
 import * as logs from 'aws-cdk-lib/aws-logs'
+import * as s3 from 'aws-cdk-lib/aws-s3'
 import { Construct } from 'constructs'
 import * as path from 'path'
 
@@ -409,6 +410,17 @@ export class AgentCoreConstruct extends Construct {
       ]),
     })
 
+    // ========== Code Interpreter Output Bucket ==========
+    const codeInterpreterBucket = new s3.Bucket(this, 'CodeInterpreterOutputBucket', {
+      bucketName: `tonari-codeinterpreter-outputs-${account}`,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+      lifecycleRules: [
+        { expiration: cdk.Duration.days(1) },
+      ],
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+    })
+
     // ========== Runtime (L2) ==========
     const artifact = agentcore.AgentRuntimeArtifact.fromAsset(
       path.join(__dirname, '../../agentcore'),
@@ -480,6 +492,34 @@ export class AgentCoreConstruct extends Construct {
                   'cloudwatch:namespace': 'bedrock-agentcore',
                 },
               },
+            }),
+          ],
+        }),
+        CodeInterpreterAccess: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              actions: [
+                'bedrock-agentcore:CreateCodeInterpreter',
+                'bedrock-agentcore:StartCodeInterpreterSession',
+                'bedrock-agentcore:InvokeCodeInterpreter',
+                'bedrock-agentcore:StopCodeInterpreterSession',
+                'bedrock-agentcore:DeleteCodeInterpreter',
+                'bedrock-agentcore:ListCodeInterpreters',
+                'bedrock-agentcore:GetCodeInterpreter',
+              ],
+              resources: ['*'],
+            }),
+          ],
+        }),
+        CostExplorerAccess: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              actions: [
+                'ce:GetCostAndUsage',
+                'ce:GetCostForecast',
+                'ce:GetDimensionValues',
+              ],
+              resources: ['*'],
             }),
           ],
         }),
@@ -557,9 +597,11 @@ export class AgentCoreConstruct extends Construct {
         ...(props.ownerTwitterUserId && {
           OWNER_TWITTER_USER_ID: props.ownerTwitterUserId,
         }),
+        CODE_INTERPRETER_OUTPUT_BUCKET: codeInterpreterBucket.bucketName,
       },
     })
     this.runtimeArn = runtime.agentRuntimeArn
+    codeInterpreterBucket.grantReadWrite(runtimeRole)
 
     // Preserve CloudFormation logical ID from L1 migration to avoid resource recreation
     const cfnRuntime = runtime.node.defaultChild as bedrockagentcore.CfnRuntime

@@ -7,6 +7,8 @@ import os
 
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 
+from strands import AgentSkills
+
 from src.agent.sub_agents import (
     briefing_agent,
     calendar_agent,
@@ -21,6 +23,8 @@ from src.agent.sub_agents import (
 )
 from strands_tools.tavily import tavily_search
 from src.agent.twitter_tools import TWITTER_TOOLS
+from src.agent.aws_cost import get_aws_cost
+from src.agent.code_interpreter import drain_pending_images, execute_python
 from src.agent.tonari_agent import (
     MODEL_PROVIDER_BEDROCK,
     _get_default_model_provider,
@@ -63,6 +67,16 @@ def _init_tavily_api_key():
 _init_tavily_api_key()
 
 app = BedrockAgentCoreApp()
+
+# Skills プラグインの初期化
+SKILLS_DIR = os.path.join(os.path.dirname(__file__), "skills")
+_skills_plugin = None
+if os.path.isdir(SKILLS_DIR):
+    try:
+        _skills_plugin = AgentSkills(skills=SKILLS_DIR)
+        logger.info("AgentSkills loaded from %s", SKILLS_DIR)
+    except Exception as e:
+        logger.warning("Failed to load AgentSkills: %s", e)
 
 # 保持中のAgentとそのセッション情報
 _current_agent = None
@@ -116,14 +130,18 @@ def _get_or_create_agent(
         main_tools = tool_map["main"] + [
             task_agent, calendar_agent, gmail_agent, notion_agent,
             briefing_agent, diary_agent, intro_agent, twitter_agent,
+            execute_python,
+            get_aws_cost,
         ]
 
+        plugins = [_skills_plugin] if _skills_plugin else []
         agent = create_tonari_agent(
             session_id=session_id,
             actor_id=actor_id,
             mcp_tools=main_tools,
             model_provider=model_provider,
             reasoning_enabled=reasoning_enabled,
+            plugins=plugins,
         )
         _current_mcp_client = mcp_client
     except Exception as e:
@@ -236,8 +254,21 @@ async def _stream_response(agent, content):
     Yields:
         str: テキストチャンク
         dict: ツールイベント ({"type": "tool_start", "tool": name} or {"type": "tool_end"})
+        dict: 画像イベント ({"type": "image", "base64": ..., "format": "png"})
     """
     event_queue = asyncio.Queue()
+
+    async def _emit_pending_images():
+        """保留画像URLをキューに送出"""
+        images = drain_pending_images()
+        for img in images:
+            url = img.get("url", "")
+            if url:
+                logger.info("Emitting image URL: %s...", url[:80])
+                await event_queue.put({
+                    "type": "image",
+                    "url": url,
+                })
 
     async def _run_agent():
         active_tool = None
@@ -249,6 +280,7 @@ async def _stream_response(agent, content):
                         if isinstance(text, str):
                             if active_tool is not None:
                                 await event_queue.put({"type": "tool_end"})
+                                await _emit_pending_images()
                                 active_tool = None
                             await event_queue.put(text)
                     elif "current_tool_use" in event:
@@ -257,10 +289,12 @@ async def _stream_response(agent, content):
                         if tool_name != active_tool:
                             if active_tool is not None:
                                 await event_queue.put({"type": "tool_end"})
+                                await _emit_pending_images()
                             active_tool = tool_name
                             await event_queue.put({"type": "tool_start", "tool": tool_name})
             if active_tool is not None:
                 await event_queue.put({"type": "tool_end"})
+                await _emit_pending_images()
         except Exception as e:
             logger.error("Agent stream error: %s", e, exc_info=True)
             await event_queue.put({"type": "error", "message": str(e)})

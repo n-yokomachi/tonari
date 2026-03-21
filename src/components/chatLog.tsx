@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import homeStore from '@/features/stores/home'
 import settingsStore from '@/features/stores/settings'
@@ -59,24 +59,40 @@ export const ChatLog = ({ isPortrait }: { isPortrait?: boolean }) => {
                 characterName={characterName}
                 isPortrait
               />
-            ) : (
+            ) : Array.isArray(msg.content) ? (
               <>
-                {msg.content?.[0]?.text ? (
-                  <Chat
-                    role={msg.role}
-                    message={msg.content[0].text}
-                    characterName={characterName}
-                    isPortrait
-                  />
-                ) : null}
-                <ChatImage
-                  role={msg.role}
-                  imageUrl={msg.content ? msg.content[1].image : ''}
-                  characterName={characterName}
-                  isPortrait
-                />
+                {msg.content.map((block, j) => {
+                  if (block.type === 'text' && block.text) {
+                    return (
+                      <Chat
+                        key={j}
+                        role={msg.role}
+                        message={block.text}
+                        characterName={characterName}
+                        isPortrait
+                      />
+                    )
+                  }
+                  if (block.type === 'image' && block.image) {
+                    const src =
+                      block.image.startsWith('data:') ||
+                      block.image.startsWith('http')
+                        ? block.image
+                        : `data:image/png;base64,${block.image}`
+                    return (
+                      <ChatImage
+                        key={j}
+                        role={msg.role}
+                        imageUrl={src}
+                        characterName={characterName}
+                        isPortrait
+                      />
+                    )
+                  }
+                  return null
+                })}
               </>
-            )}
+            ) : null}
           </div>
         ))}
         {chatProcessing && toolStatusMessage ? (
@@ -122,22 +138,38 @@ export const ChatLog = ({ isPortrait }: { isPortrait?: boolean }) => {
                 message={msg.content}
                 characterName={characterName}
               />
-            ) : (
+            ) : Array.isArray(msg.content) ? (
               <>
-                {msg.content?.[0]?.text ? (
-                  <Chat
-                    role={msg.role}
-                    message={msg.content[0].text}
-                    characterName={characterName}
-                  />
-                ) : null}
-                <ChatImage
-                  role={msg.role}
-                  imageUrl={msg.content ? msg.content[1].image : ''}
-                  characterName={characterName}
-                />
+                {msg.content.map((block, j) => {
+                  if (block.type === 'text' && block.text) {
+                    return (
+                      <Chat
+                        key={j}
+                        role={msg.role}
+                        message={block.text}
+                        characterName={characterName}
+                      />
+                    )
+                  }
+                  if (block.type === 'image' && block.image) {
+                    const src =
+                      block.image.startsWith('data:') ||
+                      block.image.startsWith('http')
+                        ? block.image
+                        : `data:image/png;base64,${block.image}`
+                    return (
+                      <ChatImage
+                        key={j}
+                        role={msg.role}
+                        imageUrl={src}
+                        characterName={characterName}
+                      />
+                    )
+                  }
+                  return null
+                })}
               </>
-            )}
+            ) : null}
           </div>
         )
       })}
@@ -266,6 +298,21 @@ const parseLinks = (text: string): React.ReactNode[] => {
   return parts.length > 0 ? parts : [text]
 }
 
+// テキスト内の画像URLを抽出する
+const IMAGE_URL_PATTERN =
+  /https?:\/\/[^\s"'<>]+\.(?:png|jpg|jpeg|gif|webp)(?:\?[^\s"'<>]*)?/gi
+
+const extractImageUrls = (
+  text: string
+): { cleanText: string; urls: string[] } => {
+  const urls: string[] = []
+  const cleanText = text.replace(IMAGE_URL_PATTERN, (match) => {
+    urls.push(match)
+    return ''
+  })
+  return { cleanText: cleanText.replace(/\s+/g, ' ').trim(), urls }
+}
+
 const Chat = ({
   role,
   message,
@@ -277,7 +324,11 @@ const Chat = ({
   characterName: string
   isPortrait?: boolean
 }) => {
-  const processedMessage = message
+  // 画像URLをテキストから抽出
+  const { cleanText: textWithoutImages, urls: imageUrls } =
+    extractImageUrls(message)
+
+  const processedMessage = textWithoutImages
     .replace(/\[[^\]]*\]/g, '')
     .replace(/\{[^}]*\}/g, '')
     .replace(/\s+/g, ' ')
@@ -311,13 +362,61 @@ const Chat = ({
             {role !== 'user' ? characterName || 'CHARACTER' : 'YOU'}
           </div>
           <div className="px-6 py-4 bg-white/70 dark:bg-black/50 backdrop-blur-sm rounded-b-lg">
-            <div className={`font-bold whitespace-pre-wrap ${roleText}`}>
-              {messageContent}
-            </div>
+            {processedMessage && (
+              <div className={`font-bold whitespace-pre-wrap ${roleText}`}>
+                {messageContent}
+              </div>
+            )}
+            {imageUrls.map((url, idx) => (
+              <ExpandableImage
+                key={idx}
+                src={url}
+                alt={`Generated image ${idx + 1}`}
+                className="mt-2"
+              />
+            ))}
           </div>
         </>
       )}
     </div>
+  )
+}
+
+const ExpandableImage = ({
+  src,
+  alt,
+  className = '',
+}: {
+  src: string
+  alt: string
+  className?: string
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false)
+  return (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        className={`rounded-lg cursor-pointer hover:opacity-80 transition-opacity ${className}`}
+        style={{ maxWidth: '100%', maxHeight: 400 }}
+        onClick={() => setIsExpanded(true)}
+      />
+      {isExpanded && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+          onClick={() => setIsExpanded(false)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={src}
+            alt={alt}
+            className="max-w-[90vw] max-h-[90vh] rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
+    </>
   )
 }
 
@@ -339,13 +438,7 @@ const ChatImage = ({
         isPortrait ? 'my-1' : `mx-auto ml-0 md:ml-10 lg:ml-20 my-1 ${offsetX}`
       }
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={imageUrl}
-        alt="Sent image"
-        className="rounded-lg"
-        style={{ maxWidth: 120, maxHeight: 120 }}
-      />
+      <ExpandableImage src={imageUrl} alt="Sent image" />
     </div>
   )
 }

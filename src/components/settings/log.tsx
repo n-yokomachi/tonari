@@ -76,7 +76,15 @@ const Log = () => {
                     ></input>
                   ) : (
                     <Image
-                      src={value.content[1].image}
+                      src={
+                        Array.isArray(value.content)
+                          ? (
+                              value.content.find((b) => b.type === 'image') as
+                                | { type: 'image'; image: string }
+                                | undefined
+                            )?.image || ''
+                          : ''
+                      }
                       alt="画像"
                       width={500}
                       height={500}
