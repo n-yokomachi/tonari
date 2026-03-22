@@ -17,7 +17,7 @@ from strands import tool
 
 logger = logging.getLogger(__name__)
 
-CODE_INTERPRETER_REGION = os.getenv("CODE_INTERPRETER_REGION", "us-west-2")
+CODE_INTERPRETER_REGION = os.getenv("CODE_INTERPRETER_REGION", "ap-northeast-1")
 OUTPUT_BUCKET = os.getenv("CODE_INTERPRETER_OUTPUT_BUCKET", "")
 AWS_REGION = os.getenv("AWS_REGION", "ap-northeast-1")
 

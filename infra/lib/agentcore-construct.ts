@@ -597,6 +597,7 @@ export class AgentCoreConstruct extends Construct {
         ...(props.ownerTwitterUserId && {
           OWNER_TWITTER_USER_ID: props.ownerTwitterUserId,
         }),
+        CODE_INTERPRETER_REGION: region,
         CODE_INTERPRETER_OUTPUT_BUCKET: codeInterpreterBucket.bucketName,
       },
     })
