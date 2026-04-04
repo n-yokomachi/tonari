@@ -53,6 +53,7 @@ interface General {
   ttsVolume: number
   wakeWordEnabled: boolean
   reasoningEnabled: boolean
+  safeMode: boolean
 }
 
 export type SettingsState = Character & General
@@ -101,6 +102,7 @@ const getInitialValuesFromEnv = (): SettingsState => {
     ttsVolume: 50,
     wakeWordEnabled: false,
     reasoningEnabled: false,
+    safeMode: true,
   }
 }
 
@@ -134,6 +136,14 @@ const settingsStore = create<SettingsState>()(
         if (!VRM_MODELS.some((m) => m.path === state.selectedVrmPath)) {
           state.selectedVrmPath = DEFAULT_VRM
         }
+        // Safe mode: fallback to default if C/D is selected
+        if (
+          state.safeMode &&
+          (state.selectedVrmPath.includes('tonari_c') ||
+            state.selectedVrmPath.includes('tonari_d'))
+        ) {
+          state.selectedVrmPath = DEFAULT_VRM
+        }
       }
     },
     partialize: (state) => ({
@@ -164,6 +174,7 @@ const settingsStore = create<SettingsState>()(
       ttsVolume: state.ttsVolume,
       wakeWordEnabled: state.wakeWordEnabled,
       reasoningEnabled: state.reasoningEnabled,
+      safeMode: state.safeMode,
     }),
   })
 )
