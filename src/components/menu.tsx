@@ -73,6 +73,7 @@ export const CreepyLogo = ({ isDark }: { isDark: boolean }) => {
   const eyesRef = useRef<HTMLSpanElement>(null)
   const [isHovered, setIsHovered] = useState(false)
   const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 })
+  const safeMode = settingsStore((s) => s.safeMode)
 
   const updateEyes = (e: React.MouseEvent) => {
     if (!eyesRef.current) return
@@ -104,11 +105,12 @@ export const CreepyLogo = ({ isDark }: { isDark: boolean }) => {
         setEyeOffset({ x: 0, y: 0 })
       }}
     >
-      {/* Eyes behind the logo */}
+      {/* Eyes behind the logo – click to toggle safe mode */}
       <span
         ref={eyesRef}
-        className="absolute flex items-center gap-[0.35em] right-[0.3em] bottom-[0.1em] h-[0.6em] z-0 pointer-events-none transition-opacity duration-200"
+        className={`absolute flex items-center gap-[0.35em] right-[0.3em] bottom-[0.1em] h-[0.6em] z-0 transition-opacity duration-200 ${isHovered ? 'cursor-pointer' : 'pointer-events-none'}`}
         style={{ opacity: isHovered ? 1 : 0 }}
+        onClick={() => settingsStore.setState({ safeMode: !safeMode })}
       >
         {[0, 1].map((i) => (
           <motion.span
@@ -545,7 +547,11 @@ export const Menu = ({ isPortrait }: { isPortrait?: boolean }) => {
           className="fixed bg-white/90 dark:bg-[rgba(20,20,35,0.9)] backdrop-blur-md rounded-xl shadow-lg border border-white/20 dark:border-white/10 py-1 z-[100] min-w-[160px]"
           style={{ top: vrmMenuPos.top, left: vrmMenuPos.left }}
         >
-          {VRM_MODELS.map((model) => (
+          {VRM_MODELS.filter(
+            (model) =>
+              !settingsStore.getState().safeMode ||
+              (model.label !== 'C' && model.label !== 'D')
+          ).map((model) => (
             <button
               key={model.label}
               onClick={() => handleSelectVrmModel(model.path)}

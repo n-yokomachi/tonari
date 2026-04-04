@@ -224,7 +224,11 @@ export const MobileHeader = ({ showLogo }: { showLogo?: boolean }) => {
           className="fixed bg-white/90 dark:bg-[rgba(20,20,35,0.9)] backdrop-blur-md rounded-xl shadow-lg border border-white/20 dark:border-white/10 py-1 z-[100] min-w-[160px]"
           style={{ top: vrmMenuPos.top, left: vrmMenuPos.left }}
         >
-          {VRM_MODELS.map((model) => (
+          {VRM_MODELS.filter(
+            (model) =>
+              !settingsStore.getState().safeMode ||
+              (model.label !== 'C' && model.label !== 'D')
+          ).map((model) => (
             <button
               key={model.label}
               onClick={() => handleSelectVrmModel(model.path)}
