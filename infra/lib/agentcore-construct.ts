@@ -530,6 +530,7 @@ export class AgentCoreConstruct extends Construct {
               resources: [
                 `arn:aws:ssm:${region}:${account}:parameter/tonari/openrouter-api-key`,
                 `arn:aws:ssm:${region}:${account}:parameter/tonari/google/*`,
+                `arn:aws:ssm:${region}:${account}:parameter/tonari/twitter/*`,
               ],
             }),
           ],

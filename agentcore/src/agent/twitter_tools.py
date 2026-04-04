@@ -1,7 +1,6 @@
-"""Twitter/X tool functions using AgentCore Identity API Key.
+"""Twitter/X tool functions using SSM-stored credentials.
 
-Provides @tool-decorated functions for reading and posting tweets,
-replacing the previous Lambda/Gateway-based implementation.
+Provides @tool-decorated functions for reading and posting tweets.
 """
 
 import logging
